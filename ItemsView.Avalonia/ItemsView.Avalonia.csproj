@@ -4,6 +4,7 @@
   	<LangVersion>preview</LangVersion>
   	<ImplicitUsings>enable</ImplicitUsings>
   	<Nullable>enable</Nullable>
+  	<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <AvaloniaXaml Remove="ItemsView.axaml" />
