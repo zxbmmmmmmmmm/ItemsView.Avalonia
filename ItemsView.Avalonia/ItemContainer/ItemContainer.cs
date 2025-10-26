@@ -26,7 +26,7 @@ public partial class ItemContainer : TemplatedControl, ISelectable
     [GeneratedStyledProperty]
     public partial Control? Child { get; set; }
 
-    private Panel _rootPanel = null!;
+    private Panel? _rootPanel;
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
@@ -41,6 +41,7 @@ public partial class ItemContainer : TemplatedControl, ISelectable
 
     partial void OnChildPropertyChanged(Control? oldValue, Control? newValue)
     {
+        if (_rootPanel is null) return;
         if (oldValue is not null)
         {
             _rootPanel.Children.RemoveAt(_rootPanel.Children.IndexOf(oldValue));

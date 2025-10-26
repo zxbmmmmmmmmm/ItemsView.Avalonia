@@ -1,10 +1,28 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:itemsview="using:ItemsView.Avalonia"
+        xmlns:local="using:ItemsView.Avalonia.Sample"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:models="using:ItemsView.Avalonia.Sample.Models"
+        xmlns:vm="using:ItemsView.Avalonia.Sample.ViewModels"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-        x:Class="ItemsView.Avalonia.Sample.MainWindow"
+        x:Class="ItemsView.Avalonia.Sample.MainWindow" 
+        x:DataType="vm:MainViewModel"
         Title="ItemsView.Avalonia.Sample">
-    <itemsview:ItemsView/>
+    <Window.DataContext>
+		<vm:MainViewModel/>
+    </Window.DataContext>
+    <itemsview:ItemsView ItemsSource="{Binding Items}">
+        <itemsview:ItemsView.ItemTemplate>
+            <DataTemplate x:DataType="models:Item">
+                <itemsview:ItemContainer>
+                    <Grid Margin="24">
+                        <TextBlock Text="{Binding Name}"/>
+                        <TextBlock Text="{Binding Id}" HorizontalAlignment="Right"/>
+                    </Grid>
+                </itemsview:ItemContainer>
+            </DataTemplate>
+        </itemsview:ItemsView.ItemTemplate>
+    </itemsview:ItemsView>
 </Window>

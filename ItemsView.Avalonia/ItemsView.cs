@@ -63,7 +63,6 @@ public partial class ItemsView : TemplatedControl
 
     private void OnItemsRepeaterElementClearing(object? sender, ItemsRepeaterElementClearingEventArgs e)
     {
-        throw new NotImplementedException();
     }
 
     private void OnItemsRepeaterElementPrepared(object? sender, ItemsRepeaterElementPreparedEventArgs e)

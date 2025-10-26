@@ -22,8 +22,8 @@ public partial class ItemsView
     [GeneratedStyledProperty]
     public partial SelectionMode SelectionMode { get; set; }
 
-    [GeneratedDirectProperty(DefaultValue = -1,DefaultBindingMode = BindingMode.TwoWay, EnableDataValidation = true)]
-    public partial int SelectedIndex { get; set; }
+    [GeneratedDirectProperty(DefaultBindingMode = BindingMode.TwoWay, EnableDataValidation = true)]
+    public partial int SelectedIndex { get; set; } = -1;
 
     [GeneratedDirectProperty(DefaultBindingMode = BindingMode.TwoWay, EnableDataValidation = true)]
     public partial object? SelectedItem { get; set; }
