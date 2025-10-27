@@ -1,4 +1,5 @@
 ﻿using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Selection;
@@ -8,8 +9,11 @@ using Avalonia.Input;
 using Avalonia.Styling;
 using ItemsView.Avalonia.Helpers;
 using ItemsView.Avalonia.Selection;
+using System;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Xml.Linq;
 
 namespace ItemsView.Avalonia;
 
@@ -22,6 +26,8 @@ public partial class ItemsView : TemplatedControl
     private readonly ISelectionModel _selectionModel = new InternalSelectionModel();
 
     private SelectorBase _selector;
+
+    HashSet<ItemContainer> _itemContainers = new();
 
     private bool _isProcessingInteraction = false;
     public ItemsView()
@@ -193,7 +199,101 @@ public partial class ItemsView : TemplatedControl
     {
         if (e.Element is not ItemContainer itemContainer) throw new Exception();
 
+        var index = e.Index;
+        if ((itemContainer.CanUserInvoke & ItemContainerUserInvokeMode.Auto) != 0)
+        {
+            var canUserInvoke = ItemContainerUserInvokeMode.Auto;
+
+            canUserInvoke |= IsItemInvokedEnabled ? ItemContainerUserInvokeMode.UserCanInvoke : ItemContainerUserInvokeMode.UserCannotInvoke;
+
+            itemContainer.CanUserInvoke = canUserInvoke;
+        }
+
+        if ((itemContainer.MultiSelectMode & ItemContainerMultiSelectMode.Auto) != 0)
+        {
+            var multiSelectMode = ItemContainerMultiSelectMode.Auto;
+
+            multiSelectMode |= SelectionMode switch
+            {
+                ItemsViewSelectionMode.None or ItemsViewSelectionMode.Single => ItemContainerMultiSelectMode.Single,
+                ItemsViewSelectionMode.Extended => ItemContainerMultiSelectMode.Extended,
+                ItemsViewSelectionMode.Multiple => ItemContainerMultiSelectMode.Multiple,
+                _ => throw new ArgumentOutOfRangeException()
+            };
+
+            itemContainer.MultiSelectMode = multiSelectMode;
+        }
+
+        if ((itemContainer.CanUserSelect & ItemContainerUserSelectMode.Auto) != 0)
+        {
+            ItemContainerUserSelectMode canUserSelect = ItemContainerUserSelectMode.Auto;
+
+            canUserSelect |= SelectionMode == ItemsViewSelectionMode.None ? ItemContainerUserSelectMode.UserCannotSelect : ItemContainerUserSelectMode.UserCanSelect;
+
+            itemContainer.CanUserSelect = canUserSelect;
+        }
+
+        var isSelectionModelSelected = _selectionModel.IsSelected(index);
+
+        if (itemContainer.IsSelected)
+        {
+            // The ItemsSource may be a list of ItemContainers, some of them having IsSelected==True. Account for this situation
+            // by updating the selection model accordingly. Only selected containers are pushed into the selection model to avoid
+            // clearing any potential selections already present in that model, which are pushed into the ItemContainers next.
+            if (!isSelectionModelSelected && SelectionMode != ItemsViewSelectionMode.None)
+            {
+                // When SelectionMode is None, ItemContainer.IsSelected will be reset below.
+                // For all other selection modes, simply select the item.
+                // No need to go through the SingleSelector, MultipleSelector or ExtendedSelector policy.
+                _selectionModel.Select(index);
+
+                // Access the new selection status for the same ItemContainer so it can be updated accordingly below.
+                isSelectionModelSelected = _selectionModel.IsSelected(index);
+            }
+        }
+
+        itemContainer.IsSelected = isSelectionModelSelected;
+
+        SetItemsViewItemContainerRevokers(itemContainer);
+
+        if (_itemsRepeater.ItemsSourceView is { } itemsSourceView)
+        {
+            itemContainer.SetValue(AutomationProperties.PositionInSetProperty, index + 1);
+            itemContainer.SetValue(AutomationProperties.SizeOfSetProperty, itemsSourceView.Count);
+        }    
     }
+
+    private void SetItemsViewItemContainerRevokers(ItemContainer itemContainer)
+    {
+        itemContainer.KeyDown += OnItemsViewElementKeyDown;
+        itemContainer.GotFocus += OnItemsViewElementGettingFocus;
+        itemContainer.ItemInvoked += OnItemsViewItemContainerItemInvoked;
+        itemContainer.PropertyChanged += OnItemsViewItemContainerPropertyChanged;
+
+        _itemContainers.Add(itemContainer);
+    }
+
+    private void OnItemsViewItemContainerPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property != ItemContainer.IsSelectedProperty) return;
+
+    }
+
+    private void OnItemsViewItemContainerItemInvoked(object? sender, ItemContainerInvokedEventArgs e)
+    {
+
+    }
+
+    private void OnItemsViewElementGettingFocus(object? sender, GotFocusEventArgs e)
+    {
+
+    }
+
+    private void OnItemsViewElementKeyDown(object? sender, KeyEventArgs e)
+    {
+
+    }
+
     private void OnSourceListChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
     {
         throw new NotImplementedException();

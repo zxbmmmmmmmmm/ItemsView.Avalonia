@@ -22,6 +22,9 @@ public partial class ItemsView
     [GeneratedStyledProperty]
     public partial ItemsViewSelectionMode SelectionMode { get; set; }
 
+    [GeneratedStyledProperty]
+    public partial bool IsItemInvokedEnabled { get; set; }
+
     [GeneratedDirectProperty(DefaultBindingMode = BindingMode.TwoWay, EnableDataValidation = true)]
     public partial int SelectedIndex { get; set; } = -1;
 
