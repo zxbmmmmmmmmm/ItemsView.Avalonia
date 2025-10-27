@@ -20,7 +20,7 @@ public partial class ItemsView
     public partial IDataTemplate? ItemTemplate { get; set; }
 
     [GeneratedStyledProperty]
-    public partial SelectionMode SelectionMode { get; set; }
+    public partial ItemsViewSelectionMode SelectionMode { get; set; }
 
     [GeneratedDirectProperty(DefaultBindingMode = BindingMode.TwoWay, EnableDataValidation = true)]
     public partial int SelectedIndex { get; set; } = -1;
