@@ -38,33 +38,30 @@ public partial class ItemContainer : TemplatedControl, ISelectable
         if (e.Handled)
             return;
 
-        if (!e.Handled && ItemsControl.ItemsControlFromItemContainer(this) is ListBox owner)
+        var p = e.GetCurrentPoint(this);
+
+        if (p.Properties.PointerUpdateKind is PointerUpdateKind.LeftButtonPressed or
+            PointerUpdateKind.RightButtonPressed)
         {
-            var p = e.GetCurrentPoint(this);
-
-            if (p.Properties.PointerUpdateKind is PointerUpdateKind.LeftButtonPressed or
-                PointerUpdateKind.RightButtonPressed)
+            if (p.Pointer.Type == PointerType.Mouse
+                || (p.Pointer.Type == PointerType.Pen && p.Properties.IsRightButtonPressed))
             {
-                if (p.Pointer.Type == PointerType.Mouse
-                    || (p.Pointer.Type == PointerType.Pen && p.Properties.IsRightButtonPressed))
+                // If the pressed point comes from a mouse or right-click pen, perform the selection immediately.
+                // In case of pen, only right-click is accepted, as left click (a tip touch) is used for scrolling. 
+                if (CanRaiseItemInvoked())
                 {
-                    // If the pressed point comes from a mouse or right-click pen, perform the selection immediately.
-                    // In case of pen, only right-click is accepted, as left click (a tip touch) is used for scrolling. 
-                    if (CanRaiseItemInvoked())
-                    {
-                        e.Handled = RaiseItemInvoked(ItemContainerInteractionTrigger.PointerReleased, e.Source);
-                    }
+                    e.Handled = RaiseItemInvoked(ItemContainerInteractionTrigger.PointerReleased, e.Source);
                 }
-                else
-                {
-                    // Otherwise perform the selection when the pointer is released as to not
-                    // interfere with gestures.
-                    _pointerDownPoint = p.Position;
+            }
+            else
+            {
+                // Otherwise perform the selection when the pointer is released as to not
+                // interfere with gestures.
+                _pointerDownPoint = p.Position;
 
-                    // Ideally we'd set handled here, but that would prevent the scroll gesture
-                    // recognizer from working.
-                    ////e.Handled = true;
-                }
+                // Ideally we'd set handled here, but that would prevent the scroll gesture
+                // recognizer from working.
+                ////e.Handled = true;
             }
         }
     }
