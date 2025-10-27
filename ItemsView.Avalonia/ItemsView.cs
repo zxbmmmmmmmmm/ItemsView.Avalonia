@@ -169,6 +169,11 @@ public partial class ItemsView : TemplatedControl
         return itemsSourceView.GetAt(itemIndex);
     }
 
+    private int GetElementIndex(Control element)
+    {
+        return _itemsRepeater.GetElementIndex(element);
+    }
+
     void RaiseItemInvoked(
         Control element)
     {
@@ -277,6 +282,37 @@ public partial class ItemsView : TemplatedControl
     {
         if (e.Property != ItemContainer.IsSelectedProperty) return;
 
+        if (sender is not ItemContainer itemContainer) throw new Exception();
+        var itemIndex = GetElementIndex(itemContainer);
+        if (itemIndex is -1) return;
+
+        var isSelectionModelSelected = _selectionModel.IsSelected(itemIndex);
+
+        if (itemContainer.IsSelected)
+        {
+            if (!isSelectionModelSelected)
+            {
+                if (SelectionMode == ItemsViewSelectionMode.None)
+                {
+                    // Permission denied.
+                    itemContainer.IsSelected = false;
+                }
+                else
+                {
+                    // For all other selection modes, simply select the item.
+                    // No need to go through the SingleSelector, MultipleSelector or ExtendedSelector policy.
+                    _selectionModel.Select(itemIndex);
+                }
+            }
+        }
+        else
+        {
+            if (isSelectionModelSelected)
+            {
+                // For all selection modes, simply deselect the item & preserve the anchor if any.
+                _selectionModel.Deselect(itemIndex);
+            }
+        }
     }
 
     private void OnItemsViewItemContainerItemInvoked(object? sender, ItemContainerInvokedEventArgs e)
