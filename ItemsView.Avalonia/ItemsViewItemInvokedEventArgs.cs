@@ -4,9 +4,9 @@ namespace ItemsView.Avalonia;
 
 public class ItemsViewItemInvokedEventArgs : RoutedEventArgs
 {
-    internal ItemsViewItemInvokedEventArgs(object invokedItem)
+    internal ItemsViewItemInvokedEventArgs(object? invokedItem)
     {
         InvokedItem = invokedItem;
     }
-    public object InvokedItem { get; }
+    public object? InvokedItem { get; }
 }
