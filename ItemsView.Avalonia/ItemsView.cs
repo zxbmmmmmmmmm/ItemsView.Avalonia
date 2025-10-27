@@ -174,6 +174,29 @@ public partial class ItemsView : TemplatedControl
         return _itemsRepeater.GetElementIndex(element);
     }
 
+    bool CanRaiseItemInvoked(
+        ItemContainerInteractionTrigger interactionTrigger,
+        ItemContainer itemContainer)
+    {
+
+		var canUserInvoke = itemContainer.CanUserInvoke;
+
+
+        if ((canUserInvoke & (ItemContainerUserInvokeMode.UserCannotInvoke | ItemContainerUserInvokeMode.UserCanInvoke)) != (ItemContainerUserInvokeMode.UserCanInvoke))
+        {
+            return false;
+        }
+
+        var cannotRaiseItemInvoked =
+            (!IsItemInvokedEnabled ||
+             (SelectionMode == ItemsViewSelectionMode.None && interactionTrigger == ItemContainerInteractionTrigger.DoubleTap) ||
+             (SelectionMode != ItemsViewSelectionMode.None && (interactionTrigger == ItemContainerInteractionTrigger.Tap || interactionTrigger == ItemContainerInteractionTrigger.SpaceKey)));
+
+        var canRaiseItemInvoked = !cannotRaiseItemInvoked;
+
+        return canRaiseItemInvoked;
+    }
+
     void RaiseItemInvoked(
         Control element)
     {
@@ -315,9 +338,78 @@ public partial class ItemsView : TemplatedControl
         }
     }
 
-    private void OnItemsViewItemContainerItemInvoked(object? sender, ItemContainerInvokedEventArgs e)
+    private void OnItemsViewItemContainerItemInvoked(ItemContainer? itemContainer, ItemContainerInvokedEventArgs e)
     {
+        if (itemContainer is null) return;
 
+        var interactionTrigger = e.InteractionTrigger;
+        bool handled = e.Handled;
+
+        switch (interactionTrigger)
+        {
+            case ItemContainerInteractionTrigger.PointerReleased:
+            {
+                handled |= ProcessInteraction(itemContainer, FocusState.Pointer);
+                break;
+            }
+
+            case ItemContainerInteractionTrigger.EnterKey:
+            case ItemContainerInteractionTrigger.SpaceKey:
+            {
+                handled |= ProcessInteraction(itemContainer, FocusState.Keyboard);
+                break;
+            }
+
+            case ItemContainerInteractionTrigger.Tap:
+            case ItemContainerInteractionTrigger.DoubleTap:
+            case ItemContainerInteractionTrigger.AutomationInvoke:
+            {
+                break;
+            }
+
+            default:
+            {
+                return;
+            }
+        }
+
+        if (!e.Handled &&
+            interactionTrigger != ItemContainerInteractionTrigger.PointerReleased &&
+            CanRaiseItemInvoked(interactionTrigger, itemContainer))
+        {
+            if (GetElementIndex(itemContainer) == -1) throw new Exception();
+
+            RaiseItemInvoked(itemContainer);
+        }
+
+        e.Handled = handled;
+    }
+
+    bool ProcessInteraction(
+        Control control,
+        FocusState focusState)
+    {
+        var index = GetElementIndex(control);
+
+        if (index < 0) throw new Exception();
+
+        // When the focusState is Pointer, the element not only gets focus but is also brought into view by SetFocusElementIndex's StartBringIntoView call.
+        bool handled = SetCurrentElementIndex(index, focusState, true /*forceKeyboardNavigationReferenceReset*/, focusState == FocusState.Pointer /*startBringIntoView*/);
+
+        bool isCtrlDown = (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control) & CoreVirtualKeyStates.Down) == CoreVirtualKeyStates.Down;
+        bool isShiftDown = (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift) & CoreVirtualKeyStates.Down) == CoreVirtualKeyStates.Down;
+
+        try
+        {
+            _isProcessingInteraction = true;
+            _selector.OnInteractedAction(index, isCtrlDown, isShiftDown);
+        }
+        finally
+        {
+            _isProcessingInteraction = false;
+        }
+
+        return handled;
     }
 
     private void OnItemsViewElementGettingFocus(object? sender, GotFocusEventArgs e)

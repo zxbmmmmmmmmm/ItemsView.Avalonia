@@ -130,5 +130,5 @@ public partial class ItemContainer : TemplatedControl, ISelectable
                (CanUserSelect & (ItemContainerUserSelectMode.Auto | ItemContainerUserSelectMode.UserCanSelect)) != 0;
     }
 
-    internal event EventHandler<ItemContainerInvokedEventArgs>? ItemInvoked;
+    internal event EventHandler<ItemContainer, ItemContainerInvokedEventArgs>? ItemInvoked;
 }
