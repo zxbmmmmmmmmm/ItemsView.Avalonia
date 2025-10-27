@@ -16,16 +16,6 @@ public partial class ItemContainer : TemplatedControl, ISelectable
     private static readonly Point s_invalidPoint = new Point(double.NaN, double.NaN);
     private Point _pointerDownPoint = s_invalidPoint;
 
-    [GeneratedStyledProperty]
-    public partial bool IsSelected { get; set; }
-
-    /// <summary>
-    /// Gets or sets the content to display.
-    /// </summary>
-    [Content]
-    [GeneratedStyledProperty]
-    public partial Control? Child { get; set; }
-
     private Panel? _rootPanel;
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
@@ -37,19 +27,6 @@ public partial class ItemContainer : TemplatedControl, ISelectable
             _rootPanel.Children.Insert(0, child);
         }
         base.OnApplyTemplate(e);
-    }
-
-    partial void OnChildPropertyChanged(Control? oldValue, Control? newValue)
-    {
-        if (_rootPanel is null) return;
-        if (oldValue is not null)
-        {
-            _rootPanel.Children.RemoveAt(_rootPanel.Children.IndexOf(oldValue));
-        }
-        if(newValue is not null)
-        {
-            _rootPanel.Children.Insert(0, newValue);
-        }
     }
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
@@ -73,7 +50,10 @@ public partial class ItemContainer : TemplatedControl, ISelectable
                 {
                     // If the pressed point comes from a mouse or right-click pen, perform the selection immediately.
                     // In case of pen, only right-click is accepted, as left click (a tip touch) is used for scrolling. 
-                    e.Handled = RaiseItemInvoked(ItemContainerInteractionTrigger.PointerReleased, e.Source);
+                    if (CanRaiseItemInvoked())
+                    {
+                        e.Handled = RaiseItemInvoked(ItemContainerInteractionTrigger.PointerReleased, e.Source);
+                    }
                 }
                 else
                 {
@@ -106,11 +86,31 @@ public partial class ItemContainer : TemplatedControl, ISelectable
             if (new Rect(Bounds.Size).ContainsExclusive(point.Position) &&
                 tapRect.ContainsExclusive(point.Position))
             {
-                e.Handled = RaiseItemInvoked(ItemContainerInteractionTrigger.PointerReleased, e.Source);
+                if (CanRaiseItemInvoked())
+                {
+                    e.Handled = RaiseItemInvoked(ItemContainerInteractionTrigger.PointerReleased, e.Source);
+                }
             }
         }
 
         _pointerDownPoint = s_invalidPoint;
+    }
+
+    protected override void OnKeyDown(KeyEventArgs args)
+    {
+        base.OnKeyDown(args);
+
+        if (!args.Handled && CanRaiseItemInvoked())
+        {
+            if (args.Key == Key.Enter)
+            {
+                args.Handled = RaiseItemInvoked(ItemContainerInteractionTrigger.EnterKey, args.Source);
+            }
+            else if (args.Key == Key.Space)
+            {
+                args.Handled = RaiseItemInvoked(ItemContainerInteractionTrigger.SpaceKey, args.Source);
+            }
+        }
     }
 
     internal bool RaiseItemInvoked(ItemContainerInteractionTrigger interactionTrigger, object? originalSource)
@@ -125,6 +125,12 @@ public partial class ItemContainer : TemplatedControl, ISelectable
         }
 
         return false;
+    }
+
+    private bool CanRaiseItemInvoked()
+    {
+        return (CanUserInvoke & ItemContainerUserInvokeMode.UserCanInvoke) != 0 ||
+               (CanUserSelect & (ItemContainerUserSelectMode.Auto | ItemContainerUserSelectMode.UserCanSelect)) != 0;
     }
 
     internal event EventHandler<ItemContainerInvokedEventArgs>? ItemInvoked;
