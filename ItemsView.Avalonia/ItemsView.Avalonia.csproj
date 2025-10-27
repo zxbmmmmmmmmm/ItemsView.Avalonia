@@ -24,7 +24,4 @@
   	</PackageReference>
 	  <PackageReference Include="PropertyGenerator.Avalonia" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Selection\" />
-  </ItemGroup>
 </Project>
