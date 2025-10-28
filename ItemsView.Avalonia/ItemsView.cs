@@ -340,7 +340,7 @@ public partial class ItemsView : TemplatedControl
             if (isSelectionModelSelected)
             {
                 // For all selection modes, simply deselect the item & preserve the anchor if any.
-                _selectionModel.Deselect(itemIndex);
+                _selector.DeselectWithAnchorPreservation(itemIndex);
             }
         }
     }
