@@ -50,7 +50,7 @@ public partial class ItemContainer : TemplatedControl, ISelectable
                 // In case of pen, only right-click is accepted, as left click (a tip touch) is used for scrolling. 
                 if (CanRaiseItemInvoked())
                 {
-                    e.Handled = RaiseItemInvoked(ItemContainerInteractionTrigger.PointerReleased, e.Source);
+                    e.Handled = RaiseItemInvoked(ItemContainerInteractionTrigger.PointerPressed, e.Source);
                 }
             }
             else
