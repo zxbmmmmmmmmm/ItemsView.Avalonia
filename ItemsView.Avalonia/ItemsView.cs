@@ -31,6 +31,13 @@ public partial class ItemsView : TemplatedControl
 
     private readonly HashSet<Key> _keysDown = new();
 
+    private Rect _keyboardNavigationReferenceRect = new Rect(-1.0f, -1.0f, -1.0f, -1.0f);
+
+    // Incremented in SetFocusElementIndex when a navigation key processing causes a new item to get focus.
+    // This will trigger an OnScrollViewBringingIntoView call where it is decremented.
+    // Used to delay a navigation key processing until the content has settled on a new viewport.
+    private byte _navigationKeyBringIntoViewPendingCount = 0;
+
     private bool _isProcessingInteraction = false;
     public ItemsView()
     {
@@ -187,10 +194,20 @@ public partial class ItemsView : TemplatedControl
         valueReturned = true;
         return itemsSourceView.GetAt(itemIndex);
     }
+    private Control? TryGetElement(int index)
+    {
+        return _itemsRepeater.TryGetElement(index);
+    }
 
     private int GetElementIndex(Control element)
     {
         return _itemsRepeater.GetElementIndex(element);
+    }
+
+
+    private int GetCurrentElementIndex()
+    {
+        return _selectionModel.SelectedIndex;
     }
 
     bool CanRaiseItemInvoked(
@@ -429,6 +446,69 @@ public partial class ItemsView : TemplatedControl
         }
 
         return handled;
+    }
+
+    bool SetCurrentElementIndex(
+        int index,
+        NavigationMethod focusState,
+        bool forceKeyboardNavigationReferenceReset,
+        bool startBringIntoView = false,
+        bool expectBringIntoView = false)
+    {
+        var currentElementIndex = GetCurrentElementIndex();
+
+        if (index != currentElementIndex)
+        {
+            if (index == -1)
+            {
+                _selectionModel.Clear();
+            }
+            else
+            {
+                _selectionModel.Select(index);
+            }
+
+            if (index == -1 || Math.Abs(_keyboardNavigationReferenceRect.X - (-1.0)) < 0.01 || forceKeyboardNavigationReferenceReset)
+            {
+                UpdateKeyboardNavigationReference();
+            }
+        }
+
+        return SetFocusElementIndex(index, focusState, startBringIntoView, expectBringIntoView);
+    }
+
+    bool SetFocusElementIndex(
+        int index,
+        NavigationMethod focusState,
+        bool startBringIntoView = false,
+        bool expectBringIntoView = false)
+    {
+        if (index != -1 /*&& focusState != NavigationMethod.Unfocused*/)
+        {
+            if (TryGetElement(index) is { } element)
+            {
+                bool success = element.Focus(focusState);
+
+                if (success)
+                {
+                    if (_scrollViewer is { } scrollView)
+                    {
+                        if (expectBringIntoView)
+                        {
+                            _navigationKeyBringIntoViewPendingCount++;
+                        }
+                        else if (startBringIntoView)
+                        {
+                            element.BringIntoView();
+                        }
+                    }
+                }
+
+                return success;
+            }
+        }
+
+        return false;
     }
 
     private void OnItemsViewElementGettingFocus(object? sender, GotFocusEventArgs e)
