@@ -27,7 +27,9 @@ public partial class ItemsView : TemplatedControl
 
     private SelectorBase _selector;
 
-    HashSet<ItemContainer> _itemContainers = new();
+    private HashSet<ItemContainer> _itemContainers = new();
+
+    private readonly HashSet<Key> _keysDown = new();
 
     private bool _isProcessingInteraction = false;
     public ItemsView()
@@ -45,6 +47,23 @@ public partial class ItemsView : TemplatedControl
         if (scrollViewer is null || itemsRepeater is null) throw new Exception();
         UpdateScrollViewer(scrollViewer);
         UpdateItemsRepeater(itemsRepeater);
+    }
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        _keysDown.Add(e.Key);
+    }
+
+    protected override void OnKeyUp(KeyEventArgs e)
+    {
+        base.OnKeyUp(e);
+        _keysDown.Remove(e.Key);
+    }
+
+    public bool IsKeyDown(Key key)
+    {
+        return _keysDown.Contains(key);
     }
 
     private void UpdateScrollViewer(ScrollViewer scrollViewer)
@@ -349,14 +368,14 @@ public partial class ItemsView : TemplatedControl
         {
             case ItemContainerInteractionTrigger.PointerReleased:
             {
-                handled |= ProcessInteraction(itemContainer, FocusState.Pointer);
+                handled |= ProcessInteraction(itemContainer, NavigationMethod.Pointer);
                 break;
             }
 
             case ItemContainerInteractionTrigger.EnterKey:
             case ItemContainerInteractionTrigger.SpaceKey:
             {
-                handled |= ProcessInteraction(itemContainer, FocusState.Keyboard);
+                handled |= ProcessInteraction(itemContainer, NavigationMethod.Tab);
                 break;
             }
 
@@ -387,17 +406,17 @@ public partial class ItemsView : TemplatedControl
 
     bool ProcessInteraction(
         Control control,
-        FocusState focusState)
+        NavigationMethod focusState)
     {
         var index = GetElementIndex(control);
 
         if (index < 0) throw new Exception();
 
         // When the focusState is Pointer, the element not only gets focus but is also brought into view by SetFocusElementIndex's StartBringIntoView call.
-        bool handled = SetCurrentElementIndex(index, focusState, true /*forceKeyboardNavigationReferenceReset*/, focusState == FocusState.Pointer /*startBringIntoView*/);
+        var handled = SetCurrentElementIndex(index, focusState, true /*forceKeyboardNavigationReferenceReset*/, focusState == NavigationMethod.Pointer /*startBringIntoView*/);
 
-        bool isCtrlDown = (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control) & CoreVirtualKeyStates.Down) == CoreVirtualKeyStates.Down;
-        bool isShiftDown = (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift) & CoreVirtualKeyStates.Down) == CoreVirtualKeyStates.Down;
+        var isCtrlDown = IsKeyDown(Key.LeftCtrl)|| IsKeyDown(Key.RightCtrl);
+        var isShiftDown = IsKeyDown(Key.LeftShift) || IsKeyDown(Key.RightShift);
 
         try
         {
