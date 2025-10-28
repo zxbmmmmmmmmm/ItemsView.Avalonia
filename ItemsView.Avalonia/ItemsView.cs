@@ -408,11 +408,11 @@ public partial class ItemsView : TemplatedControl
         {
             if (index == -1)
             {
-                _selectionModel.Clear();
+                ///_selectionModel.Clear();
             }
             else
             {
-                _selectionModel.Select(index);
+                //_selectionModel.Select(index);
             }
 
             if (index == -1 || Math.Abs(_keyboardNavigationReferenceRect.X - (-1.0)) < 0.01 || forceKeyboardNavigationReferenceReset)
