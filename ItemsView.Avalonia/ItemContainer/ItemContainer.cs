@@ -43,6 +43,8 @@ public partial class ItemContainer : TemplatedControl, ISelectable
         if (p.Properties.PointerUpdateKind is PointerUpdateKind.LeftButtonPressed or
             PointerUpdateKind.RightButtonPressed)
         {
+            _pointerDownPoint = p.Position;
+            return;
             if (p.Pointer.Type == PointerType.Mouse
                 || (p.Pointer.Type == PointerType.Pen && p.Properties.IsRightButtonPressed))
             {
@@ -57,7 +59,7 @@ public partial class ItemContainer : TemplatedControl, ISelectable
             {
                 // Otherwise perform the selection when the pointer is released as to not
                 // interfere with gestures.
-                _pointerDownPoint = p.Position;
+
 
                 // Ideally we'd set handled here, but that would prevent the scroll gesture
                 // recognizer from working.

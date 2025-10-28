@@ -370,6 +370,7 @@ public partial class ItemsView : TemplatedControl
             case ItemContainerInteractionTrigger.Tap:
             case ItemContainerInteractionTrigger.DoubleTap:
             case ItemContainerInteractionTrigger.AutomationInvoke:
+            case ItemContainerInteractionTrigger.PointerPressed:// TODO: Handle Tap/DoubleTap in ItemContainer
             {
                 break;
             }
@@ -416,7 +417,7 @@ public partial class ItemsView : TemplatedControl
 
             if (index == -1 || Math.Abs(_keyboardNavigationReferenceRect.X - (-1.0)) < 0.01 || forceKeyboardNavigationReferenceReset)
             {
-                UpdateKeyboardNavigationReference();
+                //UpdateKeyboardNavigationReference();
             }
         }
 
@@ -441,6 +442,8 @@ public partial class ItemsView : TemplatedControl
     partial void OnSelectionModePropertyChanged(ItemsViewSelectionMode newValue)
     {
         UpdateSelector();
+
+        if (!IsLoaded) return;
 
         var count = _itemsRepeater.Children.Count;
         var multiSelectMode = ItemContainerMultiSelectMode.Auto;

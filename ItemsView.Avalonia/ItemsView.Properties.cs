@@ -49,4 +49,9 @@ public partial class ItemsView
 
     public event EventHandler<ItemsViewItemInvokedEventArgs>? ItemInvoked;
     public event EventHandler<ItemsViewSelectionChangedEventArgs>? SelectionChanged;
+
+    partial void OnItemsSourcePropertyChanged(IEnumerable? newValue)
+    {
+        _selectionModel.Source = newValue;
+    }
 }
