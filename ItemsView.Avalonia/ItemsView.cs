@@ -300,12 +300,13 @@ public partial class ItemsView : TemplatedControl
 
     private void SetItemsViewItemContainerRevokers(ItemContainer itemContainer)
     {
-        itemContainer.KeyDown += OnItemsViewElementKeyDown;
-        itemContainer.GotFocus += OnItemsViewElementGettingFocus;
-        itemContainer.ItemInvoked += OnItemsViewItemContainerItemInvoked;
-        itemContainer.PropertyChanged += OnItemsViewItemContainerPropertyChanged;
-
-        _itemContainers.Add(itemContainer);
+        if (_itemContainers.Add(itemContainer))
+        {
+            itemContainer.KeyDown += OnItemsViewElementKeyDown;
+            itemContainer.GotFocus += OnItemsViewElementGettingFocus;
+            itemContainer.ItemInvoked += OnItemsViewItemContainerItemInvoked;
+            itemContainer.PropertyChanged += OnItemsViewItemContainerPropertyChanged;
+        }
     }
 
     private void OnItemsViewItemContainerPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
