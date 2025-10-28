@@ -437,7 +437,7 @@ public partial class ItemsView : TemplatedControl
 
     private void OnSourceListChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
     {
-        throw new NotImplementedException();
+
     }
 
     partial void OnSelectionModePropertyChanged(ItemsViewSelectionMode newValue)
