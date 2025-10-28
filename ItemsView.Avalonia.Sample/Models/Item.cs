@@ -1,3 +1,12 @@
-﻿namespace ItemsView.Avalonia.Sample.Models;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-public record Item(int Id, string Name);
+namespace ItemsView.Avalonia.Sample.Models;
+
+public partial class Item : ObservableObject
+{
+    [ObservableProperty]
+    public partial string? Name { get; set; }
+
+    [ObservableProperty]
+    public partial int Value { get; set; }
+}

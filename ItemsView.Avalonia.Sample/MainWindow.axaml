@@ -13,16 +13,60 @@
     <Window.DataContext>
 		<vm:MainViewModel/>
     </Window.DataContext>
-    <itemsview:ItemsView SelectionMode="Multiple" ItemsSource="{Binding Items}">
-        <itemsview:ItemsView.ItemTemplate>
-            <DataTemplate x:DataType="models:Item">
-                <itemsview:ItemContainer>
-                    <Grid Margin="24">
-                        <TextBlock Text="{Binding Name}"/>
-                        <TextBlock Text="{Binding Id}" HorizontalAlignment="Right"/>
-                    </Grid>
-                </itemsview:ItemContainer>
-            </DataTemplate>
-        </itemsview:ItemsView.ItemTemplate>
-    </itemsview:ItemsView>
+    <Grid RowDefinitions="*,Auto">
+        <itemsview:ItemsView ItemsSource="{Binding Items}" SelectionMode="Multiple">
+            <itemsview:ItemsView.ItemTemplate>
+                <DataTemplate x:DataType="models:Item">
+                    <itemsview:ItemContainer>
+                        <Grid Margin="24">
+                            <StackPanel
+                                HorizontalAlignment="Left"
+                                Orientation="Horizontal"
+                                Spacing="12">
+                                <TextBox
+                                    Text="{Binding Name}" />
+                                <NumericUpDown FormatString="0" Value="{Binding Value}" />
+                            </StackPanel>
+                            <Button
+                                HorizontalAlignment="Right"
+                                Command="{Binding $parent[local:MainWindow].DataContext.RemoveCommand}"
+                                CommandParameter="{Binding}"
+                                Content="Remove" />
+                        </Grid>
+                    </itemsview:ItemContainer>
+                </DataTemplate>
+            </itemsview:ItemsView.ItemTemplate>
+        </itemsview:ItemsView>
+        <Grid
+            Grid.Row="1"
+            Margin="12"
+            Background="{DynamicResource ThemeBorderHighBrush}"
+            ColumnDefinitions="Auto,*">
+            <StackPanel Orientation="Horizontal" Spacing="24">
+				<StackPanel VerticalAlignment="Center" Spacing="4">
+					<TextBlock FontSize="12" Text="Items" />
+					<TextBlock Text="{Binding Items.Count, Mode=OneWay}" />
+				</StackPanel>
+                <StackPanel VerticalAlignment="Center" Spacing="4">
+                    <TextBlock FontSize="12" Text="TotalValue" />
+                    <TextBlock 
+						Text="{Binding TotalValue, Mode=OneWay}" />
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel
+                Grid.Column="1"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Orientation="Horizontal"
+                Spacing="12">
+                <TextBox 
+					Text="{Binding Name, Mode=TwoWay}" 
+					Watermark="Name" />
+                <NumericUpDown FormatString="0" Watermark="Value" Value="{Binding Value, Mode=TwoWay}" />
+				<Button Command="{Binding AddCommand}" Content="Add" />
+				<Button Command="{Binding AddAllCommand}" Content="Add All" />
+            </StackPanel>
+        </Grid>
+    </Grid>
 </Window>
