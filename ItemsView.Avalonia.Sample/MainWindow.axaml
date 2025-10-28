@@ -13,7 +13,7 @@
     <Window.DataContext>
 		<vm:MainViewModel/>
     </Window.DataContext>
-    <itemsview:ItemsView ItemsSource="{Binding Items}">
+    <itemsview:ItemsView IsItemInvokedEnabled="True" ItemsSource="{Binding Items}">
         <itemsview:ItemsView.ItemTemplate>
             <DataTemplate x:DataType="models:Item">
                 <itemsview:ItemContainer>
