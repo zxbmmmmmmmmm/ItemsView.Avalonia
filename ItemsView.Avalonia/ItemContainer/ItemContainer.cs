@@ -1,6 +1,7 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
+using Avalonia.Controls.Mixins;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
@@ -17,7 +18,11 @@ public partial class ItemContainer : TemplatedControl, ISelectable
     private Point _pointerDownPoint = s_invalidPoint;
 
     private Panel? _rootPanel;
-
+    public ItemContainer()
+    {
+        SelectableMixin.Attach<ItemContainer>(IsSelectedProperty);
+        PressedMixin.Attach<ItemContainer>();
+    }
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         var rootPanel = e.NameScope.Find<Panel>("PART_ContainerRoot");

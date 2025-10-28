@@ -6,7 +6,7 @@
       <controls:ItemContainer>
           <StackPanel>
               <controls:ItemContainer IsEnabled="False"><TextBlock Text="Disabled"/></controls:ItemContainer>
-              <controls:ItemContainer >
+              <controls:ItemContainer IsSelected="True">
                   <TextBlock Text="Test"/>
               </controls:ItemContainer>
               <controls:ItemContainer><TextBlock Text="Test"/></controls:ItemContainer>
