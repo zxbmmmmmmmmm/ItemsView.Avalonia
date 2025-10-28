@@ -14,10 +14,10 @@
 		<vm:MainViewModel/>
     </Window.DataContext>
     <Grid RowDefinitions="*,Auto">
-        <itemsview:ItemsView ItemsSource="{Binding Items}" SelectionMode="Multiple">
+        <itemsview:ItemsView ItemsSource="{Binding Items}" SelectionMode="Single">
             <itemsview:ItemsView.ItemTemplate>
                 <DataTemplate x:DataType="models:Item">
-                    <itemsview:ItemContainer>
+                    <itemsview:ItemContainer MinWidth="400">
                         <Grid Margin="24">
                             <StackPanel
                                 HorizontalAlignment="Left"
@@ -36,6 +36,9 @@
                     </itemsview:ItemContainer>
                 </DataTemplate>
             </itemsview:ItemsView.ItemTemplate>
+            <itemsview:ItemsView.Layout>
+				<UniformGridLayout ItemsStretch="Fill"/>
+            </itemsview:ItemsView.Layout>
         </itemsview:ItemsView>
         <Grid
             Grid.Row="1"
@@ -51,6 +54,11 @@
                     <TextBlock FontSize="12" Text="TotalValue" />
                     <TextBlock 
 						Text="{Binding TotalValue, Mode=OneWay}" />
+                </StackPanel>
+                <StackPanel VerticalAlignment="Center" Spacing="4">
+                    <TextBlock FontSize="12" Text="LoadedTimes" />
+                    <TextBlock 
+                        Text="{Binding LoadedTimes, Mode=OneWay}" />
                 </StackPanel>
             </StackPanel>
 
