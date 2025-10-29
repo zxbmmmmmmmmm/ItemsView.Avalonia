@@ -127,7 +127,7 @@ public partial class ItemsView : TemplatedControl
 
         for (var childIndex = 0; childIndex < count; childIndex++)
         {
-            if (_itemsRepeater.TryGetElement(childIndex) is not ItemContainer itemContainer) continue;
+            if (_itemsRepeater.Children?[childIndex] is not ItemContainer itemContainer) continue;
             var itemIndex = _itemsRepeater.GetElementIndex(itemContainer);
             if (itemIndex < 0) continue;
 
