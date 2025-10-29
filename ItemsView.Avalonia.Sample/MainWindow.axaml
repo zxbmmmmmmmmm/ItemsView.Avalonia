@@ -62,15 +62,25 @@
                 </StackPanel>
             </StackPanel>
 
+                  
+
             <StackPanel
                 Grid.Column="1"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Center"
-                Orientation="Horizontal"
+                Orientation="Horizontal" 
                 Spacing="12">
+                <ComboBox
+                    SelectedItem="{Binding #MainItemsView.SelectionMode, Mode=TwoWay}">
+                    <x:Static Member="itemsview:ItemsViewSelectionMode.None" />
+                    <x:Static Member="itemsview:ItemsViewSelectionMode.Single" />
+                    <x:Static Member="itemsview:ItemsViewSelectionMode.Multiple" />
+                    <x:Static Member="itemsview:ItemsViewSelectionMode.Extended" />
+                </ComboBox>
+                <Line StartPoint="0,0" EndPoint="0,24" VerticalAlignment="Center" StrokeThickness="0.5" Stroke="Gray"/>
                 <TextBox 
-					Text="{Binding Name, Mode=TwoWay}" 
-					Watermark="Name" />
+                    Text="{Binding Name, Mode=TwoWay}" 
+                    Watermark="Name" />
                 <NumericUpDown FormatString="0" Watermark="Value" Value="{Binding Value, Mode=TwoWay}" />
 				<Button Command="{Binding AddCommand}" Content="Add" />
 				<Button Command="{Binding AddAllCommand}" Content="Add All" />

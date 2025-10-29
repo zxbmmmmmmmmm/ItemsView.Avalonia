@@ -27,7 +27,7 @@ public partial class MainViewModel : ObservableObject
     {
         Items.ListChanged += (s, e) =>
         OnPropertyChanged(nameof(TotalValue));
-        for (var i = 0; i <= 100; i++)
+        for (var i = 0; i <= 100000; i++)
         {
             Items.Add(new Item { Name = $"Item {i}", Value = 10 });
         }
