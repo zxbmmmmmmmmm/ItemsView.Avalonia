@@ -226,10 +226,6 @@ public partial class ItemsView : TemplatedControl
         ApplySelectionModelSelectionChange();
     }
 
-    private void OnItemsRepeaterElementClearing(object? sender, ItemsRepeaterElementClearingEventArgs e)
-    {
-    }
-
     private void OnItemsRepeaterElementPrepared(object? sender, ItemsRepeaterElementPreparedEventArgs e)
     {
         if (e.Element is not ItemContainer itemContainer) throw new Exception();
@@ -298,6 +294,36 @@ public partial class ItemsView : TemplatedControl
         }    
     }
 
+    private void OnItemsRepeaterElementClearing(object? sender, ItemsRepeaterElementClearingEventArgs args)
+    {
+        if (args.Element is not ItemContainer itemContainer) throw new Exception();
+
+        // Clear all the revokers first before touching ItemContainer properties to avoid side effects.
+        // For example, if you clear IsSelected before clearing revokers, we will listen to that change and
+        // update SelectionModel which is incorrect.
+        ClearItemsViewItemContainerRevokers(itemContainer);
+
+        if ((itemContainer.CanUserInvoke & ItemContainerUserInvokeMode.Auto) != 0)
+        {
+            itemContainer.CanUserInvoke = ItemContainerUserInvokeMode.Auto;
+        }
+
+        if ((itemContainer.MultiSelectMode & ItemContainerMultiSelectMode.Auto) != 0)
+        {
+            itemContainer.MultiSelectMode = ItemContainerMultiSelectMode.Auto;
+        }
+
+        if ((itemContainer.CanUserSelect & ItemContainerUserSelectMode.Auto) != 0)
+        {
+            itemContainer.CanUserSelect = ItemContainerUserSelectMode.Auto;
+        }
+
+        itemContainer.IsSelected = false;
+
+        itemContainer.ClearValue(AutomationProperties.PositionInSetProperty);
+        itemContainer.ClearValue(AutomationProperties.SizeOfSetProperty);
+    }
+
     private void SetItemsViewItemContainerRevokers(ItemContainer itemContainer)
     {
         if (_itemContainers.Add(itemContainer))
@@ -306,6 +332,17 @@ public partial class ItemsView : TemplatedControl
             itemContainer.GotFocus += OnItemsViewElementGettingFocus;
             itemContainer.ItemInvoked += OnItemsViewItemContainerItemInvoked;
             itemContainer.PropertyChanged += OnItemsViewItemContainerPropertyChanged;
+        }
+    }
+    void ClearItemsViewItemContainerRevokers(
+        ItemContainer itemContainer)
+    {
+        if (_itemContainers.Remove(itemContainer))
+        {
+            itemContainer.KeyDown -= OnItemsViewElementKeyDown;
+            itemContainer.GotFocus -= OnItemsViewElementGettingFocus;
+            itemContainer.ItemInvoked -= OnItemsViewItemContainerItemInvoked;
+            itemContainer.PropertyChanged -= OnItemsViewItemContainerPropertyChanged;
         }
     }
 
