@@ -11,11 +11,7 @@ namespace ItemsView.Avalonia.Sample.ViewModels;
 public partial class MainViewModel : ObservableObject
 {
     [ObservableProperty]
-    public partial ObservableBindingList<Item> Items { get; set; } = 
-        [
-        new() { Name = "Item 1", Value = 10 }, 
-        new() { Name = "Item 2", Value = 10 }, 
-        new() { Name = "Item 3", Value = 10 }];
+    public partial ObservableBindingList<Item> Items { get; set; } = [];
 
     [ObservableProperty]
     public partial string Name { get;
@@ -31,6 +27,11 @@ public partial class MainViewModel : ObservableObject
     {
         Items.ListChanged += (s, e) =>
         OnPropertyChanged(nameof(TotalValue));
+        for (var i = 0; i <= 100; i++)
+        {
+            Items.Add(new Item { Name = $"Item {i}", Value = 10 });
+        }
+        Name = $"New Item {Items.Count + 1}";
     }
 
     [RelayCommand]
