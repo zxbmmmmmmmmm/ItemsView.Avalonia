@@ -1,4 +1,5 @@
 <Window xmlns="https://github.com/avaloniaui"
+        xmlns:behaviors="using:ItemsView.Avalonia.Sample.Behaviors"
         xmlns:itemsview="using:ItemsView.Avalonia"
         xmlns:local="using:ItemsView.Avalonia.Sample"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -18,21 +19,7 @@
             <itemsview:ItemsView.ItemTemplate>
                 <DataTemplate x:DataType="models:Item">
                     <itemsview:ItemContainer MinWidth="400">
-                        <Grid Margin="24">
-                            <StackPanel
-                                HorizontalAlignment="Left"
-                                Orientation="Horizontal"
-                                Spacing="12">
-                                <TextBox
-                                    Text="{Binding Name}" />
-                                <NumericUpDown FormatString="0" Value="{Binding Value}" />
-                            </StackPanel>
-                            <Button
-                                HorizontalAlignment="Right"
-                                Command="{Binding $parent[local:MainWindow].DataContext.RemoveCommand}"
-                                CommandParameter="{Binding}"
-                                Content="Remove" />
-                        </Grid>
+                        <local:ItemControl Item="{Binding}"/>
                     </itemsview:ItemContainer>
                 </DataTemplate>
             </itemsview:ItemsView.ItemTemplate>

@@ -9,4 +9,7 @@ public partial class Item : ObservableObject
 
     [ObservableProperty]
     public partial int Value { get; set; }
+
+    [ObservableProperty]
+    public partial int LoadedTimes { get; set; }
 }
