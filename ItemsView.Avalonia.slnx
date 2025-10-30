@@ -2,6 +2,7 @@
   <Folder Name="/.Solution Items/">
     <File Path="Directory.Packages.props" />
   </Folder>
+  <Project Path="CompositionScroll/CompositionScroll.csproj" />
   <Project Path="ItemsView.Avalonia.Sample/ItemsView.Avalonia.Sample.csproj" />
   <Project Path="ItemsView.Avalonia/ItemsView.Avalonia.csproj" />
 </Solution>
