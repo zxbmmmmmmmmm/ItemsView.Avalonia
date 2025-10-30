@@ -34,6 +34,60 @@ public partial class ItemsView : TemplatedControl
         _selectionModel.SelectionChanged += OnSelectionModelSelectionChanged;
     }
 
+    public void Select(int itemIndex)
+    {
+        _selectionModel.Select(itemIndex);
+    }
+
+    public void Deselect(int itemIndex)
+    {
+        _selectionModel.Deselect(itemIndex);
+    }
+
+    public bool IsSelected(int itemIndex)
+    {
+        return _selectionModel.IsSelected(itemIndex);
+    }
+
+    public void SelectAll()
+    {
+        _selectionModel.SelectAll();
+    }
+
+    public void DeselectAll()
+    {
+        _selectionModel.Clear();
+    }
+
+    public void InvertSelection()
+    {        
+        if (_itemsRepeater.ItemsSourceView is { } itemsSourceView)
+        {
+            var selectedIndexes = _selectionModel.SelectedIndexes;
+            int indexEnd = itemsSourceView.Count - 1;
+
+            // We loop backwards through the selected indices so we can deselect as we go
+            for (int i = selectedIndexes.Count - 1; i >= 0; i--)
+            {
+                var index = selectedIndexes[i];
+                // Select all the unselected items
+                if (index < indexEnd)
+                {
+                    _selectionModel.SelectRange(index + 1, indexEnd);
+                }
+
+                _selectionModel.Deselect(index);
+                indexEnd = index - 1;
+            }
+
+            // Select the remaining unselected items at the beginning of the collection
+            if (indexEnd >= 0)
+            {
+                _selectionModel.SelectRange(0, indexEnd);
+            }
+        }
+    }
+
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
