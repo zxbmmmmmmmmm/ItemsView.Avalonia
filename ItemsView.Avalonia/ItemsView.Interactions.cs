@@ -34,6 +34,16 @@ public partial class ItemsView
         return _keysDown.Contains(key);
     }
 
+    private void OnItemsViewElementGettingFocus(object? sender, GotFocusEventArgs args)
+    {
+
+    }
+
+    private void OnItemsViewElementKeyDown(object? sender, KeyEventArgs e)
+    {
+
+    }
+
     bool ProcessInteraction(
         Control control,
         NavigationMethod focusState)

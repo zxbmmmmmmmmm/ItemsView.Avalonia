@@ -126,7 +126,7 @@ public partial class ItemsView : TemplatedControl
     private void UnhookItemsSourceViewEvents()
     {
         if (_itemsRepeater.ItemsSourceView is not { } itemsSourceView) return;
-        itemsSourceView.CollectionChanged += OnSourceListChanged;
+        itemsSourceView.CollectionChanged -= OnSourceListChanged;
     }
 
     private void UnhookItemsRepeaterEvents()
@@ -520,16 +520,6 @@ public partial class ItemsView : TemplatedControl
         }
 
         return SetFocusElementIndex(index, focusState, startBringIntoView, expectBringIntoView);
-    }
-
-    private void OnItemsViewElementGettingFocus(object? sender, GotFocusEventArgs e)
-    {
-
-    }
-
-    private void OnItemsViewElementKeyDown(object? sender, KeyEventArgs e)
-    {
-
     }
 
     private void OnSourceListChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
