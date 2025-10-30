@@ -24,6 +24,7 @@ public partial class ItemsView : TemplatedControl
     private ItemsRepeater _itemsRepeater = null!;
 
     private readonly ISelectionModel _selectionModel = new InternalSelectionModel();
+    private readonly ISelectionModel _currentSelectionModel = new InternalSelectionModel { SingleSelect = true };
 
     private SelectorBase _selector;
 
@@ -32,6 +33,7 @@ public partial class ItemsView : TemplatedControl
     {
         UpdateSelector();
         _selectionModel.SelectionChanged += OnSelectionModelSelectionChanged;
+        _currentSelectionModel.SelectionChanged += OnCurrentElementSelectionModelSelectionChanged;
     }
 
     public void Select(int itemIndex)
@@ -116,6 +118,23 @@ public partial class ItemsView : TemplatedControl
     {
         _itemsRepeater.ElementPrepared += OnItemsRepeaterElementPrepared;
         _itemsRepeater.ElementClearing += OnItemsRepeaterElementClearing;
+        _itemsRepeater.PropertyChanged += OnItemsRepeaterPropertyChanged;
+    }
+
+    private void OnItemsRepeaterPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if(e.Property == ItemsRepeater.ItemsSourceProperty)
+        {
+
+            HookItemsSourceViewEvents();
+            var itemsSource = ItemsSource;
+
+            // Updating the selection model's ItemsSource here rather than earlier in OnPropertyChanged/OnItemsSourceChanged so that
+            // Layout.OnItemsChangedCore is executed before OnSelectionModelSelectionChanged. Otherwise OnSelectionModelSelectionChanged
+            // would operate on out-of-date ItemsRepeater children.
+            _selectionModel.Source =  itemsSource;
+            _currentSelectionModel.Source = itemsSource;
+        }
     }
 
     private void HookItemsSourceViewEvents()
@@ -125,14 +144,16 @@ public partial class ItemsView : TemplatedControl
     }
     private void UnhookItemsSourceViewEvents()
     {
-        if (_itemsRepeater.ItemsSourceView is not { } itemsSourceView) return;
+        if (_itemsRepeater?.ItemsSourceView is not { } itemsSourceView) return;
         itemsSourceView.CollectionChanged -= OnSourceListChanged;
     }
 
     private void UnhookItemsRepeaterEvents()
     {
+        if (_itemsRepeater is null) return;
         _itemsRepeater.ElementPrepared -= OnItemsRepeaterElementPrepared;
         _itemsRepeater.ElementClearing -= OnItemsRepeaterElementClearing;
+        _itemsRepeater.PropertyChanged -= OnItemsRepeaterPropertyChanged;
     }
 
     [MemberNotNull(nameof(_selector))]
@@ -238,7 +259,7 @@ public partial class ItemsView : TemplatedControl
 
     private int GetCurrentElementIndex()
     {
-        return _selectionModel.SelectedIndex;
+        return _currentSelectionModel.SelectedIndex;
     }
 
     bool CanRaiseItemInvoked(
@@ -506,11 +527,11 @@ public partial class ItemsView : TemplatedControl
         {
             if (index == -1)
             {
-                ///_selectionModel.Clear();
+                _currentSelectionModel.Clear();
             }
             else
             {
-                //_selectionModel.Select(index);
+                _currentSelectionModel.Select(index);
             }
 
             if (index == -1 || Math.Abs(_keyboardNavigationReferenceRect.X - (-1.0)) < 0.01 || forceKeyboardNavigationReferenceReset)
@@ -520,6 +541,14 @@ public partial class ItemsView : TemplatedControl
         }
 
         return SetFocusElementIndex(index, focusState, startBringIntoView, expectBringIntoView);
+    }
+
+    // Raised when the current element index changed.
+    void OnCurrentElementSelectionModelSelectionChanged(object? sender, SelectionModelSelectionChangedEventArgs args)
+    {
+        var currentElementIndex = GetCurrentElementIndex();
+
+        CurrentItemIndex = currentElementIndex;
     }
 
     private void OnSourceListChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)

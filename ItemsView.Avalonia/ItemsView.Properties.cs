@@ -31,6 +31,9 @@ public partial class ItemsView
     [GeneratedDirectProperty(DefaultBindingMode = BindingMode.TwoWay, EnableDataValidation = true)]
     public partial object? SelectedItem { get; set; }
 
+    [GeneratedDirectProperty]
+    public partial int CurrentItemIndex { get; set; } = -1;
+
     /// <summary>
     /// Defines the <see cref="SelectionChanged"/> event.
     /// </summary>
@@ -52,6 +55,16 @@ public partial class ItemsView
 
     partial void OnItemsSourcePropertyChanged(IEnumerable? newValue)
     {
-        _selectionModel.Source = newValue;
+        // When the inner ItemsRepeater has not been loaded yet, set the selection models' Source
+        // right away as OnItemsRepeaterItemsSourceChanged will not be invoked.
+        // There is no reason to delay the updates to OnItemsRepeaterItemsSourceChanged
+        // in this case since ItemsRepeater and its children do not exist yet.
+
+        if (_itemsRepeater is null)
+        {
+            var itemsSource = ItemsSource;
+            _selectionModel.Source = itemsSource;
+            _currentSelectionModel.Source = itemsSource;
+        }
     }
 }
