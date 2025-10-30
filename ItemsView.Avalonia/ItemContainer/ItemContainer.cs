@@ -18,6 +18,10 @@ public partial class ItemContainer : TemplatedControl, ISelectable
     private Point _pointerDownPoint = s_invalidPoint;
 
     private Panel? _rootPanel;
+    static ItemContainer()
+    {
+        FocusableProperty.OverrideDefaultValue<ItemContainer>(true);
+    }
     public ItemContainer()
     {
         SelectableMixin.Attach<ItemContainer>(IsSelectedProperty);
