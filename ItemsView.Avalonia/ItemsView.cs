@@ -27,7 +27,7 @@ public partial class ItemsView : TemplatedControl
 
     private SelectorBase _selector;
 
-    private HashSet<ItemContainer> _itemContainers = new();
+    private readonly HashSet<ItemContainer> _itemContainers = [];
     public ItemsView()
     {
         UpdateSelector();
@@ -106,6 +106,7 @@ public partial class ItemsView : TemplatedControl
     private void UpdateItemsRepeater(ItemsRepeater itemsRepeater)
     {
         UnhookItemsRepeaterEvents();
+        UnhookItemsSourceViewEvents();
         _itemsRepeater = itemsRepeater;
         HookItemsRepeaterEvents();
         HookItemsSourceViewEvents();
@@ -122,11 +123,16 @@ public partial class ItemsView : TemplatedControl
         if (_itemsRepeater.ItemsSourceView is not { } itemsSourceView) return;
         itemsSourceView.CollectionChanged += OnSourceListChanged;
     }
-
+    private void UnhookItemsSourceViewEvents()
+    {
+        if (_itemsRepeater.ItemsSourceView is not { } itemsSourceView) return;
+        itemsSourceView.CollectionChanged += OnSourceListChanged;
+    }
 
     private void UnhookItemsRepeaterEvents()
     {
-        
+        _itemsRepeater.ElementPrepared -= OnItemsRepeaterElementPrepared;
+        _itemsRepeater.ElementClearing -= OnItemsRepeaterElementClearing;
     }
 
     [MemberNotNull(nameof(_selector))]
