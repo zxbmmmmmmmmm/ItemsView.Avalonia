@@ -114,12 +114,7 @@ public partial class ItemsView : TemplatedControl
         HookItemsSourceViewEvents();
     }
 
-    private void HookItemsRepeaterEvents()
-    {
-        _itemsRepeater.ElementPrepared += OnItemsRepeaterElementPrepared;
-        _itemsRepeater.ElementClearing += OnItemsRepeaterElementClearing;
-        _itemsRepeater.PropertyChanged += OnItemsRepeaterPropertyChanged;
-    }
+
 
     private void OnItemsRepeaterPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
@@ -137,6 +132,21 @@ public partial class ItemsView : TemplatedControl
         }
     }
 
+    private void HookItemsRepeaterEvents()
+    {
+        _itemsRepeater.ElementPrepared += OnItemsRepeaterElementPrepared;
+        _itemsRepeater.ElementClearing += OnItemsRepeaterElementClearing;
+        _itemsRepeater.PropertyChanged += OnItemsRepeaterPropertyChanged;
+    }
+
+    private void UnhookItemsRepeaterEvents()
+    {
+        if (_itemsRepeater is null) return;
+        _itemsRepeater.ElementPrepared -= OnItemsRepeaterElementPrepared;
+        _itemsRepeater.ElementClearing -= OnItemsRepeaterElementClearing;
+        _itemsRepeater.PropertyChanged -= OnItemsRepeaterPropertyChanged;
+    }
+
     private void HookItemsSourceViewEvents()
     {
         if (_itemsRepeater.ItemsSourceView is not { } itemsSourceView) return;
@@ -146,14 +156,6 @@ public partial class ItemsView : TemplatedControl
     {
         if (_itemsRepeater?.ItemsSourceView is not { } itemsSourceView) return;
         itemsSourceView.CollectionChanged -= OnSourceListChanged;
-    }
-
-    private void UnhookItemsRepeaterEvents()
-    {
-        if (_itemsRepeater is null) return;
-        _itemsRepeater.ElementPrepared -= OnItemsRepeaterElementPrepared;
-        _itemsRepeater.ElementClearing -= OnItemsRepeaterElementClearing;
-        _itemsRepeater.PropertyChanged -= OnItemsRepeaterPropertyChanged;
     }
 
     [MemberNotNull(nameof(_selector))]
