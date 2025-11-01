@@ -90,6 +90,12 @@ public partial class ItemsView : TemplatedControl
         }
     }
 
+    public void StartBringItemIntoView(int index)
+    {
+        var element = TryGetElement(index);
+        element?.BringIntoView();
+    }
+
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
