@@ -103,6 +103,7 @@ public partial class ItemsView : TemplatedControl
     private void UpdateScrollViewer(ScrollViewer scrollViewer)
     {
         _scrollViewer = scrollViewer;
+        _scrollViewer.BringIntoViewOnFocusChange = false;// TODO: When an element is removed, focus on the next element correctly
     }
 
     private void UpdateItemsRepeater(ItemsRepeater itemsRepeater)
