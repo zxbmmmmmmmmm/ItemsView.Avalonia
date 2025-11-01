@@ -20,8 +20,10 @@ namespace ItemsView.Avalonia;
 public partial class ItemsView : TemplatedControl
 {
     private ScrollViewer _scrollViewer = null!;
-
     private ItemsRepeater _itemsRepeater = null!;
+
+    // 新增：删除/虚拟化后待补焦的索引
+    private int _pendingFocusIndex = -1;
 
     private readonly ISelectionModel _selectionModel = new InternalSelectionModel();
     private readonly ISelectionModel _currentSelectionModel = new InternalSelectionModel { SingleSelect = true };
@@ -62,7 +64,7 @@ public partial class ItemsView : TemplatedControl
     }
 
     public void InvertSelection()
-    {        
+    {
         if (_itemsRepeater.ItemsSourceView is { } itemsSourceView)
         {
             var selectedIndexes = _selectionModel.SelectedIndexes;
@@ -103,6 +105,11 @@ public partial class ItemsView : TemplatedControl
     private void UpdateScrollViewer(ScrollViewer scrollViewer)
     {
         _scrollViewer = scrollViewer;
+        _scrollViewer.BringIntoViewOnFocusChange = false;
+        _scrollViewer.ScrollChanged += (s, e) =>
+        {
+
+        };
     }
 
     private void UpdateItemsRepeater(ItemsRepeater itemsRepeater)
@@ -110,6 +117,8 @@ public partial class ItemsView : TemplatedControl
         UnhookItemsRepeaterEvents();
         UnhookItemsSourceViewEvents();
         _itemsRepeater = itemsRepeater;
+        KeyboardNavigation.SetTabNavigation(_itemsRepeater, KeyboardNavigationMode.Continue);
+
         HookItemsRepeaterEvents();
         HookItemsSourceViewEvents();
     }
@@ -118,7 +127,7 @@ public partial class ItemsView : TemplatedControl
 
     private void OnItemsRepeaterPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
-        if(e.Property == ItemsRepeater.ItemsSourceProperty)
+        if (e.Property == ItemsRepeater.ItemsSourceProperty)
         {
 
             HookItemsSourceViewEvents();
@@ -127,7 +136,7 @@ public partial class ItemsView : TemplatedControl
             // Updating the selection model's ItemsSource here rather than earlier in OnPropertyChanged/OnItemsSourceChanged so that
             // Layout.OnItemsChangedCore is executed before OnSelectionModelSelectionChanged. Otherwise OnSelectionModelSelectionChanged
             // would operate on out-of-date ItemsRepeater children.
-            _selectionModel.Source =  itemsSource;
+            _selectionModel.Source = itemsSource;
             _currentSelectionModel.Source = itemsSource;
         }
     }
@@ -166,34 +175,34 @@ public partial class ItemsView : TemplatedControl
         switch (SelectionMode)
         {
             case ItemsViewSelectionMode.None:
-            {
-                _selectionModel.Clear();
-                _selector = new NullSelector();
-                break;
-            }
+                {
+                    _selectionModel.Clear();
+                    _selector = new NullSelector();
+                    break;
+                }
 
             case ItemsViewSelectionMode.Single:
-            {
-                _selectionModel.SingleSelect = true;
+                {
+                    _selectionModel.SingleSelect = true;
 
-                _selector = new SingleSelector();
-                _selector.SetSelectionModel(_selectionModel);
-                break;
-            }
+                    _selector = new SingleSelector();
+                    _selector.SetSelectionModel(_selectionModel);
+                    break;
+                }
 
             case ItemsViewSelectionMode.Multiple:
-            {
-                _selector = new MultipleSelector();
-                _selector.SetSelectionModel(_selectionModel);
-                break;
-            }
+                {
+                    _selector = new MultipleSelector();
+                    _selector.SetSelectionModel(_selectionModel);
+                    break;
+                }
 
             case ItemsViewSelectionMode.Extended:
-            {
-                _selector = new ExtendedSelector();
-                _selector.SetSelectionModel(_selectionModel);
-                break;
-            }
+                {
+                    _selector = new ExtendedSelector();
+                    _selector.SetSelectionModel(_selectionModel);
+                    break;
+                }
             default:
                 throw new ArgumentOutOfRangeException();
         }
@@ -269,7 +278,7 @@ public partial class ItemsView : TemplatedControl
         ItemContainer itemContainer)
     {
 
-		var canUserInvoke = itemContainer.CanUserInvoke;
+        var canUserInvoke = itemContainer.CanUserInvoke;
 
 
         if ((canUserInvoke & (ItemContainerUserInvokeMode.UserCannotInvoke | ItemContainerUserInvokeMode.UserCanInvoke)) != (ItemContainerUserInvokeMode.UserCanInvoke))
@@ -370,11 +379,19 @@ public partial class ItemsView : TemplatedControl
 
         SetItemsViewItemContainerRevokers(itemContainer);
 
+        // 新增：若该索引是待补焦的目标，在容器准备好后再设置焦点
+        if (_pendingFocusIndex == index)
+        {
+            // 非指针交互，不触发 BringIntoView
+            SetFocusElementIndex(index, NavigationMethod.Tab, startBringIntoView: false, expectBringIntoView: false);
+            _pendingFocusIndex = -1;
+        }
+
         if (_itemsRepeater.ItemsSourceView is { } itemsSourceView)
         {
             itemContainer.SetValue(AutomationProperties.PositionInSetProperty, index + 1);
             itemContainer.SetValue(AutomationProperties.SizeOfSetProperty, itemsSourceView.Count);
-        }    
+        }
     }
 
     private void OnItemsRepeaterElementClearing(object? sender, ItemsRepeaterElementClearingEventArgs args)
@@ -476,30 +493,30 @@ public partial class ItemsView : TemplatedControl
         switch (interactionTrigger)
         {
             case ItemContainerInteractionTrigger.PointerReleased:
-            {
-                handled |= ProcessInteraction(itemContainer, NavigationMethod.Pointer);
-                break;
-            }
+                {
+                    handled |= ProcessInteraction(itemContainer, NavigationMethod.Pointer);
+                    break;
+                }
 
             case ItemContainerInteractionTrigger.EnterKey:
             case ItemContainerInteractionTrigger.SpaceKey:
-            {
-                handled |= ProcessInteraction(itemContainer, NavigationMethod.Tab);
-                break;
-            }
+                {
+                    handled |= ProcessInteraction(itemContainer, NavigationMethod.Tab);
+                    break;
+                }
 
             case ItemContainerInteractionTrigger.Tap:
             case ItemContainerInteractionTrigger.DoubleTap:
             case ItemContainerInteractionTrigger.AutomationInvoke:
             case ItemContainerInteractionTrigger.PointerPressed:// TODO: Handle Tap/DoubleTap in ItemContainer
-            {
-                break;
-            }
+                {
+                    break;
+                }
 
             default:
-            {
-                return;
-            }
+                {
+                    return;
+                }
         }
 
         if (!e.Handled &&
@@ -555,7 +572,79 @@ public partial class ItemsView : TemplatedControl
 
     private void OnSourceListChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
     {
+        if (_itemsRepeater.ItemsSourceView is not { } itemsSourceView)
+            return;
 
+        // 仅处理 Remove/Reset，其他保持当前焦点（SelectionModel 通常会处理索引偏移）
+        switch (e.Action)
+        {
+            case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
+            {
+                var current = GetCurrentElementIndex();
+                var removedIndex = e.OldStartingIndex;
+                var removedCount = e.OldItems?.Count ?? 1;
+                var newCount = itemsSourceView.Count; // 已经是移除后的数量
+
+                // 计算新的焦点索引：
+                // 1) 当前焦点位于被移除区间：将焦点放到移除起点（该位置的新元素）
+                //    若超界，则退到前一个索引；
+                // 2) 当前焦点在被移除区间之后：索引左移 removedCount；
+                // 3) 其他情况：保持不变。
+                int newIndex = current;
+                if (current >= removedIndex && current < removedIndex + removedCount)
+                {
+                    newIndex = Math.Min(removedIndex, newCount - 1);
+                }
+                else if (current > removedIndex)
+                {
+                    newIndex = current - removedCount;
+                }
+
+                // 规范化
+                if (newIndex < 0 || newCount == 0)
+                    newIndex = -1;
+
+                // 应用当前项/焦点（不触发滚动）
+                if (newIndex != GetCurrentElementIndex())
+                {
+                    var focused = SetCurrentElementIndex(
+                        newIndex,
+                        NavigationMethod.Tab,
+                        forceKeyboardNavigationReferenceReset: true,
+                        startBringIntoView: false,
+                        expectBringIntoView: false);
+
+                    // 若容器尚未实现，记录待补焦索引，等 ElementPrepared 时再聚焦
+                    if (!focused && newIndex >= 0)
+                    {
+                        _pendingFocusIndex = newIndex;
+                    }
+                }
+
+                break;
+            }
+
+            case System.Collections.Specialized.NotifyCollectionChangedAction.Reset:
+            {
+                // 数据源整体刷新：若还有元素，将焦点设为 0；否则清空
+                var newCount = itemsSourceView.Count;
+                var newIndex = newCount > 0 ? 0 : -1;
+
+                var focused = SetCurrentElementIndex(
+                    newIndex,
+                    NavigationMethod.Tab,
+                    forceKeyboardNavigationReferenceReset: true,
+                    startBringIntoView: false,
+                    expectBringIntoView: false);
+
+                if (!focused && newIndex >= 0)
+                {
+                    _pendingFocusIndex = newIndex;
+                }
+
+                break;
+            }
+        }
     }
 
     partial void OnSelectionModePropertyChanged(ItemsViewSelectionMode newValue)
