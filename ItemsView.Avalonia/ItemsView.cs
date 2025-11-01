@@ -110,6 +110,7 @@ public partial class ItemsView : TemplatedControl
         UnhookItemsRepeaterEvents();
         UnhookItemsSourceViewEvents();
         _itemsRepeater = itemsRepeater;
+        KeyboardNavigation.SetTabNavigation(_itemsRepeater, KeyboardNavigationMode.Continue);
         HookItemsRepeaterEvents();
         HookItemsSourceViewEvents();
     }
