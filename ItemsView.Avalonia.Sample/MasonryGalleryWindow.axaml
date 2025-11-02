@@ -1,0 +1,117 @@
+<Window xmlns="https://github.com/avaloniaui"
+		xmlns:avalonia="using:ItemsView.Avalonia"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:local="using:ItemsView.Avalonia.Sample"
+		xmlns:masonry="using:ItemsView.Avalonia.Layouts.MasonryLayout"
+		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		mc:Ignorable="d"
+		x:Class="ItemsView.Avalonia.Sample.MasonryGalleryWindow"
+		x:DataType="local:MasonryGalleryViewModel"
+		Title="Masonry Gallery"
+		Width="1000" Height="700">
+	<Design.DataContext>
+		<x:Null />
+	</Design.DataContext>
+	<Window.Resources>
+		<ControlTheme x:Key="{x:Type avalonia:ItemContainer}" TargetType="avalonia:ItemContainer">
+			<Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="{DynamicResource ItemContainerPadding}" />
+			<Setter Property="Template">
+				<ControlTemplate>
+					<Grid x:Name="PART_ContainerRoot" Background="{TemplateBinding Background}">
+						<!--Placeholder for child -->
+						<CheckBox IsVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8,4" ZIndex="1" x:Name="PART_CheckBox"/>
+						<Border
+							x:Name="PART_SelectionVisual"
+							BorderThickness="2"
+							Background="Transparent"
+                            ZIndex="1"
+							CornerRadius="{TemplateBinding CornerRadius}"
+							HorizontalAlignment="Stretch"
+							VerticalAlignment="Stretch"
+							IsHitTestVisible="False"/>
+					</Grid>
+				</ControlTemplate>
+			</Setter>
+
+			<Style Selector="^:disabled /template/ Grid#PART_ContainerRoot">
+				<Setter Property="Opacity" Value="0.5" />
+			</Style>
+
+			<!--  PointerOver State  -->
+			<Style Selector="^:pointerover /template/ Grid#PART_ContainerRoot">
+				<Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
+			</Style>
+
+			<!--  Pressed State  -->
+			<Style Selector="^:pressed /template/ Grid#PART_ContainerRoot">
+				<Setter Property="Background" Value="{DynamicResource SystemControlHighlightListMediumBrush}" />
+			</Style>
+
+			<!--  Selected State  -->
+			<Style Selector="^:selected">
+
+				<Style Selector="^ /template/ Border#PART_SelectionVisual">
+					<Setter Property="BorderBrush" Value="{DynamicResource SystemControlHighlightListAccentLowBrush}" />
+				</Style>
+
+                <Style Selector="^ /template/ CheckBox#PART_CheckBox">
+                    <Setter Property="IsChecked" Value="True" />
+                    <Setter Property="IsVisible" Value="True" />
+                </Style>
+
+				<!--  Selected Unfocused State  -->
+				<Style Selector="^:not(:focus) /template/ Grid#PART_ContainerRoot">
+					<Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentLowBrush}" />
+				</Style>
+
+				<!--  Selected PointerOver State  -->
+				<Style Selector="^:pointerover /template/ Grid#PART_ContainerRoot">
+					<Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentMediumBrush}" />
+				</Style>
+
+				<!--  Selected Pressed State  -->
+				<Style Selector="^:pressed /template/ Grid#PART_ContainerRoot">
+					<Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentHighBrush}" />
+				</Style>
+			</Style>
+		</ControlTheme>
+	</Window.Resources>
+
+	<Grid RowDefinitions="Auto,*">
+		<Border Padding="12" Background="{DynamicResource ThemeBorderHighBrush}">
+			<Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+				<Button Grid.Column="0" x:Name="OpenFolderButton" Content="Open Folder" Click="OpenFolderButton_OnClick" />
+				<TextBlock Grid.Column="1" VerticalAlignment="Center" Text="ItemsStretch:"/>
+				<ComboBox Grid.Column="2" SelectedItem="{Binding ItemsStretch, Mode=TwoWay}">
+					<x:Static Member="masonry:MasonryLayoutItemsStretch.None" />
+					<x:Static Member="masonry:MasonryLayoutItemsStretch.Fill" />
+				</ComboBox>
+				<TextBlock Grid.Column="3" VerticalAlignment="Center" Text="DesiredColumnWidth:"/>
+				<NumericUpDown Grid.Column="4" Minimum="50" Maximum="1000" Increment="10" Value="{Binding DesiredColumnWidth, Mode=TwoWay}"/>
+				<TextBlock Grid.Column="5" VerticalAlignment="Center" Text="Spacing (Col/Row):"/>
+				<StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="6">
+					<NumericUpDown Minimum="0" Maximum="100" Increment="1" Value="{Binding ColumnSpacing, Mode=TwoWay}" />
+					<NumericUpDown Minimum="0" Maximum="100" Increment="1" Value="{Binding RowSpacing, Mode=TwoWay}"/>
+				</StackPanel>
+			</Grid>
+		</Border>
+		<avalonia:ItemsView Grid.Row="1" SelectionMode="Multiple" ItemsSource="{Binding Images}">
+			<avalonia:ItemsView.ItemTemplate>
+				<DataTemplate>
+					<avalonia:ItemContainer>
+						<Image Margin="2" Source="{Binding}" Stretch="Uniform" HorizontalAlignment="Stretch"/>
+					</avalonia:ItemContainer>
+				</DataTemplate>
+			</avalonia:ItemsView.ItemTemplate>
+			<avalonia:ItemsView.Layout>
+				<masonry:MasonryLayout
+				ItemsStretch="{Binding ItemsStretch,Mode=OneWay}"
+				DesiredColumnWidth="{Binding DesiredColumnWidth,Mode=OneWay}"
+				ColumnSpacing="{Binding ColumnSpacing,Mode=OneWay}"
+				RowSpacing="{Binding RowSpacing,Mode=OneWay}"/>
+			</avalonia:ItemsView.Layout>
+		</avalonia:ItemsView>
+	</Grid>
+</Window>

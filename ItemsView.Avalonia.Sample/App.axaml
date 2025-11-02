@@ -7,7 +7,7 @@
     <Application.Resources>
 
 		<ResourceDictionary>
-                    <ControlTheme x:Key="{x:Type ScrollViewer}"
+                    <ControlTheme x:Key="CompositionScrollViewerStyle"
                       TargetType="ScrollViewer">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Template">

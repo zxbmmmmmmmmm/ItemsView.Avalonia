@@ -1,4 +1,6 @@
 using Avalonia.Controls;
+using Avalonia.Interactivity;
+using System;
 
 namespace ItemsView.Avalonia.Sample
 {
@@ -7,6 +9,12 @@ namespace ItemsView.Avalonia.Sample
         public MainWindow()
         {
             InitializeComponent();
+        }
+
+        private void OpenMasonryGallery_OnClick(object? sender, RoutedEventArgs e)
+        {
+            var win = new MasonryGalleryWindow();
+            win.Show();
         }
     }
 }

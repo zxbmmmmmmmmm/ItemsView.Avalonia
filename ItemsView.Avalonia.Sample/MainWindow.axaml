@@ -31,7 +31,7 @@
             Grid.Row="1"
             Margin="12"
             Background="{DynamicResource ThemeBorderHighBrush}"
-            ColumnDefinitions="Auto,*">
+            ColumnDefinitions="Auto,*,Auto">
             <StackPanel Orientation="Horizontal" Spacing="24">
 				<StackPanel VerticalAlignment="Center" Spacing="4">
 					<TextBlock FontSize="12" Text="Items" />
@@ -72,6 +72,8 @@
 				<Button Command="{Binding AddCommand}" Content="Add" />
 				<Button Command="{Binding AddAllCommand}" Content="Add All" />
             </StackPanel>
-        </Grid>
+
+            <Button Grid.Column="2" Margin="12,0,0,0" HorizontalAlignment="Right" VerticalAlignment="Center" Content="Open Masonry Gallery" Click="OpenMasonryGallery_OnClick"/>
+         </Grid>
     </Grid>
 </Window>
