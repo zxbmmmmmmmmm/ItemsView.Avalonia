@@ -1,0 +1,17 @@
+﻿namespace ItemsView.Avalonia.Layouts.MasonryLayout;
+
+/// <summary>
+/// Defines constants that specify how items are sized to fill the available space in a <see cref="MasonryLayout"/>.
+/// </summary>
+public enum MasonryLayoutItemsStretch
+{
+    /// <summary>
+    /// The items' width is determined by the <see cref="MasonryLayout.DesiredColumnWidth"/>.
+    /// </summary>
+    None,
+
+    /// <summary>
+    /// The items' width is determined by the parent's width. The minimum width is determined by the <see cref="MasonryLayout.DesiredColumnWidth"/>.
+    /// </summary>
+    Fill
+}

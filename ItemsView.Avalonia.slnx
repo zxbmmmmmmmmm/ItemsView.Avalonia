@@ -3,6 +3,7 @@
     <File Path="Directory.Packages.props" />
   </Folder>
   <Project Path="CompositionScroll/CompositionScroll.csproj" />
+  <Project Path="ItemsView.Avalonia.Layouts/ItemsView.Avalonia.Layouts.csproj" Id="cbd4e679-4956-45a3-b7a4-8a713527049d" />
   <Project Path="ItemsView.Avalonia.Sample/ItemsView.Avalonia.Sample.csproj" />
   <Project Path="ItemsView.Avalonia/ItemsView.Avalonia.csproj" />
 </Solution>

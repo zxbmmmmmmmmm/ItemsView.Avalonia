@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CompositionScroll\CompositionScroll.csproj" />
+    <ProjectReference Include="..\ItemsView.Avalonia.Layouts\ItemsView.Avalonia.Layouts.csproj" />
     <ProjectReference Include="..\ItemsView.Avalonia\ItemsView.Avalonia.csproj" />
   </ItemGroup>
 

@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
-        xmlns:behaviors="using:ItemsView.Avalonia.Sample.Behaviors"
         xmlns:itemsview="using:ItemsView.Avalonia"
         xmlns:local="using:ItemsView.Avalonia.Sample"
+        xmlns:masonrylayout="using:ItemsView.Avalonia.Layouts.MasonryLayout"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -24,7 +24,7 @@
                 </DataTemplate>
             </itemsview:ItemsView.ItemTemplate>
             <itemsview:ItemsView.Layout>
-				<UniformGridLayout ItemsStretch="Fill"/>
+				<masonrylayout:MasonryLayout ItemsStretch="Fill"/>
             </itemsview:ItemsView.Layout>
         </itemsview:ItemsView>
         <Grid

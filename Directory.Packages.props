@@ -10,7 +10,7 @@
     <!-- Avalonia packages -->
     <!-- Important: keep version in sync! -->
     <PackageVersion Include="Avalonia" Version="$(AvaloniaVersion)" />
-    <PackageVersion Include="Avalonia.Controls.ItemsRepeater" Version="11.1.5" />
+    <PackageVersion Include="Avalonia.Controls.ItemsRepeater" Version="11.1.999" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="$(AvaloniaVersion)" />
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="$(AvaloniaVersion)" />
     <PackageVersion Include="Avalonia.Diagnostics" Version="$(AvaloniaVersion)" />
@@ -23,6 +23,6 @@
     <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.1.0" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageVersion Include="PropertyGenerator.Avalonia" Version="1.2.6" />
-    <PackageVersion Include="IgnoresAccessChecksToGenerator"  Version="0.8.0" />
+    <PackageVersion Include="IgnoresAccessChecksToGenerator" Version="0.8.0" />
   </ItemGroup>
 </Project>
