@@ -85,8 +85,11 @@
 				<Button Grid.Column="0" x:Name="OpenFolderButton" Content="Open Folder" Click="OpenFolderButton_OnClick" />
 				<TextBlock Grid.Column="1" VerticalAlignment="Center" Text="ItemsStretch:"/>
 				<ComboBox Grid.Column="2" SelectedItem="{Binding ItemsStretch, Mode=TwoWay}">
-					<x:Static Member="masonry:MasonryLayoutItemsStretch.None" />
-					<x:Static Member="masonry:MasonryLayoutItemsStretch.Fill" />
+                    <x:Static Member="masonry:MasonryLayoutItemsStretch.Start" />
+                    <x:Static Member="masonry:MasonryLayoutItemsStretch.End" />
+                    <x:Static Member="masonry:MasonryLayoutItemsStretch.Center" />
+                    <x:Static Member="masonry:MasonryLayoutItemsStretch.Justify" />
+					<x:Static Member="masonry:MasonryLayoutItemsStretch.Stretch" />
 				</ComboBox>
 				<TextBlock Grid.Column="3" VerticalAlignment="Center" Text="DesiredColumnWidth:"/>
 				<NumericUpDown Grid.Column="4" Minimum="50" Maximum="1000" Increment="10" Value="{Binding DesiredColumnWidth, Mode=TwoWay}"/>

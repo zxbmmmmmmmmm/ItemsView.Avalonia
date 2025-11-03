@@ -24,7 +24,7 @@
                 </DataTemplate>
             </itemsview:ItemsView.ItemTemplate>
             <itemsview:ItemsView.Layout>
-				<masonrylayout:MasonryLayout ItemsStretch="Fill"/>
+				<UniformGridLayout ItemsStretch="Fill"/>
             </itemsview:ItemsView.Layout>
         </itemsview:ItemsView>
         <Grid

@@ -30,22 +30,22 @@ public partial class MasonryGalleryWindow : Window
     }
 }
 
-public class MasonryGalleryViewModel : ObservableObject
+public partial class MasonryGalleryViewModel : ObservableObject
 {
     [ObservableProperty]
-    public ObservableCollection<Bitmap> Images { get; } = new();
+    public partial ObservableCollection<Bitmap> Images { get; private set; } = [];
 
     [ObservableProperty]
-    public MasonryLayoutItemsStretch ItemsStretch { get; set; } = MasonryLayoutItemsStretch.Fill;
+    public partial MasonryLayoutItemsStretch ItemsStretch { get; set; } = MasonryLayoutItemsStretch.Stretch;
 
     [ObservableProperty]
-    public double DesiredColumnWidth { get; set; } = 250;
+    public partial double DesiredColumnWidth { get; set; } = 250;
 
     [ObservableProperty]
-    public double ColumnSpacing { get; set; } = 8;
+    public partial double ColumnSpacing { get; set; } = 8;
 
     [ObservableProperty]
-    public double RowSpacing { get; set; } = 8;
+    public partial double RowSpacing { get; set; } = 8;
 
     public async System.Threading.Tasks.Task LoadFolderAsync(string folder)
     {
