@@ -8,10 +8,12 @@ public enum MasonryLayoutItemsStretch
     /// <summary>
     /// The items' width is determined by the <see cref="MasonryLayout.DesiredColumnWidth"/>.
     /// </summary>
-    None,
-
+    Start,
+    End,
+    Center,
+    Justify,
     /// <summary>
     /// The items' width is determined by the parent's width. The minimum width is determined by the <see cref="MasonryLayout.DesiredColumnWidth"/>.
     /// </summary>
-    Fill
+    Stretch,
 }

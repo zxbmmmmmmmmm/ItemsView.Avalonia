@@ -99,7 +99,7 @@ public partial class MasonryLayout : VirtualizingLayout
         // This ternary prevents the column width from being NaN, which would otherwise cause an exception when measuring item sizes
         double columnWidth;
         int numColumns;
-        if (ItemsStretch is MasonryLayoutItemsStretch.None)
+        if (ItemsStretch is MasonryLayoutItemsStretch.Start or MasonryLayoutItemsStretch.Center or MasonryLayoutItemsStretch.End)
         {
             columnWidth = double.IsNaN(DesiredColumnWidth) ? availableWidth : Math.Min(DesiredColumnWidth, availableWidth);
             numColumns = Math.Max(1, (int)Math.Floor(availableWidth / (columnWidth + ColumnSpacing)));
@@ -253,7 +253,15 @@ public partial class MasonryLayout : VirtualizingLayout
                 if (item.Top <= context.RealizationRect.Bottom)
                 {
                     double itemHorizontalOffset = (state.ColumnWidth * columnIndex) + (ColumnSpacing * columnIndex);
-
+                    if(ItemsStretch is MasonryLayoutItemsStretch.End)
+                    {
+                        itemHorizontalOffset = finalSize.Width - itemHorizontalOffset - state.ColumnWidth - ColumnSpacing;
+                    }
+                    else if(ItemsStretch is MasonryLayoutItemsStretch.Center)
+                    {
+                        var empty = finalSize.Width - (state.ColumnWidth * state.NumberOfColumns + ColumnSpacing * (state.NumberOfColumns - 1));
+                        itemHorizontalOffset += empty / 2;
+                    }
                     Rect bounds = new Rect((float)itemHorizontalOffset, (float)item.Top, (float)state.ColumnWidth, (float)item.Height);
                     Layoutable element = context.GetOrCreateElementAt(item.Index);
                     element.Arrange(bounds);
