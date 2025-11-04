@@ -4,6 +4,7 @@
 		xmlns:local="using:ItemsView.Avalonia.Sample"
 		xmlns:masonry="using:ItemsView.Avalonia.Layouts.MasonryLayout"
 		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:flowlayout="using:ItemsView.Avalonia.Layouts.FlowLayout"
 		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 		mc:Ignorable="d"
 		x:Class="ItemsView.Avalonia.Sample.MasonryGalleryWindow"
@@ -109,11 +110,7 @@
 				</DataTemplate>
 			</avalonia:ItemsView.ItemTemplate>
 			<avalonia:ItemsView.Layout>
-				<masonry:MasonryLayout
-				ItemsStretch="{Binding ItemsStretch,Mode=OneWay}"
-				DesiredColumnWidth="{Binding DesiredColumnWidth,Mode=OneWay}"
-				ColumnSpacing="{Binding ColumnSpacing,Mode=OneWay}"
-				RowSpacing="{Binding RowSpacing,Mode=OneWay}"/>
+				<flowlayout:FlowLayout LineHeight="250" />
 			</avalonia:ItemsView.Layout>
 		</avalonia:ItemsView>
 	</Grid>
