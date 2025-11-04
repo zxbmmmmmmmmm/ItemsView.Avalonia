@@ -12,6 +12,7 @@ using System.Xml.Linq;
 namespace ItemsView.Avalonia;
 
 [PseudoClasses(":pressed", ":selected")]
+[TemplatePart("PART_ContainerRoot", typeof(Grid))]
 public partial class ItemContainer : TemplatedControl, ISelectable
 {
     private static readonly Point s_invalidPoint = new Point(double.NaN, double.NaN);

@@ -19,7 +19,7 @@
           <Setter.Value>
               <ControlTemplate TargetType="controls:ItemsView">
                   <ScrollViewer
-                      x:Name="PART_ScrollView"
+                      x:Name="PART_ScrollViewer"
                       Background="{TemplateBinding Background}"
                       BorderBrush="{TemplateBinding BorderBrush}"
                       BorderThickness="{TemplateBinding BorderThickness}"

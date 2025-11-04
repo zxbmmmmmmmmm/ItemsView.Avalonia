@@ -1,6 +1,7 @@
 ﻿using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
@@ -17,6 +18,8 @@ using System.Xml.Linq;
 
 namespace ItemsView.Avalonia;
 
+[TemplatePart("PART_ScrollViewer", typeof(ScrollViewer))]
+[TemplatePart("PART_ItemsRepeater", typeof(ItemsRepeater))]
 public partial class ItemsView : TemplatedControl
 {
     private ScrollViewer _scrollViewer = null!;
@@ -99,7 +102,7 @@ public partial class ItemsView : TemplatedControl
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
-        var scrollViewer = e.NameScope.Find<ScrollViewer>("PART_ScrollView");
+        var scrollViewer = e.NameScope.Find<ScrollViewer>("PART_ScrollViewer");
         var itemsRepeater = e.NameScope.Find<ItemsRepeater>("PART_ItemsRepeater");
         if (scrollViewer is null || itemsRepeater is null) throw new Exception();
         UpdateScrollViewer(scrollViewer);
