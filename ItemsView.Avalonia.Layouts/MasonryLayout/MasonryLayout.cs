@@ -99,12 +99,7 @@ public partial class MasonryLayout : VirtualizingLayout
         // This ternary prevents the column width from being NaN, which would otherwise cause an exception when measuring item sizes
         double columnWidth;
         int numColumns;
-        if (ItemsStretch is MasonryLayoutItemsStretch.Start or MasonryLayoutItemsStretch.Center or MasonryLayoutItemsStretch.End)
-        {
-            columnWidth = double.IsNaN(DesiredColumnWidth) ? availableWidth : Math.Min(DesiredColumnWidth, availableWidth);
-            numColumns = Math.Max(1, (int)Math.Floor(availableWidth / (columnWidth + ColumnSpacing)));
-        }
-        else
+        if (ItemsStretch is MasonryLayoutItemsStretch.Stretch)
         {
             if (double.IsNaN(DesiredColumnWidth) || DesiredColumnWidth > availableWidth)
             {
@@ -118,6 +113,13 @@ public partial class MasonryLayout : VirtualizingLayout
                 numColumns = (int)Math.Floor(tempAvailableWidth / (DesiredColumnWidth + ColumnSpacing));
                 columnWidth = tempAvailableWidth / numColumns - ColumnSpacing;
             }
+        }
+        else
+        {
+            columnWidth = double.IsNaN(DesiredColumnWidth)
+                ? availableWidth
+                : Math.Min(DesiredColumnWidth, availableWidth);
+            numColumns = Math.Max(1, (int)Math.Floor(availableWidth / (columnWidth + ColumnSpacing)));
         }
 
         if (Math.Abs(columnWidth - state.ColumnWidth) > double.Epsilon)
@@ -253,14 +255,23 @@ public partial class MasonryLayout : VirtualizingLayout
                 if (item.Top <= context.RealizationRect.Bottom)
                 {
                     double itemHorizontalOffset = (state.ColumnWidth * columnIndex) + (ColumnSpacing * columnIndex);
-                    if(ItemsStretch is MasonryLayoutItemsStretch.End)
+                    switch (ItemsStretch)
                     {
-                        itemHorizontalOffset = finalSize.Width - itemHorizontalOffset - state.ColumnWidth - ColumnSpacing;
-                    }
-                    else if(ItemsStretch is MasonryLayoutItemsStretch.Center)
-                    {
-                        var empty = finalSize.Width - (state.ColumnWidth * state.NumberOfColumns + ColumnSpacing * (state.NumberOfColumns - 1));
-                        itemHorizontalOffset += empty / 2;
+                        case MasonryLayoutItemsStretch.End:
+                            itemHorizontalOffset = finalSize.Width - itemHorizontalOffset - state.ColumnWidth - ColumnSpacing;
+                            break;
+                        case MasonryLayoutItemsStretch.Center:
+                        {
+                            double emptySpace = finalSize.Width - (state.ColumnWidth * state.NumberOfColumns + ColumnSpacing * (state.NumberOfColumns - 1));
+                            itemHorizontalOffset += emptySpace / 2;
+                            break;
+                        }
+                        case MasonryLayoutItemsStretch.Justify:
+                        {
+                            double emptySpace = finalSize.Width - (state.ColumnWidth * state.NumberOfColumns + ColumnSpacing * (state.NumberOfColumns - 1));
+                            itemHorizontalOffset += (emptySpace / (state.NumberOfColumns - 1)) * columnIndex;
+                            break;
+                        }
                     }
                     Rect bounds = new Rect((float)itemHorizontalOffset, (float)item.Top, (float)state.ColumnWidth, (float)item.Height);
                     Layoutable element = context.GetOrCreateElementAt(item.Index);
