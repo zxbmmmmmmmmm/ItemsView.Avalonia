@@ -19,6 +19,9 @@ public sealed partial class FlowLayout : VirtualizingLayout
     [GeneratedStyledProperty(50d)]
     public partial double LineHeight { get; set; }
 
+    [GeneratedStyledProperty(FlowLayoutItemsStretch.Stretch)]
+    public partial FlowLayoutItemsStretch ItemsStretch { get; set; }
+
     partial void OnLineSpacingPropertyChanged(AvaloniaPropertyChangedEventArgs e) => OnLineHeightPropertyChanged(e);
 
     partial void OnMinItemSpacingPropertyChanged(AvaloniaPropertyChangedEventArgs e) => OnLineHeightPropertyChanged(e);
@@ -95,7 +98,8 @@ public sealed partial class FlowLayout : VirtualizingLayout
         var realizationBounds = context.RealizationRect;
         Point? nextPosition = new Point();
         var currentRow = new List<FlowItem>();
-        var currentRowLength = .0;
+        var currentRowInfo = new RowInfo();
+        var itemStretch = ItemsStretch;
         for (var i = 0; i < context.ItemCount; ++i)
         {
             Point currentPosition;
@@ -175,20 +179,36 @@ public sealed partial class FlowLayout : VirtualizingLayout
 
                 if (excessLength + spacingMeasure.Width > 0)
                 {
-                    var shrinkScale = (parentMeasure.Width - currentRow.Count * spacingMeasure.Width) / (currentRowLength + desiredSize.Width);
-                    var enlargeScale = (parentMeasure.Width - (currentRow.Count - 1) * spacingMeasure.Width) / currentRowLength;
+                    if (itemStretch is not FlowLayoutItemsStretch.Stretch)
+                    {
+                        currentRow.Clear();
+                        currentRowInfo = new RowInfo(1);
+                        item.IndexOfRow = 0;
+                        item.Position = currentPosition = new(0, currentPosition.Y + LineHeight + spacingMeasure.Height);
+                        item.RowInfo = currentRowInfo;
+                        currentRowInfo.Length += desiredSize.Width;
+                        currentRow.Add(item);
+                        nextPosition = currentPosition.WithX(desiredSize.Width + spacingMeasure.Width);
+                        return true;
+                    }
+
+                    var shrinkScale = (parentMeasure.Width - currentRow.Count * spacingMeasure.Width) / (currentRowInfo.Length + desiredSize.Width);
+                    var enlargeScale = (parentMeasure.Width - (currentRow.Count - 1) * spacingMeasure.Width) / currentRowInfo.Length;
 
                     // shrinkScale < enlargeScale
                     // find the one that is closer to 1
                     // length excessed
                     if (1 / shrinkScale < enlargeScale)
                     {
+                        item.RowInfo = currentRowInfo;
                         currentRow.Add(item);
+                        currentRowInfo.ItemCount = currentRow.Count;
+                        item.IndexOfRow = currentRowInfo.ItemCount - 1;
                         // is not used before next assignment
                         // currentRowLength += currentMeasure.Width;
                         Resize(shrinkScale);
                         currentRow.Clear();
-                        currentRowLength = 0;
+                        currentRowInfo = new RowInfo(1);
                         // New Row
                         nextPosition = currentPosition = new(0, currentPosition.Y + LineHeight + spacingMeasure.Height);
                     }
@@ -196,13 +216,16 @@ public sealed partial class FlowLayout : VirtualizingLayout
                     else
                     {
                         Resize(enlargeScale);
+                        currentRowInfo.ItemCount = currentRow.Count;
                         currentRow.Clear();
-                        currentRowLength = 0;
+                        currentRowInfo = new RowInfo(1);
                         // New Row
                         item.Position = currentPosition = new(desiredSize.Width + spacingMeasure.Width, currentPosition.Y + LineHeight + spacingMeasure.Height);
+                        item.RowInfo = currentRowInfo;
+                        item.IndexOfRow = 0;
 
                         currentRow.Add(item);
-                        currentRowLength += desiredSize.Width;
+                        currentRowInfo.Length += desiredSize.Width;
 
                         nextPosition = currentPosition;
 
@@ -229,7 +252,10 @@ public sealed partial class FlowLayout : VirtualizingLayout
                 else
                 {
                     currentRow.Add(item);
-                    currentRowLength += desiredSize.Width;
+                    item.RowInfo = currentRowInfo;
+                    currentRowInfo.ItemCount = currentRow.Count;
+                    item.IndexOfRow = currentRowInfo.ItemCount - 1;
+                    currentRowInfo.Length += desiredSize.Width;
                     currentPosition = new Point(currentPosition.X + desiredSize.Width + spacingMeasure.Width, currentPosition.Y);
                     nextPosition = currentPosition;
                 }
@@ -256,6 +282,7 @@ public sealed partial class FlowLayout : VirtualizingLayout
         if (context.ItemCount > 0)
         {
             var realizationBounds = context.RealizationRect;
+            var itemStretch = ItemsStretch;
             //  var viewHeight = realizationBounds.Height /= 3;
             //  realizationBounds.Y += viewHeight;
 
@@ -268,14 +295,46 @@ public sealed partial class FlowLayout : VirtualizingLayout
                 }
 
                 var desiredMeasure = item.Measure.Value;
+                var desiredSize = item.DesiredSize.Value;
 
                 var position = item.Position.Value;
 
                 if (position.Y + desiredMeasure.Height >= realizationBounds.Top && position.Y <= realizationBounds.Bottom)
                 {
-                    // place the item
                     var child = context.GetOrCreateElementAt(item.Index);
-                    child.Arrange(new(position, desiredMeasure));
+
+                    switch (itemStretch)
+                    {
+                        // place the item
+                        case FlowLayoutItemsStretch.Stretch:
+                            child.Arrange(new(position, desiredMeasure));
+                            break;
+                        case FlowLayoutItemsStretch.Start:
+                            child.Arrange(new(position, desiredSize));
+                            break;
+                        case FlowLayoutItemsStretch.End:
+                        {
+                            var spacing = parentMeasure.Width - item.RowInfo.Length;
+                            position = position.WithX(position.X + spacing);
+                            child.Arrange(new(position, desiredSize));
+                            break;
+                        }
+                        case FlowLayoutItemsStretch.Center:
+                        {
+                            var spacing = (parentMeasure.Width - item.RowInfo.Length) / 2;
+                            position = position.WithX(position.X + spacing);
+                            child.Arrange(new(position, desiredSize));
+                            break;
+                        }
+                        case FlowLayoutItemsStretch.Justify:
+                        {
+                            var spacing = (parentMeasure.Width - item.RowInfo.Length)/(item.RowInfo.ItemCount - 1);
+                            if (item.RowInfo.ItemCount is not 1)
+                                position = position.WithX(position.X + spacing * item.IndexOfRow);
+                            child.Arrange(new(position, desiredSize));
+                            break;
+                        }
+                    }
                 }
                 else if (position.Y > realizationBounds.Bottom)
                 {
