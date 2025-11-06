@@ -1,19 +1,21 @@
-﻿using Avalonia.Controls;
+﻿using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Layout;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using ItemsView.Avalonia.Layouts.FlowLayout;
 using ItemsView.Avalonia.Layouts.MasonryLayout;
 using ItemsView.Avalonia.Sample.Models;
+using SixLabors.ImageSharp.Processing;
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Avalonia;
+using SixLabors.ImageSharp;
 using StringComparer = System.StringComparer;
-using CommunityToolkit.Mvvm.Input;
 
 namespace ItemsView.Avalonia.Sample.ViewModels;
 
@@ -108,7 +110,21 @@ public partial class SampleViewModel : ObservableObject
             try
             {
                 await using var stream = File.OpenRead(file);
-                var bmp = new Bitmap(stream);
+                using var image = await SixLabors.ImageSharp.Image.LoadAsync(stream);
+
+                const int thumbnailSize = 300;
+                var options = new ResizeOptions
+                {
+                    Size = new SixLabors.ImageSharp.Size(thumbnailSize, thumbnailSize),
+                    Mode = ResizeMode.Max
+                };
+                image.Mutate(x => x.Resize(options));
+
+                await using var memoryStream = new MemoryStream();
+                await image.SaveAsPngAsync(memoryStream);
+                memoryStream.Position = 0;
+
+                var bmp = new Bitmap(memoryStream);
                 images.Add(bmp);
             }
             catch

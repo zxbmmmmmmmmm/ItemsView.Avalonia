@@ -25,5 +25,6 @@
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageVersion Include="PropertyGenerator.Avalonia" Version="1.2.6" />
     <PackageVersion Include="IgnoresAccessChecksToGenerator" Version="0.8.0" />
+    <PackageVersion Include="SixLabors.ImageSharp" Version="3.1.12" />
   </ItemGroup>
 </Project>
