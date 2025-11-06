@@ -21,6 +21,7 @@
     </PackageReference>
     <PackageReference Include="Avalonia.Xaml.Interactions" />
     <PackageReference Include="AvaloniaUI.DiagnosticsSupport" />
+    <PackageReference Include="bodong.Avalonia.PropertyGrid" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
   </ItemGroup>
 
@@ -31,7 +32,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="ViewModels\" />
     <Folder Include="Models\" />
   </ItemGroup>
 </Project>

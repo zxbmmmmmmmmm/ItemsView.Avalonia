@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
+using ItemsView.Avalonia.Layouts.FlowLayout;
 using ItemsView.Avalonia.Layouts.MasonryLayout;
 
 namespace ItemsView.Avalonia.Sample;
@@ -36,7 +37,7 @@ public partial class MasonryGalleryViewModel : ObservableObject
     public partial ObservableCollection<Bitmap> Images { get; private set; } = [];
 
     [ObservableProperty]
-    public partial MasonryLayoutItemsStretch ItemsStretch { get; set; } = MasonryLayoutItemsStretch.Stretch;
+    public partial FlowLayoutItemsStretch ItemsStretch { get; set; } = FlowLayoutItemsStretch.Stretch;
 
     [ObservableProperty]
     public partial double DesiredColumnWidth { get; set; } = 250;

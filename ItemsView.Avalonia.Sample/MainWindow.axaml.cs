@@ -9,7 +9,9 @@ namespace ItemsView.Avalonia.Sample
         public MainWindow()
         {
             InitializeComponent();
+            Current = this;
         }
+        public static MainWindow Current { get; private set; }
 
         private void OpenMasonryGallery_OnClick(object? sender, RoutedEventArgs e)
         {

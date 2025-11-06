@@ -86,11 +86,11 @@
 				<Button Grid.Column="0" x:Name="OpenFolderButton" Content="Open Folder" Click="OpenFolderButton_OnClick" />
 				<TextBlock Grid.Column="1" VerticalAlignment="Center" Text="ItemsStretch:"/>
 				<ComboBox Grid.Column="2" SelectedItem="{Binding ItemsStretch, Mode=TwoWay}">
-                    <x:Static Member="masonry:MasonryLayoutItemsStretch.Start" />
-                    <x:Static Member="masonry:MasonryLayoutItemsStretch.End" />
-                    <x:Static Member="masonry:MasonryLayoutItemsStretch.Center" />
-                    <x:Static Member="masonry:MasonryLayoutItemsStretch.Justify" />
-					<x:Static Member="masonry:MasonryLayoutItemsStretch.Stretch" />
+                    <x:Static Member="flowlayout:FlowLayoutItemsStretch.Start" />
+                    <x:Static Member="flowlayout:FlowLayoutItemsStretch.End" />
+                    <x:Static Member="flowlayout:FlowLayoutItemsStretch.Center" />
+                    <x:Static Member="flowlayout:FlowLayoutItemsStretch.Justify" />
+					<x:Static Member="flowlayout:FlowLayoutItemsStretch.Stretch" />
 				</ComboBox>
 				<TextBlock Grid.Column="3" VerticalAlignment="Center" Text="DesiredColumnWidth:"/>
 				<NumericUpDown Grid.Column="4" Minimum="50" Maximum="1000" Increment="10" Value="{Binding DesiredColumnWidth, Mode=TwoWay}"/>
@@ -105,12 +105,12 @@
 			<avalonia:ItemsView.ItemTemplate>
 				<DataTemplate>
 					<avalonia:ItemContainer>
-						<Image Margin="2" Source="{Binding}" Stretch="Uniform" HorizontalAlignment="Stretch"/>
+						<Image Margin="2" Source="{Binding}" Stretch="UniformToFill" HorizontalAlignment="Stretch"/>
 					</avalonia:ItemContainer>
 				</DataTemplate>
 			</avalonia:ItemsView.ItemTemplate>
 			<avalonia:ItemsView.Layout>
-				<flowlayout:FlowLayout LineHeight="250" />
+				<flowlayout:FlowLayout LineHeight="250" ItemsStretch="{Binding ItemsStretch,Mode=OneWay}"/>
 			</avalonia:ItemsView.Layout>
 		</avalonia:ItemsView>
 	</Grid>

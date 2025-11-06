@@ -12,4 +12,7 @@ public partial class Item : ObservableObject
 
     [ObservableProperty]
     public partial int LoadedTimes { get; set; }
+
+    [ObservableProperty]
+    public partial string? Description { get; set; }
 }
