@@ -26,6 +26,8 @@ public sealed partial class FlowLayout : VirtualizingLayout
 
     partial void OnMinItemSpacingPropertyChanged(AvaloniaPropertyChangedEventArgs e) => OnLineHeightPropertyChanged(e);
 
+    partial void OnItemsStretchPropertyChanged(AvaloniaPropertyChangedEventArgs e) => OnLineHeightPropertyChanged(e);
+
     partial void OnLineHeightPropertyChanged(AvaloniaPropertyChangedEventArgs e)
     {
         InvalidateMeasure();
