@@ -222,14 +222,14 @@ public sealed partial class FlowLayout : VirtualizingLayout
                         currentRow.Clear();
                         currentRowInfo = new RowInfo(1);
                         // New Row
-                        item.Position = currentPosition = new(desiredSize.Width + spacingMeasure.Width, currentPosition.Y + LineHeight + spacingMeasure.Height);
+                        item.Position = currentPosition = new(0, currentPosition.Y + LineHeight + spacingMeasure.Height);
                         item.RowInfo = currentRowInfo;
                         item.IndexOfRow = 0;
 
                         currentRow.Add(item);
                         currentRowInfo.Length += desiredSize.Width;
 
-                        nextPosition = currentPosition;
+                        nextPosition = currentPosition.WithX(desiredSize.Width + spacingMeasure.Width);
 
                         return true;
                     }
