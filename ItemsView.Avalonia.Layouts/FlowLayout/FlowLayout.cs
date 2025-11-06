@@ -285,6 +285,7 @@ public sealed partial class FlowLayout : VirtualizingLayout
         {
             var realizationBounds = context.RealizationRect;
             var itemStretch = ItemsStretch;
+            var minItemSpacing = MinItemSpacing;
             //  var viewHeight = realizationBounds.Height /= 3;
             //  realizationBounds.Y += viewHeight;
 
@@ -315,27 +316,27 @@ public sealed partial class FlowLayout : VirtualizingLayout
                             child.Arrange(new(position, desiredSize));
                             break;
                         case FlowLayoutItemsStretch.End:
-                        {
-                            var spacing = parentMeasure.Width - item.RowInfo.Length;
-                            position = position.WithX(position.X + spacing);
-                            child.Arrange(new(position, desiredSize));
-                            break;
-                        }
+                            {
+                                var spacing = parentMeasure.Width - item.RowInfo.Length;
+                                position = position.WithX(position.X + spacing - minItemSpacing * (item.RowInfo.ItemCount - 1));
+                                child.Arrange(new(position, desiredSize));
+                                break;
+                            }
                         case FlowLayoutItemsStretch.Center:
-                        {
-                            var spacing = (parentMeasure.Width - item.RowInfo.Length) / 2;
-                            position = position.WithX(position.X + spacing);
-                            child.Arrange(new(position, desiredSize));
-                            break;
-                        }
+                            {
+                                var spacing = (parentMeasure.Width - item.RowInfo.Length) / 2;
+                                position = position.WithX(position.X + spacing);
+                                child.Arrange(new(position, desiredSize));
+                                break;
+                            }
                         case FlowLayoutItemsStretch.Justify:
-                        {
-                            var spacing = (parentMeasure.Width - item.RowInfo.Length)/(item.RowInfo.ItemCount - 1);
-                            if (item.RowInfo.ItemCount is not 1)
-                                position = position.WithX(position.X + spacing * item.IndexOfRow);
-                            child.Arrange(new(position, desiredSize));
-                            break;
-                        }
+                            {
+                                var spacing = (parentMeasure.Width - item.RowInfo.Length) / (item.RowInfo.ItemCount - 1);
+                                if (item.RowInfo.ItemCount is not 1)
+                                    position = position.WithX(position.X + spacing * item.IndexOfRow);
+                                child.Arrange(new(position, desiredSize));
+                                break;
+                            }
                     }
                 }
                 else if (position.Y > realizationBounds.Bottom)
