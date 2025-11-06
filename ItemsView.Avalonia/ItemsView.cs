@@ -131,7 +131,10 @@ public partial class ItemsView : TemplatedControl
     {
         if(e.Property == ItemsRepeater.ItemsSourceProperty)
         {
-
+            if(e.OldValue is ItemsSourceView oldItemSource)
+            {
+                oldItemSource.CollectionChanged -= OnSourceListChanged;
+            }
             HookItemsSourceViewEvents();
             var itemsSource = ItemsSource;
 
