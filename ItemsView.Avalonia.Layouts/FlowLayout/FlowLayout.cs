@@ -16,7 +16,7 @@ public sealed partial class FlowLayout : VirtualizingLayout
     [GeneratedStyledProperty(0d)]
     public partial double MinItemSpacing { get; set; }
 
-    [GeneratedStyledProperty(50d)]
+    [GeneratedStyledProperty(200d)]
     public partial double LineHeight { get; set; }
 
     [GeneratedStyledProperty(FlowLayoutItemsStretch.Stretch)]
