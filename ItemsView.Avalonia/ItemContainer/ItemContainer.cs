@@ -142,5 +142,11 @@ public partial class ItemContainer : TemplatedControl, ISelectable
                (CanUserSelect & (ItemContainerUserSelectMode.Auto | ItemContainerUserSelectMode.UserCanSelect)) != 0;
     }
 
+#if NET10_0_OR_GREATER
     internal event EventHandler<ItemContainer, ItemContainerInvokedEventArgs>? ItemInvoked;
+#else
+    internal delegate void ItemInvokedEventHandler(ItemContainer? sender, ItemContainerInvokedEventArgs e);
+
+    internal event ItemInvokedEventHandler? ItemInvoked;
+#endif
 }
