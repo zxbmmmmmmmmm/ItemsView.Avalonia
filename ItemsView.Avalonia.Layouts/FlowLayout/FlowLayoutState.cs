@@ -3,6 +3,7 @@
 
 using Avalonia;
 using Avalonia.Layout;
+using FluentAvalonia.UI.Controls;
 
 namespace ItemsView.Avalonia.Layouts.FlowLayout;
 

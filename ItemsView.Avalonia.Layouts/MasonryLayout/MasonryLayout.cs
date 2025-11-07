@@ -1,9 +1,10 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Layout;
 using PropertyGenerator.Avalonia;
 using System.Collections.Specialized;
 using System.Xml.Linq;
+using FluentAvalonia.UI.Controls;
+
 namespace ItemsView.Avalonia.Layouts.MasonryLayout;
 
 public partial class MasonryLayout : VirtualizingLayout
@@ -30,14 +31,12 @@ public partial class MasonryLayout : VirtualizingLayout
     protected override void InitializeForContextCore(VirtualizingLayoutContext context)
     {
         context.LayoutState = new MasonryLayoutState(context);
-        base.InitializeForContextCore(context);
     }
 
     /// <inheritdoc/>
     protected override void UninitializeForContextCore(VirtualizingLayoutContext context)
     {
         context.LayoutState = null;
-        base.UninitializeForContextCore(context);
     }
 
     /// <inheritdoc/>
@@ -268,7 +267,7 @@ public partial class MasonryLayout : VirtualizingLayout
                         }
                     }
                     Rect bounds = new Rect((float)itemHorizontalOffset, (float)item.Top, (float)state.ColumnWidth, (float)item.Height);
-                    Layoutable element = context.GetOrCreateElementAt(item.Index);
+                    Control element = context.GetOrCreateElementAt(item.Index);
                     element.Arrange(bounds);
                 }
                 else

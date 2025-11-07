@@ -23,6 +23,7 @@
     <PackageReference Include="AvaloniaUI.DiagnosticsSupport" />
     <PackageReference Include="bodong.Avalonia.PropertyGrid" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="FluentAvaloniaUI" />
     <PackageReference Include="SixLabors.ImageSharp" />
   </ItemGroup>
 

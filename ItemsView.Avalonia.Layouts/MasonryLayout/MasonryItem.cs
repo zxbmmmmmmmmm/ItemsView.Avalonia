@@ -17,5 +17,5 @@ internal class MasonryItem
 
     public int Index { get; }
 
-    public Layoutable? Element { get; internal set; }
+    public Control? Element { get; internal set; }
 }

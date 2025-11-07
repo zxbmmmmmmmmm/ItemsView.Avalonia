@@ -15,6 +15,7 @@ using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Xml.Linq;
+using FluentAvalonia.UI.Controls;
 
 namespace ItemsView.Avalonia;
 

@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia.Controls.ItemsRepeater" />
+    <PackageReference Include="FluentAvaloniaUI" />
     <PackageReference Include="PropertyGenerator.Avalonia" />
   </ItemGroup>
 

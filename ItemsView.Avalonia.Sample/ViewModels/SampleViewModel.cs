@@ -5,7 +5,6 @@ using Avalonia.Layout;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using ItemsView.Avalonia.Layouts.FlowLayout;
 using ItemsView.Avalonia.Layouts.MasonryLayout;
 using ItemsView.Avalonia.Sample.Models;
 using SixLabors.ImageSharp.Processing;
@@ -14,7 +13,9 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using FluentAvalonia.UI.Controls;
 using SixLabors.ImageSharp;
+using FlowLayout = ItemsView.Avalonia.Layouts.FlowLayout.FlowLayout;
 using StringComparer = System.StringComparer;
 
 namespace ItemsView.Avalonia.Sample.ViewModels;
@@ -28,7 +29,7 @@ public partial class SampleViewModel : ObservableObject
     public partial IEnumerable? Items { get; set; }
 
     [ObservableProperty]
-    public partial AttachedLayout? Layout { get; set; }
+    public partial Layout? Layout { get; set; }
 
     [ObservableProperty]
     public partial ObservableCollection<DataSource> DataSources { get; set; } = [];
@@ -37,10 +38,10 @@ public partial class SampleViewModel : ObservableObject
     public partial DataSource? SelectedDataSource { get; set; }
 
     [ObservableProperty]
-    public partial ObservableCollection<AttachedLayout> Layouts { get; set; } = [];
+    public partial ObservableCollection<Layout> Layouts { get; set; } = [];
 
     [ObservableProperty]
-    public partial AttachedLayout? SelectedLayout { get; set; }
+    public partial Layout? SelectedLayout { get; set; }
 
     public SampleViewModel()
     {
@@ -77,7 +78,7 @@ public partial class SampleViewModel : ObservableObject
         Layouts.Add(new StackLayout());
         Layouts.Add(new FlowLayout());
         Layouts.Add(new MasonryLayout());
-        Layouts.Add(new WrapLayout());
+        //Layouts.Add(new WrapLayout());
         Layouts.Add(new UniformGridLayout());
     }
 
@@ -89,7 +90,7 @@ public partial class SampleViewModel : ObservableObject
         ItemTemplate = value.ItemTemplate;
     }
 
-    partial void OnSelectedLayoutChanged(AttachedLayout? value)
+    partial void OnSelectedLayoutChanged(Layout? value)
     {
         Layout = value;
     }

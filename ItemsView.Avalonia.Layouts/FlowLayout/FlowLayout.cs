@@ -3,7 +3,7 @@
 
 using System.Collections.Specialized;
 using Avalonia;
-using Avalonia.Layout;
+using FluentAvalonia.UI.Controls;
 using PropertyGenerator.Avalonia;
 
 namespace ItemsView.Avalonia.Layouts.FlowLayout;
@@ -38,14 +38,12 @@ public sealed partial class FlowLayout : VirtualizingLayout
     protected override void InitializeForContextCore(VirtualizingLayoutContext context)
     {
         context.LayoutState = new FlowLayoutState(context);
-        base.InitializeForContextCore(context);
     }
 
     /// <inheritdoc />
     protected override void UninitializeForContextCore(VirtualizingLayoutContext context)
     {
         context.LayoutState = null;
-        base.UninitializeForContextCore(context);
     }
 
     /// <inheritdoc />
