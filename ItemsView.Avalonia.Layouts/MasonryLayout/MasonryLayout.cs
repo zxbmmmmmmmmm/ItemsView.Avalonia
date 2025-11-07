@@ -11,7 +11,7 @@ public partial class MasonryLayout : VirtualizingLayout
     /// <summary>
     /// Gets or sets the desired width for each column.
     /// </summary>
-    [GeneratedStyledProperty]
+    [GeneratedStyledProperty(MasonryLayoutItemsStretch.Stretch)]
     public partial MasonryLayoutItemsStretch ItemsStretch { get; set; }
 
     /// <summary>
