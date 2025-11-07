@@ -8,9 +8,6 @@ namespace ItemsView.Avalonia.Layouts.MasonryLayout;
 
 public partial class MasonryLayout : VirtualizingLayout
 {
-    /// <summary>
-    /// Gets or sets the desired width for each column.
-    /// </summary>
     [GeneratedStyledProperty(MasonryLayoutItemsStretch.Stretch)]
     public partial MasonryLayoutItemsStretch ItemsStretch { get; set; }
 
@@ -18,17 +15,14 @@ public partial class MasonryLayout : VirtualizingLayout
     /// Gets or sets the desired width for each column.
     /// </summary>
     [GeneratedStyledProperty(250.0)]
-    public partial double DesiredColumnWidth { get; set; }
+    public partial double MinColumnWidth { get; set; }
 
     /// <summary>
-    /// Gets or sets the spacing between columns of items.
+    /// Gets or sets the minimum spacing between columns of items.
     /// </summary>
     [GeneratedStyledProperty]
-    public partial double ColumnSpacing { get; set; }
+    public partial double MinColumnSpacing { get; set; }
 
-    /// <summary>
-    /// Identifies the <see cref="ColumnSpacing"/> dependency property.
-    /// </summary>
     [GeneratedStyledProperty]
     public partial double RowSpacing { get; set; }
 
@@ -101,7 +95,7 @@ public partial class MasonryLayout : VirtualizingLayout
         int numColumns;
         if (ItemsStretch is MasonryLayoutItemsStretch.Stretch)
         {
-            if (double.IsNaN(DesiredColumnWidth) || DesiredColumnWidth > availableWidth)
+            if (double.IsNaN(MinColumnWidth) || MinColumnWidth > availableWidth)
             {
                 columnWidth = availableWidth;
                 numColumns = 1;
@@ -109,17 +103,17 @@ public partial class MasonryLayout : VirtualizingLayout
             else
             {
                 // 0.0001 is to prevent floating point errors
-                var tempAvailableWidth = availableWidth + ColumnSpacing - 0.0001;
-                numColumns = (int)Math.Floor(tempAvailableWidth / (DesiredColumnWidth + ColumnSpacing));
-                columnWidth = tempAvailableWidth / numColumns - ColumnSpacing;
+                var tempAvailableWidth = availableWidth + MinColumnSpacing - 0.0001;
+                numColumns = (int)Math.Floor(tempAvailableWidth / (MinColumnWidth + MinColumnSpacing));
+                columnWidth = tempAvailableWidth / numColumns - MinColumnSpacing;
             }
         }
         else
         {
-            columnWidth = double.IsNaN(DesiredColumnWidth)
+            columnWidth = double.IsNaN(MinColumnWidth)
                 ? availableWidth
-                : Math.Min(DesiredColumnWidth, availableWidth);
-            numColumns = Math.Max(1, (int)Math.Floor(availableWidth / (columnWidth + ColumnSpacing)));
+                : Math.Min(MinColumnWidth, availableWidth);
+            numColumns = Math.Max(1, (int)Math.Floor(availableWidth / (columnWidth + MinColumnSpacing)));
         }
 
         if (Math.Abs(columnWidth - state.ColumnWidth) > double.Epsilon)
@@ -131,7 +125,7 @@ public partial class MasonryLayout : VirtualizingLayout
         state.ColumnWidth = columnWidth;
 
         // adjust for column spacing on all columns expect the first
-        double totalWidth = state.ColumnWidth + ((numColumns - 1) * (state.ColumnWidth + ColumnSpacing));
+        double totalWidth = state.ColumnWidth + ((numColumns - 1) * (state.ColumnWidth + MinColumnSpacing));
         if (totalWidth > availableWidth)
         {
             numColumns--;
@@ -254,21 +248,21 @@ public partial class MasonryLayout : VirtualizingLayout
 
                 if (item.Top <= context.RealizationRect.Bottom)
                 {
-                    double itemHorizontalOffset = (state.ColumnWidth * columnIndex) + (ColumnSpacing * columnIndex);
+                    double itemHorizontalOffset = (state.ColumnWidth * columnIndex) + (MinColumnSpacing * columnIndex);
                     switch (ItemsStretch)
                     {
                         case MasonryLayoutItemsStretch.End:
-                            itemHorizontalOffset = finalSize.Width - itemHorizontalOffset - state.ColumnWidth - ColumnSpacing;
+                            itemHorizontalOffset = finalSize.Width - itemHorizontalOffset - state.ColumnWidth - MinColumnSpacing;
                             break;
                         case MasonryLayoutItemsStretch.Center:
                         {
-                            double emptySpace = finalSize.Width - (state.ColumnWidth * state.NumberOfColumns + ColumnSpacing * (state.NumberOfColumns - 1));
+                            double emptySpace = finalSize.Width - (state.ColumnWidth * state.NumberOfColumns + MinColumnSpacing * (state.NumberOfColumns - 1));
                             itemHorizontalOffset += emptySpace / 2;
                             break;
                         }
                         case MasonryLayoutItemsStretch.Justify:
                         {
-                            double emptySpace = finalSize.Width - (state.ColumnWidth * state.NumberOfColumns + ColumnSpacing * (state.NumberOfColumns - 1));
+                            double emptySpace = finalSize.Width - (state.ColumnWidth * state.NumberOfColumns + MinColumnSpacing * (state.NumberOfColumns - 1));
                             itemHorizontalOffset += (emptySpace / (state.NumberOfColumns - 1)) * columnIndex;
                             break;
                         }
@@ -292,7 +286,7 @@ public partial class MasonryLayout : VirtualizingLayout
         InvalidateMeasure();
     }
 
-    partial void OnDesiredColumnWidthPropertyChanged(double newValue)
+    partial void OnMinColumnWidthPropertyChanged(double newValue)
     {
         InvalidateMeasure();
     }
@@ -302,7 +296,7 @@ public partial class MasonryLayout : VirtualizingLayout
         InvalidateMeasure();
     }
 
-    partial void OnColumnSpacingPropertyChanged(double newValue)
+    partial void OnMinColumnSpacingPropertyChanged(double newValue)
     {
         InvalidateMeasure();
     }
