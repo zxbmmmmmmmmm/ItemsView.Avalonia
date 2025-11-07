@@ -1,144 +1,160 @@
-<Application xmlns="https://github.com/avaloniaui"
-			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-			 xmlns:compositionScroll="clr-namespace:CompositionScroll;assembly=CompositionScroll"
-			 xmlns:converters="clr-namespace:ItemsView.Avalonia.Sample.Converters"
-			 xmlns:avalonia="clr-namespace:ItemsView.Avalonia;assembly=ItemsView.Avalonia"
-			 xmlns:models="clr-namespace:ItemsView.Avalonia.Sample.Models"
-			 x:Class="ItemsView.Avalonia.Sample.App"
-			 RequestedThemeVariant="Default">
-	<!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
-	<Application.Resources>
+<Application
+    x:Class="ItemsView.Avalonia.Sample.App"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:avalonia="clr-namespace:ItemsView.Avalonia;assembly=ItemsView.Avalonia"
+    xmlns:compositionScroll="clr-namespace:CompositionScroll;assembly=CompositionScroll"
+    xmlns:converters="clr-namespace:ItemsView.Avalonia.Sample.Converters"
+    xmlns:models="clr-namespace:ItemsView.Avalonia.Sample.Models"
+    xmlns:viewModels="clr-namespace:ItemsView.Avalonia.Sample.ViewModels"
+    RequestedThemeVariant="Default">
+    <!--  "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options.  -->
+    <Application.Resources>
 
-		<ResourceDictionary>
-			<converters:TypeNameConverter x:Key="TypeNameConverter" />
-			<DataTemplate x:Key="ItemTemplate" DataType="models:Item">
-				<avalonia:ItemContainer Padding="12">
-					<StackPanel Spacing="4">
-						<TextBlock Text="{Binding Name}" FontWeight="Bold" />
-						<TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
-					</StackPanel>
-				</avalonia:ItemContainer>
+        <ResourceDictionary>
+            <converters:TypeNameConverter x:Key="TypeNameConverter" />
+            <DataTemplate x:Key="TextItemsTemplate" DataType="models:Item">
+                <avalonia:ItemContainer Padding="12">
+                    <StackPanel Spacing="4">
+                        <TextBlock FontWeight="Bold" Text="{Binding Name}" />
+                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </avalonia:ItemContainer>
+            </DataTemplate>
+            <DataTemplate x:Key="AsyncImageItemsTemplate" x:DataType="viewModels:ImageUri">
+                <avalonia:ItemContainer>
+                    <Image Source="{Binding BitmapAsync^}" Stretch="UniformToFill" />
+                </avalonia:ItemContainer>
+            </DataTemplate>
+            <DataTemplate x:Key="ImageItemsTemplate" x:DataType="Bitmap">
+                <avalonia:ItemContainer>
+                    <Image Source="{Binding}" Stretch="UniformToFill" />
+                </avalonia:ItemContainer>
+            </DataTemplate>
+            <ControlTheme x:Key="{x:Type avalonia:ItemContainer}" TargetType="avalonia:ItemContainer">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Padding" Value="{DynamicResource ItemContainerPadding}" />
+                <Setter Property="Template">
+                    <ControlTemplate>
+                        <Grid x:Name="PART_ContainerRoot" Background="{TemplateBinding Background}">
+                            <!--  Placeholder for child  -->
+                            <CheckBox
+                                x:Name="PART_CheckBox"
+                                Margin="8,4"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Top"
+                                IsVisible="False"
+                                ZIndex="1" />
+                            <Border
+                                x:Name="PART_SelectionVisual"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                Background="Transparent"
+                                BorderThickness="2"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                IsHitTestVisible="False"
+                                ZIndex="1" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter>
 
-			</DataTemplate>
-			<DataTemplate x:Key="ImageTemplate" x:DataType="Bitmap">
-				<avalonia:ItemContainer>
-					<Image Source="{Binding}" Stretch="UniformToFill" />
-				</avalonia:ItemContainer>
-			</DataTemplate>
-			<ControlTheme x:Key="{x:Type avalonia:ItemContainer}" TargetType="avalonia:ItemContainer">
-				<Setter Property="Background" Value="Transparent" />
-				<Setter Property="Padding" Value="{DynamicResource ItemContainerPadding}" />
-				<Setter Property="Template">
-					<ControlTemplate>
-						<Grid x:Name="PART_ContainerRoot" Background="{TemplateBinding Background}">
-							<!--Placeholder for child -->
-							<CheckBox IsVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8,4" ZIndex="1" x:Name="PART_CheckBox"/>
-							<Border
-							x:Name="PART_SelectionVisual"
-							BorderThickness="2"
-							Background="Transparent"
-							ZIndex="1"
-							CornerRadius="{TemplateBinding CornerRadius}"
-							HorizontalAlignment="Stretch"
-							VerticalAlignment="Stretch"
-							IsHitTestVisible="False"/>
-						</Grid>
-					</ControlTemplate>
-				</Setter>
+                <Style Selector="^:disabled /template/ Grid#PART_ContainerRoot">
+                    <Setter Property="Opacity" Value="0.5" />
+                </Style>
 
-				<Style Selector="^:disabled /template/ Grid#PART_ContainerRoot">
-					<Setter Property="Opacity" Value="0.5" />
-				</Style>
+                <!--  PointerOver State  -->
+                <Style Selector="^:pointerover /template/ Grid#PART_ContainerRoot">
+                    <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
+                </Style>
 
-				<!--  PointerOver State  -->
-				<Style Selector="^:pointerover /template/ Grid#PART_ContainerRoot">
-					<Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
-				</Style>
+                <!--  Pressed State  -->
+                <Style Selector="^:pressed /template/ Grid#PART_ContainerRoot">
+                    <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListMediumBrush}" />
+                </Style>
 
-				<!--  Pressed State  -->
-				<Style Selector="^:pressed /template/ Grid#PART_ContainerRoot">
-					<Setter Property="Background" Value="{DynamicResource SystemControlHighlightListMediumBrush}" />
-				</Style>
+                <!--  Selected State  -->
+                <Style Selector="^:selected">
 
-				<!--  Selected State  -->
-				<Style Selector="^:selected">
+                    <Style Selector="^ /template/ Border#PART_SelectionVisual">
+                        <Setter Property="BorderBrush" Value="{DynamicResource SystemControlHighlightListAccentLowBrush}" />
+                    </Style>
 
-					<Style Selector="^ /template/ Border#PART_SelectionVisual">
-						<Setter Property="BorderBrush" Value="{DynamicResource SystemControlHighlightListAccentLowBrush}" />
-					</Style>
+                    <Style Selector="^ /template/ CheckBox#PART_CheckBox">
+                        <Setter Property="IsChecked" Value="True" />
+                        <Setter Property="IsVisible" Value="True" />
+                    </Style>
 
-					<Style Selector="^ /template/ CheckBox#PART_CheckBox">
-						<Setter Property="IsChecked" Value="True" />
-						<Setter Property="IsVisible" Value="True" />
-					</Style>
+                    <!--  Selected Unfocused State  -->
+                    <Style Selector="^:not(:focus) /template/ Grid#PART_ContainerRoot">
+                        <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentLowBrush}" />
+                    </Style>
 
-					<!--  Selected Unfocused State  -->
-					<Style Selector="^:not(:focus) /template/ Grid#PART_ContainerRoot">
-						<Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentLowBrush}" />
-					</Style>
+                    <!--  Selected PointerOver State  -->
+                    <Style Selector="^:pointerover /template/ Grid#PART_ContainerRoot">
+                        <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentMediumBrush}" />
+                    </Style>
 
-					<!--  Selected PointerOver State  -->
-					<Style Selector="^:pointerover /template/ Grid#PART_ContainerRoot">
-						<Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentMediumBrush}" />
-					</Style>
-
-					<!--  Selected Pressed State  -->
-					<Style Selector="^:pressed /template/ Grid#PART_ContainerRoot">
-						<Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentHighBrush}" />
-					</Style>
-				</Style>
-			</ControlTheme>
-			<ControlTheme x:Key="CompositionScrollViewerStyle"
-						  TargetType="ScrollViewer">
-				<Setter Property="Background" Value="Transparent" />
-				<Setter Property="Template">
-					<ControlTemplate>
-						<Grid ColumnDefinitions="*,Auto" RowDefinitions="*,Auto">
-							<compositionScroll:CompositionScrollContentPresenter
-							Name="PART_ContentPresenter"
-							Grid.Row="0"
-							Grid.Column="0"
-							Grid.RowSpan="2"
-							Grid.ColumnSpan="2"
-							Background="{TemplateBinding Background}"
-							HorizontalSnapPointsType="{TemplateBinding HorizontalSnapPointsType}"
-							VerticalSnapPointsType="{TemplateBinding VerticalSnapPointsType}"
-							HorizontalSnapPointsAlignment="{TemplateBinding HorizontalSnapPointsAlignment}"
-							VerticalSnapPointsAlignment="{TemplateBinding VerticalSnapPointsAlignment}"
-							Padding="{TemplateBinding Padding}"
-							ScrollViewer.IsScrollInertiaEnabled="{TemplateBinding IsScrollInertiaEnabled}"
-							compositionScroll:CompositionScrollContentPresenter.ScrollFeatures="{TemplateBinding (compositionScroll:CompositionScrollContentPresenter.ScrollFeatures)}"/>
-							<ScrollBar Name="PART_HorizontalScrollBar"
-									   Orientation="Horizontal"
-									   Grid.Row="1" />
-							<ScrollBar Name="PART_VerticalScrollBar"
-									   Orientation="Vertical"
-									   Grid.Column="1" />
-							<Panel x:Name="PART_ScrollBarsSeparator"
-								   Grid.Row="1"
-								   Grid.Column="1"
-								   Background="{DynamicResource ScrollViewerScrollBarsSeparatorBackground}"
-								   Opacity="0">
-								<Panel.Transitions>
-									<Transitions>
-										<DoubleTransition Property="Opacity" Duration="0:0:0.1" />
-									</Transitions>
-								</Panel.Transitions>
-							</Panel>
-						</Grid>
-					</ControlTemplate>
-				</Setter>
-				<Style Selector="^[IsExpanded=true] /template/ Panel#PART_ScrollBarsSeparator">
-					<Setter Property="Opacity" Value="1" />
-				</Style>
-			</ControlTheme>
-			<ResourceDictionary.MergedDictionaries>
-				<ResourceInclude Source="avares://ItemsView.Avalonia/ItemsView.axaml"/>
-				<ResourceInclude Source="avares://ItemsView.Avalonia/ItemContainer/ItemContainer.axaml"/>
-			</ResourceDictionary.MergedDictionaries>
-		</ResourceDictionary>
-	</Application.Resources>
-	<Application.Styles>
-		<FluentTheme />
-	</Application.Styles>
+                    <!--  Selected Pressed State  -->
+                    <Style Selector="^:pressed /template/ Grid#PART_ContainerRoot">
+                        <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentHighBrush}" />
+                    </Style>
+                </Style>
+            </ControlTheme>
+            <!--
+			<ControlTheme x:Key="CompositionScrollViewerStyle" TargetType="ScrollViewer">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Template">
+                    <ControlTemplate>
+                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="*,Auto">
+                            <compositionScroll:CompositionScrollContentPresenter
+                                Name="PART_ContentPresenter"
+                                Grid.Row="0"
+                                Grid.RowSpan="2"
+                                Grid.Column="0"
+                                Grid.ColumnSpan="2"
+                                Padding="{TemplateBinding Padding}"
+                                compositionScroll:CompositionScrollContentPresenter.ScrollFeatures="{TemplateBinding (compositionScroll:CompositionScrollContentPresenter.ScrollFeatures)}"
+                                Background="{TemplateBinding Background}"
+                                HorizontalSnapPointsAlignment="{TemplateBinding HorizontalSnapPointsAlignment}"
+                                HorizontalSnapPointsType="{TemplateBinding HorizontalSnapPointsType}"
+                                ScrollViewer.IsScrollInertiaEnabled="{TemplateBinding IsScrollInertiaEnabled}"
+                                VerticalSnapPointsAlignment="{TemplateBinding VerticalSnapPointsAlignment}"
+                                VerticalSnapPointsType="{TemplateBinding VerticalSnapPointsType}" />
+                            <ScrollBar
+                                Name="PART_HorizontalScrollBar"
+                                Grid.Row="1"
+                                Orientation="Horizontal" />
+                            <ScrollBar
+                                Name="PART_VerticalScrollBar"
+                                Grid.Column="1"
+                                Orientation="Vertical" />
+                            <Panel
+                                x:Name="PART_ScrollBarsSeparator"
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                Background="{DynamicResource ScrollViewerScrollBarsSeparatorBackground}"
+                                Opacity="0">
+                                <Panel.Transitions>
+                                    <Transitions>
+                                        <DoubleTransition Property="Opacity" Duration="0:0:0.1" />
+                                    </Transitions>
+                                </Panel.Transitions>
+                            </Panel>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter>
+                <Style Selector="^[IsExpanded=true] /template/ Panel#PART_ScrollBarsSeparator">
+                    <Setter Property="Opacity" Value="1" />
+                </Style>
+            </ControlTheme>
+			-->
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://ItemsView.Avalonia/ItemsView.axaml" />
+                <ResourceInclude Source="avares://ItemsView.Avalonia/ItemContainer/ItemContainer.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+    <Application.Styles>
+        <FluentTheme />
+    </Application.Styles>
 </Application>

@@ -1,60 +1,61 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-			 xmlns:viewmodels="using:ItemsView.Avalonia.Sample.ViewModels"
-			 xmlns:avalonia="clr-namespace:ItemsView.Avalonia;assembly=ItemsView.Avalonia"
-			 xmlns:controls="clr-namespace:Avalonia.PropertyGrid.Controls;assembly=Avalonia.PropertyGrid"
-			 xmlns:models="clr-namespace:ItemsView.Avalonia.Sample.Models"
-			 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-			 x:DataType="viewmodels:SampleViewModel"
-			 x:Class="ItemsView.Avalonia.Sample.SampleView">
-	<UserControl.DataContext>
-		<viewmodels:SampleViewModel/>
-	</UserControl.DataContext>
+<UserControl
+    x:Class="ItemsView.Avalonia.Sample.SampleView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:avalonia="clr-namespace:ItemsView.Avalonia;assembly=ItemsView.Avalonia"
+    xmlns:controls="clr-namespace:Avalonia.PropertyGrid.Controls;assembly=Avalonia.PropertyGrid"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="clr-namespace:ItemsView.Avalonia.Sample.Models"
+    xmlns:viewmodels="using:ItemsView.Avalonia.Sample.ViewModels"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    x:DataType="viewmodels:SampleViewModel"
+    mc:Ignorable="d">
+    <UserControl.DataContext>
+        <viewmodels:SampleViewModel />
+    </UserControl.DataContext>
 
-	<Grid ColumnDefinitions="2*,*">
-		<avalonia:ItemsView x:Name="ItemsView" Grid.Column="0"
-							ItemsSource="{Binding Items,Mode = OneWay}"
-							ItemTemplate="{Binding ItemTemplate,Mode = OneWay}"
-							Layout="{Binding Layout,Mode = OneWay}" />
-		<ScrollViewer Grid.Column="1">
-			<StackPanel  Margin="16" Spacing="8">
-				<TextBlock Text="Data Source" />
-				<StackPanel Orientation="Horizontal" Spacing="8">
-					<ComboBox ItemsSource="{Binding DataSources}"
-							  SelectedItem="{Binding SelectedDataSource}"
-							  DisplayMemberBinding="{Binding Name}" />
-					<Button Content="Open Folder..." Command="{Binding OpenFolderCommand}" />
+    <Grid ColumnDefinitions="2*,*">
+        <avalonia:ItemsView
+            x:Name="ItemsView"
+            Grid.Column="0"
+            ItemTemplate="{Binding ItemTemplate, Mode=OneWay}"
+            ItemsSource="{Binding Items, Mode=OneWay}"
+            Layout="{Binding SelectedLayout, Mode=OneWay}" />
+        <ScrollViewer Grid.Column="1">
+            <StackPanel Margin="16" Spacing="8">
+                <TextBlock Text="Data Source" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <ComboBox ItemsSource="{Binding DataSources}" SelectedItem="{Binding SelectedDataSource}" />
+                    <Button Command="{Binding OpenFolderCommand}" Content="Open Folder..." />
+                </StackPanel>
 
-				</StackPanel>
+                <TextBlock Margin="0,8,0,0" Text="Selection Mode" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <ComboBox SelectedItem="{Binding #ItemsView.SelectionMode, Mode=TwoWay}">
+                        <x:Static Member="avalonia:ItemsViewSelectionMode.None" />
+                        <x:Static Member="avalonia:ItemsViewSelectionMode.Single" />
+                        <x:Static Member="avalonia:ItemsViewSelectionMode.Multiple" />
+                        <x:Static Member="avalonia:ItemsViewSelectionMode.Extended" />
+                    </ComboBox>
+                    <CheckBox Content="IsItemInvokedEnabled" IsChecked="{Binding #ItemsView.IsItemInvokedEnabled}" />
+                </StackPanel>
 
-				<TextBlock Text="Selection Mode" Margin="0 8 0 0"/>
-				<StackPanel Orientation="Horizontal" Spacing="8">
-					<ComboBox
-					SelectedItem="{Binding #ItemsView.SelectionMode, Mode=TwoWay}">
-						<x:Static Member="avalonia:ItemsViewSelectionMode.None" />
-						<x:Static Member="avalonia:ItemsViewSelectionMode.Single" />
-						<x:Static Member="avalonia:ItemsViewSelectionMode.Multiple" />
-						<x:Static Member="avalonia:ItemsViewSelectionMode.Extended" />
-					</ComboBox>
-					<CheckBox IsChecked="{Binding #ItemsView.IsItemInvokedEnabled}" Content="IsItemInvokedEnabled"/>
-			</StackPanel>
-
-
-				<TextBlock Text="Layout" Margin="0 8 0 0" />
-				<ComboBox ItemsSource="{Binding Layouts}"
-						  SelectedItem="{Binding SelectedLayout}">
-					<ComboBox.ItemTemplate>
-						<DataTemplate>
-							<TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}}" />
-						</DataTemplate>
-					</ComboBox.ItemTemplate>
-				</ComboBox>
-				<TextBlock Text="Layout Properties" Margin="0,8,0,0"/>
-				<controls:PropertyGrid IsHeaderVisible="False" IsTitleVisible="False" DataContext="{Binding SelectedLayout}" />
-			</StackPanel>
-		</ScrollViewer>
-
-	</Grid>
+                <TextBlock Margin="0,8,0,0" Text="Layout" />
+                <ComboBox ItemsSource="{Binding Layouts}" SelectedItem="{Binding SelectedLayout}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Margin="0,8,0,0" Text="Layout Properties" />
+                <controls:PropertyGrid
+                    DataContext="{Binding SelectedLayout}"
+                    IsHeaderVisible="False"
+                    IsTitleVisible="False" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
 </UserControl>

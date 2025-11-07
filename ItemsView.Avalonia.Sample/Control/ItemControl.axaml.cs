@@ -1,6 +1,4 @@
-using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 using ItemsView.Avalonia.Sample.Models;
 using PropertyGenerator.Avalonia;
 
