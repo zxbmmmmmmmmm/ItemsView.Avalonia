@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace ItemsView.Avalonia.Sample.Models;
+namespace Virtualization.Avalonia.Sample.Models;
 
 public partial class Item : ObservableObject
 {

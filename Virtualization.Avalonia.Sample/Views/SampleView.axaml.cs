@@ -2,7 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 
-namespace ItemsView.Avalonia.Sample;
+namespace Virtualization.Avalonia.Sample;
 
 public partial class SampleView : UserControl
 {

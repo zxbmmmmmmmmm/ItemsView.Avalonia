@@ -22,7 +22,7 @@ public enum FlowLayoutLineAlignment
     SpaceEvenly
 }
 
-public class FlowLayout : VirtualizingLayout, IOrientationBasedMeasures, IFlowLayoutAlgorithmDelegates
+internal class FlowLayout : VirtualizingLayout, IOrientationBasedMeasures, IFlowLayoutAlgorithmDelegates
 {
     public FlowLayout()
     {

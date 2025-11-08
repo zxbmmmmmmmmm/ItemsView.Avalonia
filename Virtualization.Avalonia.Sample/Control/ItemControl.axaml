@@ -2,12 +2,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:models="using:ItemsView.Avalonia.Sample.Models"
-             xmlns:local="clr-namespace:ItemsView.Avalonia.Sample"
-             xmlns:viewModels="clr-namespace:ItemsView.Avalonia.Sample.ViewModels"
+             xmlns:models="using:Virtualization.Avalonia.Sample.Models"
+             xmlns:local="clr-namespace:Virtualization.Avalonia.Sample"
+             xmlns:viewModels="clr-namespace:Virtualization.Avalonia.Sample.ViewModels"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:DataType="models:Item"
-             x:Class="ItemsView.Avalonia.Sample.ItemControl">
+             x:Class="Virtualization.Avalonia.Sample.ItemControl">
     <Design.DataContext>
         <models:Item/>
     </Design.DataContext>

@@ -7,16 +7,17 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using ItemsView.Avalonia.Layouts.FlowLayout;
-using ItemsView.Avalonia.Layouts.MasonryLayout;
-using ItemsView.Avalonia.Sample.Models;
+using Virtualization.Avalonia.Sample.Models;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Virtualization.Avalonia.Layouts;
+using StackLayout = Avalonia.Layout.StackLayout;
+using UniformGridLayout = Avalonia.Layout.UniformGridLayout;
 
-namespace ItemsView.Avalonia.Sample.ViewModels;
+namespace Virtualization.Avalonia.Sample.ViewModels;
 
 public partial class SampleViewModel : ObservableObject
 {

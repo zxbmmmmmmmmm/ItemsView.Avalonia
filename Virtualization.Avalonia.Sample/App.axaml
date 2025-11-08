@@ -1,12 +1,12 @@
 <Application
-    x:Class="ItemsView.Avalonia.Sample.App"
+    x:Class="Virtualization.Avalonia.Sample.App"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:avalonia="clr-namespace:ItemsView.Avalonia;assembly=ItemsView.Avalonia"
     xmlns:compositionScroll="clr-namespace:CompositionScroll;assembly=CompositionScroll"
-    xmlns:converters="clr-namespace:ItemsView.Avalonia.Sample.Converters"
-    xmlns:models="clr-namespace:ItemsView.Avalonia.Sample.Models"
-    xmlns:viewModels="clr-namespace:ItemsView.Avalonia.Sample.ViewModels"
+    xmlns:converters="clr-namespace:Virtualization.Avalonia.Sample.Converters"
+    xmlns:models="clr-namespace:Virtualization.Avalonia.Sample.Models"
+    xmlns:viewModels="clr-namespace:Virtualization.Avalonia.Sample.ViewModels"
+    xmlns:avalonia="clr-namespace:Virtualization.Avalonia;assembly=Virtualization.Avalonia.ItemsView"
     RequestedThemeVariant="Default">
     <!--  "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options.  -->
     <Application.Resources>
@@ -149,8 +149,8 @@
             </ControlTheme>
 			-->
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://ItemsView.Avalonia/ItemsView.axaml" />
-                <ResourceInclude Source="avares://ItemsView.Avalonia/ItemContainer/ItemContainer.axaml" />
+                <ResourceInclude Source="avares://Virtualization.Avalonia.ItemsView/ItemsView.axaml" />
+                <ResourceInclude Source="avares://Virtualization.Avalonia.ItemsView/ItemContainer/ItemContainer.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

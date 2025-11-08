@@ -8,8 +8,6 @@ using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Styling;
-using ItemsView.Avalonia.Helpers;
-using ItemsView.Avalonia.Selection;
 using System;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;

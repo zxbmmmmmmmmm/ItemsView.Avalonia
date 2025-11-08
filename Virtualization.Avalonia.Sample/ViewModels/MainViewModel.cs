@@ -1,12 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using ItemsView.Avalonia.Sample.Models;
+using Virtualization.Avalonia.Sample.Models;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 
-namespace ItemsView.Avalonia.Sample.ViewModels;
+namespace Virtualization.Avalonia.Sample.ViewModels;
 
 public partial class MainViewModel : ObservableObject
 {

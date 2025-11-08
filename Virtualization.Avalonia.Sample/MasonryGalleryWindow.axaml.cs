@@ -6,10 +6,9 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
-using ItemsView.Avalonia.Layouts.FlowLayout;
-using ItemsView.Avalonia.Layouts.MasonryLayout;
+using Virtualization.Avalonia.Layouts;
 
-namespace ItemsView.Avalonia.Sample;
+namespace Virtualization.Avalonia.Sample;
 
 public partial class MasonryGalleryWindow : Window
 {

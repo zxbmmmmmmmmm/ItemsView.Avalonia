@@ -28,8 +28,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CompositionScroll\CompositionScroll.csproj" />
-    <ProjectReference Include="..\ItemsView.Avalonia.Layouts\Virtualization.Avalonia.Layouts.csproj" />
-    <ProjectReference Include="..\ItemsView.Avalonia\ItemsView.Avalonia.csproj" />
+    <ProjectReference Include="..\Virtualization.Avalonia.ItemsRepeater\Virtualization.Avalonia.ItemsRepeater.csproj" />
+    <ProjectReference Include="..\Virtualization.Avalonia.ItemsView\Virtualization.Avalonia.ItemsView.csproj" />
+    <ProjectReference Include="..\Virtualization.Avalonia.Layouts\Virtualization.Avalonia.Layouts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

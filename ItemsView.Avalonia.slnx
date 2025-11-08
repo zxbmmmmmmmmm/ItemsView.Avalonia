@@ -7,7 +7,7 @@
   </Folder>
   <Project Path="CompositionScroll/CompositionScroll.csproj" />
   <Project Path="Virtualization.Avalonia.ItemsView/Virtualization.Avalonia.ItemsView.csproj" />
+  <Project Path="Virtualization.Avalonia.Sample/Virtualization.Avalonia.Sample.csproj" />
   <Project Path="Virtualization.Avalonia.ItemsRepeater/Virtualization.Avalonia.ItemsRepeater.csproj" />
   <Project Path="Virtualization.Avalonia.Layouts/Virtualization.Avalonia.Layouts.csproj" Id="cbd4e679-4956-45a3-b7a4-8a713527049d" />
-  <Project Path="ItemsView.Avalonia.Sample/ItemsView.Avalonia.Sample.csproj" />
 </Solution>

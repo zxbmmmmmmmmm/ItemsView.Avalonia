@@ -1,8 +1,8 @@
 using Avalonia.Controls;
-using ItemsView.Avalonia.Sample.Models;
+using Virtualization.Avalonia.Sample.Models;
 using PropertyGenerator.Avalonia;
 
-namespace ItemsView.Avalonia.Sample;
+namespace Virtualization.Avalonia.Sample;
 
 public partial class ItemControl : UserControl
 {

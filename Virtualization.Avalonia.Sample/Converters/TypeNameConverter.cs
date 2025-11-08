@@ -2,7 +2,7 @@ using System;
 using System.Globalization;
 using Avalonia.Data.Converters;
 
-namespace ItemsView.Avalonia.Sample.Converters;
+namespace Virtualization.Avalonia.Sample.Converters;
 
 public class TypeNameConverter : IValueConverter
 {

@@ -1,13 +1,12 @@
 <Window xmlns="https://github.com/avaloniaui"
-		xmlns:avalonia="using:ItemsView.Avalonia"
 		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-		xmlns:local="using:ItemsView.Avalonia.Sample"
-		xmlns:masonry="using:ItemsView.Avalonia.Layouts.MasonryLayout"
+		xmlns:local="using:Virtualization.Avalonia.Sample"
 		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:flowlayout="using:ItemsView.Avalonia.Layouts.FlowLayout"
 		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:layouts="clr-namespace:Virtualization.Avalonia.Layouts;assembly=Virtualization.Avalonia.Layouts"
+		xmlns:avalonia1="clr-namespace:Virtualization.Avalonia;assembly=Virtualization.Avalonia.ItemsView"
 		mc:Ignorable="d"
-		x:Class="ItemsView.Avalonia.Sample.MasonryGalleryWindow"
+		x:Class="Virtualization.Avalonia.Sample.MasonryGalleryWindow"
 		x:DataType="local:MasonryGalleryViewModel"
 		Title="Masonry Gallery"
 		Width="1000" Height="700">
@@ -15,7 +14,7 @@
 		<x:Null />
 	</Design.DataContext>
 	<Window.Resources>
-		<ControlTheme x:Key="{x:Type avalonia:ItemContainer}" TargetType="avalonia:ItemContainer">
+		<ControlTheme x:Key="{x:Type avalonia1:ItemContainer}" TargetType="avalonia1:ItemContainer">
 			<Setter Property="Background" Value="Transparent" />
             <Setter Property="Padding" Value="{DynamicResource ItemContainerPadding}" />
 			<Setter Property="Template">
@@ -86,11 +85,11 @@
 				<Button Grid.Column="0" x:Name="OpenFolderButton" Content="Open Folder" Click="OpenFolderButton_OnClick" />
 				<TextBlock Grid.Column="1" VerticalAlignment="Center" Text="ItemsStretch:"/>
 				<ComboBox Grid.Column="2" SelectedItem="{Binding ItemsStretch, Mode=TwoWay}">
-                    <x:Static Member="flowlayout:FlowLayoutItemsStretch.Start" />
-                    <x:Static Member="flowlayout:FlowLayoutItemsStretch.End" />
-                    <x:Static Member="flowlayout:FlowLayoutItemsStretch.Center" />
-                    <x:Static Member="flowlayout:FlowLayoutItemsStretch.Justify" />
-					<x:Static Member="flowlayout:FlowLayoutItemsStretch.Stretch" />
+                    <x:Static Member="layouts:FlowLayoutItemsStretch.Start" />
+                    <x:Static Member="layouts:FlowLayoutItemsStretch.End" />
+                    <x:Static Member="layouts:FlowLayoutItemsStretch.Center" />
+                    <x:Static Member="layouts:FlowLayoutItemsStretch.Justify" />
+					<x:Static Member="layouts:FlowLayoutItemsStretch.Stretch" />
 				</ComboBox>
 				<TextBlock Grid.Column="3" VerticalAlignment="Center" Text="DesiredColumnWidth:"/>
 				<NumericUpDown Grid.Column="4" Minimum="50" Maximum="1000" Increment="10" Value="{Binding DesiredColumnWidth, Mode=TwoWay}"/>
@@ -101,17 +100,17 @@
 				</StackPanel>
 			</Grid>
 		</Border>
-		<avalonia:ItemsView Grid.Row="1" SelectionMode="Multiple" ItemsSource="{Binding Images}">
-			<avalonia:ItemsView.ItemTemplate>
+		<avalonia1:ItemsView Grid.Row="1" SelectionMode="Multiple" ItemsSource="{Binding Images}">
+			<avalonia1:ItemsView.ItemTemplate>
 				<DataTemplate>
-					<avalonia:ItemContainer>
+					<avalonia1:ItemContainer>
 						<Image Margin="2" Source="{Binding}" Stretch="UniformToFill" HorizontalAlignment="Stretch"/>
-					</avalonia:ItemContainer>
+					</avalonia1:ItemContainer>
 				</DataTemplate>
-			</avalonia:ItemsView.ItemTemplate>
-			<avalonia:ItemsView.Layout>
-				<flowlayout:FlowLayout LineHeight="250" ItemsStretch="{Binding ItemsStretch,Mode=OneWay}"/>
-			</avalonia:ItemsView.Layout>
-		</avalonia:ItemsView>
+			</avalonia1:ItemsView.ItemTemplate>
+			<avalonia1:ItemsView.Layout>
+				<layouts:FlowLayout LineHeight="250" ItemsStretch="{Binding ItemsStretch,Mode=OneWay}"/>
+			</avalonia1:ItemsView.Layout>
+		</avalonia1:ItemsView>
 	</Grid>
 </Window>
