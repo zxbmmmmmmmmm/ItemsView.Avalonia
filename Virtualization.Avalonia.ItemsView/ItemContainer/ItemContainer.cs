@@ -9,7 +9,7 @@ using Avalonia.Metadata;
 using PropertyGenerator.Avalonia;
 using System.Xml.Linq;
 
-namespace ItemsView.Avalonia;
+namespace Virtualization.Avalonia;
 
 [PseudoClasses(":pressed", ":selected")]
 [TemplatePart("PART_ContainerRoot", typeof(Grid))]

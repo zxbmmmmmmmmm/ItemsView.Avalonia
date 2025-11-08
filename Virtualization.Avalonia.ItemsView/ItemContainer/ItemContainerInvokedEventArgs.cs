@@ -1,4 +1,4 @@
-﻿namespace ItemsView.Avalonia;
+﻿namespace Virtualization.Avalonia;
 
 internal class ItemContainerInvokedEventArgs
 {

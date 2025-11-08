@@ -2,7 +2,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 
-namespace ItemsView.Avalonia;
+namespace Virtualization.Avalonia;
 
 public partial class ItemsView
 {

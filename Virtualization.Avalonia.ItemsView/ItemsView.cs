@@ -16,7 +16,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Xml.Linq;
 
-namespace ItemsView.Avalonia;
+namespace Virtualization.Avalonia;
 
 [TemplatePart("PART_ScrollViewer", typeof(ScrollViewer))]
 [TemplatePart("PART_ItemsRepeater", typeof(ItemsRepeater))]

@@ -6,7 +6,7 @@ using Avalonia.Layout;
 using PropertyGenerator.Avalonia;
 using System.Collections;
 
-namespace ItemsView.Avalonia;
+namespace Virtualization.Avalonia;
 
 public partial class ItemsView
 {

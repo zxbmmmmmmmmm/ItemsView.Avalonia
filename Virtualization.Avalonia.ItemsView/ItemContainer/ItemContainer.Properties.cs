@@ -2,7 +2,7 @@
 using Avalonia.Metadata;
 using PropertyGenerator.Avalonia;
 
-namespace ItemsView.Avalonia;
+namespace Virtualization.Avalonia;
 
 public partial class ItemContainer
 {

@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace ItemsView.Avalonia.Helpers;
+namespace Virtualization.Avalonia;
 
 internal static class EnumExtensions
 {

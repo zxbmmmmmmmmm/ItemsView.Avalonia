@@ -9,7 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-namespace ItemsView.Avalonia.Selection;
+namespace Virtualization.Avalonia;
 
 internal class InternalSelectionModel : SelectionModel<object?>
 {

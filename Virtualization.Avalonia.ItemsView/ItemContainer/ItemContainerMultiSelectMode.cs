@@ -1,4 +1,4 @@
-﻿namespace ItemsView.Avalonia;
+﻿namespace Virtualization.Avalonia;
 
 [Flags]
 internal enum ItemContainerMultiSelectMode

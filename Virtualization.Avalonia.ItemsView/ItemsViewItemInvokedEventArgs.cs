@@ -1,6 +1,6 @@
 ﻿using Avalonia.Interactivity;
 
-namespace ItemsView.Avalonia;
+namespace Virtualization.Avalonia;
 
 public class ItemsViewItemInvokedEventArgs : RoutedEventArgs
 {

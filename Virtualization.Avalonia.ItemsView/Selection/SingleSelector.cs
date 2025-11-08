@@ -1,4 +1,4 @@
-﻿namespace ItemsView.Avalonia.Selection;
+﻿namespace Virtualization.Avalonia;
 
 internal class SingleSelector : SelectorBase
 {
