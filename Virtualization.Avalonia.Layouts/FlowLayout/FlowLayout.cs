@@ -6,7 +6,7 @@ using Avalonia;
 using Avalonia.Layout;
 using PropertyGenerator.Avalonia;
 
-namespace ItemsView.Avalonia.Layouts.FlowLayout;
+namespace Virtualization.Avalonia.Layouts;
 
 public sealed partial class FlowLayout : VirtualizingLayout
 {

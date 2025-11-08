@@ -4,7 +4,8 @@ using Avalonia.Layout;
 using PropertyGenerator.Avalonia;
 using System.Collections.Specialized;
 using System.Xml.Linq;
-namespace ItemsView.Avalonia.Layouts.MasonryLayout;
+
+namespace Virtualization.Avalonia.Layouts;
 
 public partial class MasonryLayout : VirtualizingLayout
 {

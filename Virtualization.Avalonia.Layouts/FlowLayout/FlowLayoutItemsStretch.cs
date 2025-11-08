@@ -1,5 +1,4 @@
-﻿namespace ItemsView.Avalonia.Layouts.FlowLayout;
-
+﻿namespace Virtualization.Avalonia.Layouts;
 public enum FlowLayoutItemsStretch
 {
     Start,

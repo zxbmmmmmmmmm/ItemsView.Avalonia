@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace ItemsView.Avalonia.Layouts.MasonryLayout;
+namespace Virtualization.Avalonia.Layouts;
 
 [DebuggerDisplay("Count = {Count}, Height = {Height}")]
 internal partial class MasonryColumnLayout : List<MasonryItem>

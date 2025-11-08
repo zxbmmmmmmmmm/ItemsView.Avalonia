@@ -5,7 +5,7 @@
 using Avalonia;
 using Avalonia.Layout;
 
-namespace ItemsView.Avalonia.Layouts.FlowLayout;
+namespace Virtualization.Avalonia.Layouts;
 
 internal class FlowItem(int index)
 {

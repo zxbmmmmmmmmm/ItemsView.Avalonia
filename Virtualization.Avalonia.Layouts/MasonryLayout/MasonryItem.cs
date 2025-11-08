@@ -2,7 +2,7 @@
 using Avalonia.Layout;
 using System.Xml.Linq;
 
-namespace ItemsView.Avalonia.Layouts.MasonryLayout;
+namespace Virtualization.Avalonia.Layouts;
 
 internal class MasonryItem
 {

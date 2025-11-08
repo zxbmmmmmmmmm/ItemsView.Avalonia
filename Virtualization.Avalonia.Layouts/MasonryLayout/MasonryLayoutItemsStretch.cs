@@ -1,4 +1,4 @@
-﻿namespace ItemsView.Avalonia.Layouts.MasonryLayout;
+﻿namespace Virtualization.Avalonia.Layouts;
 
 /// <summary>
 /// Defines constants that specify how items are sized to fill the available space in a <see cref="MasonryLayout"/>.
