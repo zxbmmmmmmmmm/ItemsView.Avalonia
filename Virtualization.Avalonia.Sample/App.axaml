@@ -7,6 +7,7 @@
     xmlns:models="clr-namespace:Virtualization.Avalonia.Sample.Models"
     xmlns:viewModels="clr-namespace:Virtualization.Avalonia.Sample.ViewModels"
     xmlns:avalonia="clr-namespace:Virtualization.Avalonia;assembly=Virtualization.Avalonia.ItemsView"
+    xmlns:sample="clr-namespace:Virtualization.Avalonia.Sample"
     RequestedThemeVariant="Default">
     <!--  "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options.  -->
     <Application.Resources>
@@ -23,12 +24,12 @@
             </DataTemplate>
             <DataTemplate x:Key="AsyncImageItemsTemplate" x:DataType="viewModels:ImageUri">
                 <avalonia:ItemContainer>
-                    <Image Source="{Binding BitmapAsync^}" Stretch="UniformToFill" />
+                    <Image Source="{Binding BitmapAsync^}" Stretch="{Binding $parent[sample:SampleView].((viewModels:SampleViewModel)DataContext).ImageStretch}" />
                 </avalonia:ItemContainer>
             </DataTemplate>
             <DataTemplate x:Key="ImageItemsTemplate" x:DataType="Bitmap">
                 <avalonia:ItemContainer>
-                    <Image Source="{Binding}" Stretch="UniformToFill" />
+                    <Image Source="{Binding}" Stretch="{Binding $parent[sample:SampleView].((viewModels:SampleViewModel)DataContext).ImageStretch}" />
                 </avalonia:ItemContainer>
             </DataTemplate>
             <ControlTheme x:Key="{x:Type avalonia:ItemContainer}" TargetType="avalonia:ItemContainer">

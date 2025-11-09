@@ -1,19 +1,20 @@
-﻿using System;
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Layout;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Virtualization.Avalonia.Sample.Models;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Virtualization.Avalonia.Layouts;
+using Virtualization.Avalonia.Sample.Models;
 
 namespace Virtualization.Avalonia.Sample.ViewModels;
 
@@ -34,6 +35,9 @@ public partial class SampleViewModel : ObservableObject
 
     [ObservableProperty]
     public partial Layout? SelectedLayout { get; set; } = Layouts.FirstOrDefault();
+
+    [ObservableProperty]
+    public partial Stretch ImageStretch { get; set; }
 
     private static IReadOnlyList<Item>? TextItems => field ??= InitializeDataSources();
 

@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using Avalonia.Media;
 
 namespace Virtualization.Avalonia.Sample.ViewModels;
 
@@ -20,6 +21,8 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     public partial int Value { get; set; } = 5;
+
+
 
     public int TotalValue => Items.Sum(i => i.Value);
 

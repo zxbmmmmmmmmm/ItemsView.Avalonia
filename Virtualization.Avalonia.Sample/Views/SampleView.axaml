@@ -31,6 +31,14 @@
                     <Button Command="{Binding OpenFolderCommand}" Content="Open Folder..." />
                 </StackPanel>
 
+                <TextBlock Margin="0,8,0,0" Text="Image Stretch" />
+                <ComboBox SelectedItem="{Binding ImageStretch, Mode=TwoWay}">
+                    <x:Static Member="Stretch.None" />
+                    <x:Static Member="Stretch.Fill" />
+                    <x:Static Member="Stretch.Uniform" />
+                    <x:Static Member="Stretch.UniformToFill" />
+                </ComboBox>
+
                 <TextBlock Margin="0,8,0,0" Text="Selection Mode" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <ComboBox SelectedItem="{Binding #ItemsView.SelectionMode, Mode=TwoWay}">
