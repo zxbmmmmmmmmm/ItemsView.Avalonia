@@ -30,7 +30,7 @@ public partial class SampleViewModel : ObservableObject
     [ObservableProperty]
     public partial DataType SelectedDataSource { get; set; } = DataType.TextItems;
 
-    public static IReadOnlyList<Layout> Layouts { get; } = [new StackLayout(), new FlowLayout(), new MasonryLayout(), new UniformGridLayout()];
+    public static IReadOnlyList<Layout> Layouts { get; } = [new StackLayout(), new FlowLayout(), new MasonryLayout(), new UniformGridLayout(), new WrapLayout()];
 
     [ObservableProperty]
     public partial Layout? SelectedLayout { get; set; } = Layouts.FirstOrDefault();
