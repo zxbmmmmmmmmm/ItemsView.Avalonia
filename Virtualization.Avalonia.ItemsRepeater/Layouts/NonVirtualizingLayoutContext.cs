@@ -1,4 +1,5 @@
-﻿using Avalonia.Controls;
+﻿using System.Diagnostics.CodeAnalysis;
+using Avalonia.Controls;
 
 namespace Virtualization.Avalonia.Layouts;
 
@@ -17,12 +18,6 @@ public abstract class NonVirtualizingLayoutContext : LayoutContext
     /// </summary>
     protected abstract IReadOnlyList<Control> ChildrenCore();
 
-    internal VirtualizingLayoutContext GetVirtualizingContextAdapter()
-    {
-        _contextAdapter ??= new LayoutContextAdapter(this);
-
-        return _contextAdapter;
-    }
-
-    private VirtualizingLayoutContext _contextAdapter;
+    [field: AllowNull, MaybeNull]
+    internal VirtualizingLayoutContext VirtualizingContextAdapter => field ??= new LayoutContextAdapter(this);
 }

@@ -25,7 +25,7 @@ internal class WrapLayoutState
             _itemsPerLineEstimationBuffer = new double[BufferSize];
         }
 
-        context.LayoutStateCore = this;
+        context.LayoutState = this;
     }
 
     public void UninitializeForContext(VirtualizingLayoutContext context)

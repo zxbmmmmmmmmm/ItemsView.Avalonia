@@ -5,41 +5,37 @@ namespace Virtualization.Avalonia.Layouts;
 
 internal class LayoutContextAdapter(NonVirtualizingLayoutContext nonVirtualizingContext) : VirtualizingLayoutContext
 {
-    protected internal override object? LayoutStateCore 
+    public override object? GetItemAt(int index) => nonVirtualizingContext.Children[index];
+
+    public override Control GetOrCreateElementAt(int index, ElementRealizationOptions options) => nonVirtualizingContext.Children[index];
+
+    public override void RecycleElement(Control element) { }
+
+    private int GetElementIndex(Control element) => nonVirtualizingContext.Children.IndexOf(element);
+
+    public override object? LayoutState
     { 
         get => nonVirtualizingContext.LayoutState; 
         set => nonVirtualizingContext.LayoutState = value;
     }
 
-    protected internal override int ItemCountCore() => nonVirtualizingContext.Children.Count;
+    public override int ItemCount => nonVirtualizingContext.Children.Count;
 
-    protected override object? GetItemAtCore(int index) => nonVirtualizingContext.Children[index];
-
-    protected override Control GetOrCreateElementAtCore(int index, ElementRealizationOptions options) => nonVirtualizingContext.Children[index];
-
-    protected override void RecycleElementCore(Control element) { }
-
-    private int GetElementIndexCore(Control element)
-    {
-        var children = nonVirtualizingContext.Children;
-        return children.IndexOf(element);
-    }
-
-    protected override Rect VisibleRectCore() =>
+    public override Rect VisibleRect  =>
         new Rect(0, 0, double.PositiveInfinity, double.PositiveInfinity);
 
-    protected override Rect RealizationRectCore() =>
+    public override Rect RealizationRect =>
         new Rect(0, 0, double.PositiveInfinity, double.PositiveInfinity);
 
-    protected override int RecommendedAnchorIndexCore() => -1;
+    public override int RecommendedAnchorIndex => -1;
 
-    protected override Point LayoutOriginCore() => default;
-
-    protected override void LayoutOriginCore(Point value)
+    public override Point LayoutOrigin
     {
-        if (value != default)
+        get =>  default;
+        set
         {
-            throw new ArgumentException("LayoutOrigin must be at (0,0) when RealizationRect is infinite sized.");
+            if (value != default)
+                throw new ArgumentException("LayoutOrigin must be at (0,0) when RealizationRect is infinite sized.");
         }
     }
 }

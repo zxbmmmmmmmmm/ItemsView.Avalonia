@@ -10,15 +10,5 @@ public abstract class LayoutContext : AvaloniaObject
     /// <summary>
     /// Gets or sets an object that represents the state of a layout.
     /// </summary>
-    public object? LayoutState
-    {
-        get => LayoutStateCore;
-        set => LayoutStateCore = value;
-    }
-
-    protected internal virtual object? LayoutStateCore { get; set; }
-
-#if DEBUG
-    internal int Indent { get; set; }
-#endif
+    public virtual object? LayoutState { get; set; }
 }

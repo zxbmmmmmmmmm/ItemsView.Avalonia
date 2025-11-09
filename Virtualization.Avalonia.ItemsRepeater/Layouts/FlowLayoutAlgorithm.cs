@@ -27,7 +27,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             // being held and remove the layout state from the context.
             _elementManager.ClearRealizedRange();
         }
-        context.LayoutStateCore = null;
+        context.LayoutState = null;
     }
 
     public Size Measure(Size availableSize, VirtualizingLayoutContext context,
@@ -148,7 +148,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
         if (!IsVirtualizingContext() || disableVirtualization)
         {
             // Non virtualizing host, start generating from the element 0
-            anchorIndex = context.ItemCountCore() > 0 ? 0 : -1;
+            anchorIndex = context.ItemCount > 0 ? 0 : -1;
         }
         else
         {
@@ -699,39 +699,32 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
         {
             // Should have 0 origin for non-virtualizing layout since we always start from
             // the first item
-            Debug.Assert(_lastExtent.X == 0 && _lastExtent.Y == 0);
+            Debug.Assert(_lastExtent is { X: 0, Y: 0 });
         }
     }
 
-    internal Control GetElementIfRealized(int dataIndex)
+    internal Control? GetElementIfRealized(int dataIndex)
     {
-        if (_elementManager.IsDataIndexRealized(dataIndex))
-            return _elementManager.GetRealizedElement(dataIndex);
-
-        return null;
+        return _elementManager.IsDataIndexRealized(dataIndex) ? _elementManager.GetRealizedElement(dataIndex) : null;
     }
 
     internal bool TryAddElement0(Control element)
     {
-        if (_elementManager.GetRealizedElementCount() == 0)
-        {
-            _elementManager.Add(element, 0);
-            return true;
-        }
+        if (_elementManager.GetRealizedElementCount() is not 0)
+            return false;
+        _elementManager.Add(element, 0);
+        return true;
 
-        return false;
     }
 
     private bool IsVirtualizingContext()
     {
-        if (_context != null)
-        {
-            Rect rect = _context.RealizationRect;
-            bool hasInfiniteSize = double.IsInfinity(rect.Height) || double.IsInfinity(rect.Width);
-            return !hasInfiniteSize;
-        }
+        if (_context is null)
+            return false;
+        Rect rect = _context.RealizationRect;
+        bool hasInfiniteSize = double.IsInfinity(rect.Height) || double.IsInfinity(rect.Width);
+        return !hasInfiniteSize;
 
-        return false;
     }
 
 

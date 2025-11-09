@@ -327,7 +327,7 @@ public class WrapLayout : VirtualizingLayout, IOrientationBasedMeasures, IFlowLa
         double avgLineSize = 0;
         avgCountInLine = 1;
 
-        Debug.Assert(context.ItemCountCore() > 0);
+        Debug.Assert(context.ItemCount > 0);
         if (flowState.TotalLinesMeasured == 0)
         {
             var tmpElement = context.GetOrCreateElementAt(0, ElementRealizationOptions.ForceCreate | ElementRealizationOptions.SuppressAutoRecycle);

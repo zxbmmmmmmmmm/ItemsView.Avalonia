@@ -18,7 +18,7 @@ internal class StackLayoutState
         if (_estimationBuffer == null)
             _estimationBuffer = new double[BufferSize];
 
-        context.LayoutStateCore = this;
+        context.LayoutState = this;
     }
 
     public void UninitializeForContext(VirtualizingLayoutContext context) =>

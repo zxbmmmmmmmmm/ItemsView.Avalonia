@@ -51,7 +51,7 @@ public abstract class Layout : AvaloniaObject
                 return vlc;
             case NonVirtualizingLayoutContext nvlc:
             {
-                return nvlc.GetVirtualizingContextAdapter();
+                return nvlc.VirtualizingContextAdapter;
             }
             default:
                 throw new NotImplementedException();

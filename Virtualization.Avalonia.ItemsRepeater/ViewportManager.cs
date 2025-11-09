@@ -38,19 +38,15 @@ internal class ViewportManager(ItemsRepeater owner)
         get
         {
             // The element generated during the ItemsRepeater.MakeAnchor call has precedence over the next tick.
-            var suggestedAnchor = MadeAnchor;
+            if (MadeAnchor is { } anchor)
+                return anchor;
+            if (_scroller?.CurrentAnchor is not { } child)
+                return null;
             Control owner1 = owner;
-
-            if (suggestedAnchor != null)
-                return suggestedAnchor;
-            var anchorElement = _scroller?.CurrentAnchor;
-
-            if (anchorElement == null)
-                return suggestedAnchor;
+            Control? suggestedAnchor = null;
             // We can't simply return anchorElement because, in case of nested Repeaters, it may not
             // be a direct child of ours, or even an indirect child. We need to walk up the tree starting
             // from anchorElement to figure out what child of ours (if any) to use as the suggested element.
-            var child = anchorElement;
             var parent = child.GetVisualParent();
             while (parent != null)
             {

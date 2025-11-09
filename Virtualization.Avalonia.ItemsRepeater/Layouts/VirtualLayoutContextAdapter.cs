@@ -9,22 +9,21 @@ internal class VirtualLayoutContextAdapter(VirtualizingLayoutContext context) : 
     {
         if (GetContext() is not { } context)
             throw new NullReferenceException();
-        _children ??= new ChildrenCollection(context);
+        _children ??= new(context);
         return _children;
     }
 
-    protected internal override object? LayoutStateCore 
+    public override object? LayoutState
     { 
-        get => GetContext()?.LayoutStateCore;
+        get => GetContext()?.LayoutState;
         set
         {
             if (GetContext() is { } vlc)
-                vlc.LayoutStateCore = value;
+                vlc.LayoutState = value;
         } 
     }
 
-    private VirtualizingLayoutContext? GetContext() =>
-        _virtualizingContext.TryGetTarget(out var target) ? target : null;
+    private VirtualizingLayoutContext? GetContext() => _virtualizingContext.TryGetTarget(out var target) ? target : null;
 
     private readonly WeakReference<VirtualizingLayoutContext> _virtualizingContext = new(context);
     private ChildrenCollection? _children;
