@@ -1,4 +1,6 @@
-﻿using Avalonia;
+﻿using System.Collections;
+using System.Diagnostics.CodeAnalysis;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Metadata;
@@ -27,19 +29,19 @@ public partial class ItemsRepeater : Panel
     /// <summary>
     /// Defines the <see cref="Layout"/> property
     /// </summary>
-    public static readonly StyledProperty<Layout> LayoutProperty =
-        AvaloniaProperty.Register<ItemsRepeater, Layout>(nameof(Layout));
+    public static readonly StyledProperty<Layout?> LayoutProperty =
+        AvaloniaProperty.Register<ItemsRepeater, Layout?>(nameof(Layout));
 
     /// <summary>
     /// Defines the <see cref="ItemsSource"/> property
     /// </summary>
-    public static readonly StyledProperty<object> ItemsSourceProperty =
-        AvaloniaProperty.Register<ItemsRepeater, object>(nameof(ItemsSource));
+    public static readonly StyledProperty<IEnumerable?> ItemsSourceProperty =
+        AvaloniaProperty.Register<ItemsRepeater, IEnumerable?>(nameof(ItemsSource));
 
     /// <summary>
     /// Defines the <see cref="VerticalCacheLength"/> property
     /// </summary>
-    public static readonly StyledProperty<IDataTemplate> ItemTemplateProperty =
+    public static readonly StyledProperty<IDataTemplate?> ItemTemplateProperty =
         ItemsControl.ItemTemplateProperty.AddOwner<ItemsRepeater>();
 
     /// <summary>
@@ -69,7 +71,7 @@ public partial class ItemsRepeater : Panel
     /// <summary>
     /// Gets or sets the layout used to size and position elements in the ItemsRepeater.
     /// </summary>
-    public Layout Layout
+    public Layout? Layout
     {
         get => GetValue(LayoutProperty);
         set => SetValue(LayoutProperty, value);
@@ -78,7 +80,7 @@ public partial class ItemsRepeater : Panel
     /// <summary>
     /// Gets or sets an object source used to generate the content of the ItemsRepeater.
     /// </summary>
-    public object ItemsSource
+    public IEnumerable? ItemsSource
     {
         get => GetValue(ItemsSourceProperty);
         set => SetValue(ItemsSourceProperty, value);
@@ -88,7 +90,7 @@ public partial class ItemsRepeater : Panel
     /// Gets or sets the template used to display each item.
     /// </summary>
     [InheritDataTypeFromItems(nameof(ItemsSource))]
-    public IDataTemplate ItemTemplate
+    public IDataTemplate? ItemTemplate
     {
         get => GetValue(ItemTemplateProperty);
         set => SetValue(ItemTemplateProperty, value);
@@ -109,23 +111,19 @@ public partial class ItemsRepeater : Panel
     /// <remarks>
     /// Note the return type is <see cref="FAItemsSourceView"/> and not the ItemsSourceView in Avalonia
     /// </remarks>
-    public FAItemsSourceView ItemsSourceView => _itemsSourceView;
+    public FAItemsSourceView? ItemsSourceView { get; private set; }
 
-    internal Control MadeAnchor => _viewportManager.MadeAnchor;
+    internal Control? MadeAnchor => _viewportManager.MadeAnchor;
 
-    internal object LayoutState
-    {
-        get => _layoutState;
-        set => _layoutState = value;
-    }
+    internal object? LayoutState { get; set; }
 
-    internal TransitionManager TransitionManager => _transitionManager;
+    internal TransitionManager TransitionManager { get; }
 
     internal Rect VisibleWindow => _viewportManager.GetLayoutVisibleWindow();
 
     internal Rect RealizationWindow => _viewportManager.GetLayoutRealizationWindow();
 
-    internal Control SuggestedAnchor => _viewportManager.SuggestedAnchor;
+    internal Control? SuggestedAnchor => _viewportManager.SuggestedAnchor;
 
     internal Point LayoutOrigin
     {
@@ -133,47 +131,41 @@ public partial class ItemsRepeater : Panel
         set => _layoutOrigin = value;
     }
 
-    internal IElementFactory ItemTemplateShim => _itemTemplateWrapper;
+    internal IElementFactory? ItemTemplateShim { get; private set; }
 
-    internal ViewManager ViewManager => _viewManager;
+    internal ViewManager ViewManager { get; }
 
-    private bool IsProcessingCollectionChange => _processingItemsSourceChange != null;
+    [MemberNotNullWhen(true, nameof(_processingItemsSourceChange))]
+    private bool IsProcessingCollectionChange => _processingItemsSourceChange is not null;
 
-    internal bool ShouldPhase => ContainerContentChanging != null;
+    internal bool ShouldPhase => ContainerContentChanging is not null;
 
     /// <summary>
     /// Occurs each time an element is prepared for use.
     /// </summary>
-    public event EventHandler<ItemsRepeater, ItemsRepeaterElementPreparedEventArgs> ElementPrepared;
+    public event EventHandler<ItemsRepeater, ItemsRepeaterElementPreparedEventArgs>? ElementPrepared;
 
     /// <summary>
     /// Occurs each time an element is cleared and made available to be re-used.
     /// </summary>
-    public event EventHandler<ItemsRepeater, ItemsRepeaterElementClearingEventArgs> ElementClearing;
+    public event EventHandler<ItemsRepeater, ItemsRepeaterElementClearingEventArgs>? ElementClearing;
 
     /// <summary>
     /// Occurs for each realized UIElement when the index for the item it represents has changed.
     /// </summary>
-    public event EventHandler<ItemsRepeater, ItemsRepeaterElementIndexChangedEventArgs> ElementIndexChanged;
+    public event EventHandler<ItemsRepeater, ItemsRepeaterElementIndexChangedEventArgs>? ElementIndexChanged;
 
     /// <summary>
     /// Occurs when container content is changing, used for Phased rendering
     /// </summary>
-    public event EventHandler<ItemsRepeater, ContainerContentChangingEventArgs> ContainerContentChanging;
+    public event EventHandler<ItemsRepeater, ContainerContentChangingEventArgs>? ContainerContentChanging;
 
-    internal static readonly AttachedProperty<VirtualizationInfo> VirtualizationInfoProperty =
-        AvaloniaProperty.RegisterAttached<ItemsRepeater, Control, VirtualizationInfo>("VirtualizationInfo");
+    internal static readonly AttachedProperty<VirtualizationInfo?> VirtualizationInfoProperty =
+        AvaloniaProperty.RegisterAttached<ItemsRepeater, Control, VirtualizationInfo?>(nameof(VirtualizationInfo));
 
     internal static VirtualizationInfo GetVirtualizationInfo(Control c)
     {
-        var result = c.GetValue(VirtualizationInfoProperty);
-
-        if (result == null)
-        {
-            result = CreateAndInitializeVirtualizationInfo(c);
-        }
-
-        return result;
+        return c.GetValue(VirtualizationInfoProperty) ?? CreateAndInitializeVirtualizationInfo(c);
     }
 
     internal static VirtualizationInfo TryGetVirtualizationInfo(Control c) =>

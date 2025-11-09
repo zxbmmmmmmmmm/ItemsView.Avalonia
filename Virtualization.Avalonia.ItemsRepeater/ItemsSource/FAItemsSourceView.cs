@@ -9,13 +9,11 @@ namespace Virtualization.Avalonia;
 /// <summary>
 /// Represents a standardized view of the supported interactions between a given ItemsSource object and an ItemsRepeater control.
 /// </summary>
-public class FAItemsSourceView
+public sealed class FAItemsSourceView : IReadOnlyList<object?>, IEnumerable
 {
     public FAItemsSourceView(IEnumerable source)
     {
-        if (source == null)
-            throw new ArgumentNullException(nameof(source));
-        
+        ArgumentNullException.ThrowIfNull(source);
         _vector = source;
         ListenToCollectionChanges();
 
@@ -49,16 +47,15 @@ public class FAItemsSourceView
     /// <summary>
     /// Occurs when the collection has changed to indicate the reason for the change and which items changed.
     /// </summary>
-    public event NotifyCollectionChangedEventHandler CollectionChanged;
+    public event NotifyCollectionChangedEventHandler? CollectionChanged;
 
     /// <summary>
     /// Retrieves the item at the specified index.
     /// </summary>
-    public object GetAt(int index) =>
-        GetAtCore(index);
+
+    public object? this[int index] => GetAtCore(index);
 
     /// <summary>
-    /// /// <summary>
     /// Retrieves the index of the item that has the specified unique identifier (key).
     /// </summary>
     public string KeyFromIndex(int index) =>
@@ -82,7 +79,7 @@ public class FAItemsSourceView
     /// Called when the ItemsSource has raised a CollectionChanged event
     /// </summary>
     /// <param name="args"></param>
-    protected void OnItemsSourceChanged(NotifyCollectionChangedEventArgs args)
+    private void OnItemsSourceChanged(NotifyCollectionChangedEventArgs args)
     {
         _cachedSize = GetSizeCore();
         CollectionChanged?.Invoke(this, args);
@@ -91,44 +88,36 @@ public class FAItemsSourceView
     /// <summary>
     /// Gets the count of the underlying collection
     /// </summary>
-    protected virtual int GetSizeCore()
+    private int GetSizeCore()
     {
         if (_vector is IList list)
-        {
             return list.Count;
-        }
-        else
-        {
-            return _vector.Count();
-        }
+
+        return _vector.Count();
     }
 
     /// <summary>
     /// Gets the item at the specified index from the underlying collection
     /// </summary>
-    protected virtual object GetAtCore(int index)
+    private object? GetAtCore(int index)
     {
         if (_vector is IList list)
-        {
             return list[index];
-        }
-        else
-        {
-            return _vector.ElementAt(index);
-        }
+
+        return _vector.ElementAt(index);
     }
 
     /// <summary>
     /// Gets whether this underlying supports Key-Index mapping
     /// </summary>
     /// <returns></returns>
-    protected virtual bool HasKeyIndexMappingCore() => 
+    private bool HasKeyIndexMappingCore() => 
         _uniqueIdMapping != null;
 
     /// <summary>
     /// Gets the key from the specified index
     /// </summary>
-    protected string KeyFromIndexCore(int index)
+    private string KeyFromIndexCore(int index)
     {
         if (_uniqueIdMapping != null)
             return _uniqueIdMapping.KeyFromIndex(index);
@@ -139,7 +128,7 @@ public class FAItemsSourceView
     /// <summary>
     /// Gets the Index from the specified key
     /// </summary>
-    protected virtual int IndexFromKeyCore(string id)
+    private int IndexFromKeyCore(string id)
     {
         if (_uniqueIdMapping != null)
             return _uniqueIdMapping.IndexFromKey(id);
@@ -150,9 +139,9 @@ public class FAItemsSourceView
     /// <summary>
     /// Queries the underlying collection for the item at the specified index
     /// </summary>
-    protected virtual int IndexOfCore(object value)
+    private int IndexOfCore(object value)
     {
-        int index = -1;
+        var index = -1;
         if (_vector is IList list)
         {
             index = list.IndexOf(value);
@@ -173,14 +162,10 @@ public class FAItemsSourceView
 
     private void ListenToCollectionChanges()
     {
-        if (_vector == null)
-            throw new Exception("No source attached");
-
-        if (_vector is INotifyCollectionChanged incc)
-        {
-            _eventToken = incc.GetWeakCollectionChangedObservable()
-                .Subscribe(new SimpleObserver<NotifyCollectionChangedEventArgs>(OnCollectionChanged));
-        }
+        if (_vector is not INotifyCollectionChanged incc)
+            return;
+        _eventToken = incc.GetWeakCollectionChangedObservable()
+            .Subscribe(new SimpleObserver<NotifyCollectionChangedEventArgs>(OnCollectionChanged));
     }
 
     private void OnCollectionChanged(NotifyCollectionChangedEventArgs args)
@@ -189,7 +174,11 @@ public class FAItemsSourceView
     }
 
     private int _cachedSize = -1;
-    private IEnumerable _vector;
-    private IKeyIndexMapping _uniqueIdMapping;
-    private IDisposable _eventToken;
+    private readonly IEnumerable _vector;
+    private readonly IKeyIndexMapping? _uniqueIdMapping;
+    private IDisposable? _eventToken;
+
+    public IEnumerator<object?> GetEnumerator() => _vector.Cast<object?>().GetEnumerator();
+    
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

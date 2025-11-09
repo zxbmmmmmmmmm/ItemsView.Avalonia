@@ -12,7 +12,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Virtualization.Avalonia.Layouts;
 using Virtualization.Avalonia.Sample.Models;
 
 namespace Virtualization.Avalonia.Sample.ViewModels;
@@ -35,7 +34,7 @@ public partial class SampleViewModel : ObservableObject
 
     private static Item[] InitializeDataSources()
     {
-        const int all = 100;
+        const int all = 1000;
         var textItems = new Item[all];
         for (var i = 0; i < all - 1; i++)
         {

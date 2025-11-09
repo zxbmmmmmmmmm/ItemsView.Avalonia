@@ -5,14 +5,9 @@ using Avalonia.VisualTree;
 
 namespace Virtualization.Avalonia;
 
-internal sealed class TransitionManager
+internal sealed class TransitionManager(ItemsRepeater owner)
 {
-    public TransitionManager(ItemsRepeater owner)
-    {
-        _owner = owner;
-    }
-
-    public void OnTransitionProviderChanged(ItemCollectionTransitionProvider newProvider)
+    public void OnTransitionProviderChanged(ItemCollectionTransitionProvider? newProvider)
     {
         // While an element is hiding, we have ownership of it. We need
         // to know when its animation completes so that we give it back
@@ -25,7 +20,7 @@ internal sealed class TransitionManager
 
         _transitionProvider = newProvider;
 
-        if (newProvider != null)
+        if (newProvider is not null)
         {
             newProvider.TransitionCompleted += OnTransitionProviderTransitionCompleted;
         }
@@ -36,7 +31,7 @@ internal sealed class TransitionManager
         _hasRecordedLayoutTransitions = true;
     }
 
-    public void OnItemsSourceChanged(object _, NotifyCollectionChangedEventArgs args)
+    public void OnItemsSourceChanged(object? _, NotifyCollectionChangedEventArgs args)
     {
         switch (args.Action)
         {
@@ -61,72 +56,67 @@ internal sealed class TransitionManager
 
     public void OnElementPrepared(Control element)
     {
-        if (_transitionProvider != null)
+        if (_transitionProvider is null)
+            return;
+        var triggers = (ItemCollectionTransitionTriggers)0;
+
+        if (_hasRecordedAdds)
+            triggers |= ItemCollectionTransitionTriggers.CollectionChangeAdd;
+
+        if (_hasRecordedResets)
+            triggers |= ItemCollectionTransitionTriggers.CollectionChangeReset;
+
+        if (_hasRecordedLayoutTransitions)
+            triggers |= ItemCollectionTransitionTriggers.LayoutTransition;
+
+        if (triggers != 0)
         {
-            var triggers = (ItemCollectionTransitionTriggers)0;
-
-            if (_hasRecordedAdds)
-                triggers |= ItemCollectionTransitionTriggers.CollectionChangeAdd;
-
-            if (_hasRecordedResets)
-                triggers |= ItemCollectionTransitionTriggers.CollectionChangeReset;
-
-            if (_hasRecordedLayoutTransitions)
-                triggers |= ItemCollectionTransitionTriggers.LayoutTransition;
-
-            if (triggers != 0)
-            {
-                _transitionProvider.QueueTransition(
-                    new ItemCollectionTransition(_transitionProvider, element, ItemCollectionTransitionOperation.Add, triggers));
-            }
+            _transitionProvider.QueueTransition(
+                new ItemCollectionTransition(_transitionProvider, element, ItemCollectionTransitionOperation.Add, triggers));
         }
     }
 
     public bool ClearElement(Control element)
     {
-        bool canClear = false;
+        if (_transitionProvider is null)
+            return false;
+        var triggers = (ItemCollectionTransitionTriggers)0;
+        if (_hasRecordedRemoves)
+            triggers |= ItemCollectionTransitionTriggers.CollectionChangeRemove;
+        if (_hasRecordedResets)
+            triggers |= ItemCollectionTransitionTriggers.CollectionChangeReset;
 
-        if (_transitionProvider != null)
-        {
-            var triggers = (ItemCollectionTransitionTriggers)0;
-            if (_hasRecordedRemoves)
-                triggers |= ItemCollectionTransitionTriggers.CollectionChangeRemove;
-            if (_hasRecordedResets)
-                triggers |= ItemCollectionTransitionTriggers.CollectionChangeReset;
+        var transition = new ItemCollectionTransition(_transitionProvider, element, ItemCollectionTransitionOperation.Remove, triggers);
 
-            var transition = new ItemCollectionTransition(_transitionProvider, element, ItemCollectionTransitionOperation.Remove, triggers);
+        var canClear = triggers != 0 && _transitionProvider.ShouldAnimate(transition);
 
-            canClear = triggers != 0 && _transitionProvider.ShouldAnimate(transition);
-
-            if (canClear)
-                _transitionProvider.QueueTransition(transition);
-        }
+        if (canClear)
+            _transitionProvider.QueueTransition(transition);
 
         return canClear;
     }
 
     public void OnElementBoundsChanged(Control element, Rect oldBounds, Rect newBounds)
     {
-        if (_transitionProvider != null)
-        {
-            var triggers = (ItemCollectionTransitionTriggers)0;
-            if (_hasRecordedAdds)
-                triggers |= ItemCollectionTransitionTriggers.CollectionChangeAdd;
-            if (_hasRecordedRemoves)
-                triggers |= ItemCollectionTransitionTriggers.CollectionChangeRemove;
-            if (_hasRecordedRemoves)
-                triggers |= ItemCollectionTransitionTriggers.CollectionChangeReset;
-            if (_hasRecordedLayoutTransitions)
-                triggers |= ItemCollectionTransitionTriggers.LayoutTransition;
+        if (_transitionProvider is null)
+            return;
+        var triggers = (ItemCollectionTransitionTriggers)0;
+        if (_hasRecordedAdds)
+            triggers |= ItemCollectionTransitionTriggers.CollectionChangeAdd;
+        if (_hasRecordedRemoves)
+            triggers |= ItemCollectionTransitionTriggers.CollectionChangeRemove;
+        if (_hasRecordedRemoves)
+            triggers |= ItemCollectionTransitionTriggers.CollectionChangeReset;
+        if (_hasRecordedLayoutTransitions)
+            triggers |= ItemCollectionTransitionTriggers.LayoutTransition;
 
-            // A bounds change can occur during initial layout or when resizing the owning control,
-            // which won't trigger an explicit layout transition but should still be treated as one.
-            if (triggers == 0)
-                triggers = ItemCollectionTransitionTriggers.LayoutTransition;
+        // A bounds change can occur during initial layout or when resizing the owning control,
+        // which won't trigger an explicit layout transition but should still be treated as one.
+        if (triggers == 0)
+            triggers = ItemCollectionTransitionTriggers.LayoutTransition;
 
-            _transitionProvider.QueueTransition(
-                new ItemCollectionTransition(_transitionProvider, element, triggers, oldBounds, newBounds));
-        }
+        _transitionProvider.QueueTransition(
+            new ItemCollectionTransition(_transitionProvider, element, triggers, oldBounds, newBounds));
     }
 
     public void OnOwnerArranged()
@@ -136,22 +126,19 @@ internal sealed class TransitionManager
 
     private void OnTransitionProviderTransitionCompleted(ItemCollectionTransitionProvider sender, ItemCollectionTransitionCompletedEventArgs args)
     {
-        if (args.Transition.Operation == ItemCollectionTransitionOperation.Remove)
-        {
-            var element = args.Element;
+        if (args.Transition.Operation is not ItemCollectionTransitionOperation.Remove)
+            return;
+        var element = args.Element;
 
-            if (element.GetVisualParent() == _owner)
-            {
-                _owner.ViewManager.ClearElementToElementFactory(element);
+        if (element.GetVisualParent() != owner)
+            return;
+        owner.ViewManager.ClearElementToElementFactory(element);
 
-                // Invalidate arrange so that repeater can arrange this element off-screen.
-                _owner.InvalidateArrange();
-            }
-        }
+        // Invalidate arrange so that repeater can arrange this element off-screen.
+        owner.InvalidateArrange();
     }
 
-    private readonly ItemsRepeater _owner;
-    private ItemCollectionTransitionProvider _transitionProvider;
+    private ItemCollectionTransitionProvider? _transitionProvider;
 
     private bool _hasRecordedAdds;
     private bool _hasRecordedRemoves;

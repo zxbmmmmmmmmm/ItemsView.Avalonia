@@ -3,62 +3,42 @@ using Avalonia.Controls;
 
 namespace Virtualization.Avalonia.Layouts;
 
-internal class VirtualLayoutContextAdapter : NonVirtualizingLayoutContext
+internal class VirtualLayoutContextAdapter(VirtualizingLayoutContext context) : NonVirtualizingLayoutContext
 {
-    public VirtualLayoutContextAdapter(VirtualizingLayoutContext context)
-    {
-        _virtualizingContext = new WeakReference<VirtualizingLayoutContext>(context);
-    }
-
     protected override IReadOnlyList<Control> ChildrenCore()
     {
-        _children ??= new ChildrenCollection(GetContext());
+        if (GetContext() is not { } context)
+            throw new NullReferenceException();
+        _children ??= new ChildrenCollection(context);
         return _children;
     }
 
-    protected internal override object LayoutStateCore 
+    protected internal override object? LayoutStateCore 
     { 
         get => GetContext()?.LayoutStateCore;
         set
         {
-            if (GetContext() is VirtualizingLayoutContext vlc)
+            if (GetContext() is { } vlc)
                 vlc.LayoutStateCore = value;
         } 
     }
 
-    private VirtualizingLayoutContext GetContext() =>
+    private VirtualizingLayoutContext? GetContext() =>
         _virtualizingContext.TryGetTarget(out var target) ? target : null;
 
-    private WeakReference<VirtualizingLayoutContext> _virtualizingContext;
-    private ChildrenCollection _children;
+    private readonly WeakReference<VirtualizingLayoutContext> _virtualizingContext = new(context);
+    private ChildrenCollection? _children;
 
     // WinUI makes this Generic, but C# doesn't like the indexer getting a control
     // with returning a generic type
-    private class ChildrenCollection : IReadOnlyList<Control>
+    private class ChildrenCollection(VirtualizingLayoutContext context) : IReadOnlyList<Control>
     {
-        public ChildrenCollection(VirtualizingLayoutContext context)
-        {
-            _context = context;
-        }
+        public int Count => context.ItemCount;
 
-        public int Count => _context.ItemCount;
+        public Control this[int index] => context.GetOrCreateElementAt(index, ElementRealizationOptions.None);
 
-        public Control this[int index]
-        {
-            get => _context.GetOrCreateElementAt(index, ElementRealizationOptions.None);
-        }
-
-        public IEnumerator<Control> GetEnumerator()
-        {
-            int ct = Count;
-            for (int i = 0; i < ct; i++)
-            {
-                yield return this[i];
-            }
-        }
+        public IEnumerator<Control> GetEnumerator() => this.Cast<Control>().GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        private VirtualizingLayoutContext _context;
     }
 }

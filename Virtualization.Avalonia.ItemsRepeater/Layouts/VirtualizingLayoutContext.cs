@@ -1,4 +1,5 @@
-﻿using Avalonia;
+﻿using System.Diagnostics.CodeAnalysis;
+using Avalonia;
 using Avalonia.Controls;
 
 namespace Virtualization.Avalonia.Layouts;
@@ -16,7 +17,7 @@ public abstract class VirtualizingLayoutContext : LayoutContext
     /// <summary>
     /// Retrieves the data item in the source found at the specified index.
     /// </summary>
-    public object GetItemAt(int index) =>
+    public object? GetItemAt(int index) =>
         GetItemAtCore(index);
 
     /// <summary>
@@ -59,7 +60,7 @@ public abstract class VirtualizingLayoutContext : LayoutContext
     /// <summary>
     /// When implemented in a derived class, retrieves the data item in the source found at the specified index.
     /// </summary>
-    protected abstract object GetItemAtCore(int index);
+    protected abstract object? GetItemAtCore(int index);
 
     /// <summary>
     /// When implemented in a derived class, retrieves a UIElement that represents the data item in the 
@@ -105,13 +106,6 @@ public abstract class VirtualizingLayoutContext : LayoutContext
     /// </summary>
     protected internal abstract int ItemCountCore();
 
-    internal NonVirtualizingLayoutContext GetNonVirtualizingContextAdapter()
-    {
-        if (_contextAdapter == null)
-            _contextAdapter = new VirtualLayoutContextAdapter(this);
-
-        return _contextAdapter;
-    }
-
-    private NonVirtualizingLayoutContext _contextAdapter;
+    [field: AllowNull, MaybeNull]
+    internal NonVirtualizingLayoutContext NonVirtualizingContextAdapter => field ??= new VirtualLayoutContextAdapter(this);
 }

@@ -27,13 +27,9 @@ public abstract class VirtualizingLayout : Layout
     /// When implemented in a derived class, provides the behavior for the "Arrange" pass of layout. 
     /// Classes can override this method to define their own "Arrange" pass behavior.
     /// </summary>
-    protected internal virtual Size ArrangeOverride(VirtualizingLayoutContext context, Size finalSize) =>
-        // Do not throw. If the layout decides to arrange its
-        // children during measure, then an ArrangeOverride is not required.
-        finalSize;
+    protected internal abstract Size ArrangeOverride(VirtualizingLayoutContext context, Size finalSize);
 
-    protected internal virtual void OnItemsChangedCore(VirtualizingLayoutContext context, object source,
-        NotifyCollectionChangedEventArgs args)
+    protected internal virtual void OnItemsChangedCore(VirtualizingLayoutContext context, object? source, NotifyCollectionChangedEventArgs args)
     {
         InvalidateMeasure();
     }

@@ -3,50 +3,26 @@ using Avalonia.Controls;
 
 namespace Virtualization.Avalonia.Layouts;
 
-internal class LayoutContextAdapter : VirtualizingLayoutContext
+internal class LayoutContextAdapter(NonVirtualizingLayoutContext nonVirtualizingContext) : VirtualizingLayoutContext
 {
-    public LayoutContextAdapter(NonVirtualizingLayoutContext nonVirtualizingContext)
-    {
-        _nonVirtualizingContext = nonVirtualizingContext;
-    }
-
-    protected internal override object LayoutStateCore 
+    protected internal override object? LayoutStateCore 
     { 
-        get => _nonVirtualizingContext?.LayoutState; 
-        set
-        {
-            if (_nonVirtualizingContext != null)
-                _nonVirtualizingContext.LayoutState = value;
-        }
+        get => nonVirtualizingContext.LayoutState; 
+        set => nonVirtualizingContext.LayoutState = value;
     }
 
-    protected internal override int ItemCountCore() => _nonVirtualizingContext?.Children.Count ?? 0;
+    protected internal override int ItemCountCore() => nonVirtualizingContext.Children.Count;
 
-    protected override object GetItemAtCore(int index) =>
-        _nonVirtualizingContext?.Children[index] ?? null;
+    protected override object? GetItemAtCore(int index) => nonVirtualizingContext.Children[index];
 
-    protected override Control GetOrCreateElementAtCore(int index, ElementRealizationOptions options)
-    {
-        if (_nonVirtualizingContext != null)
-        {
-            return _nonVirtualizingContext.Children[index];
-        }
-
-        return null;
-    }
+    protected override Control GetOrCreateElementAtCore(int index, ElementRealizationOptions options) => nonVirtualizingContext.Children[index];
 
     protected override void RecycleElementCore(Control element) { }
 
     private int GetElementIndexCore(Control element)
     {
-        int idx = -1;
-        if (_nonVirtualizingContext != null)
-        {
-            var children = _nonVirtualizingContext.Children;
-            idx = children.IndexOf(element);
-        }
-
-        return idx;
+        var children = nonVirtualizingContext.Children;
+        return children.IndexOf(element);
     }
 
     protected override Rect VisibleRectCore() =>
@@ -66,6 +42,4 @@ internal class LayoutContextAdapter : VirtualizingLayoutContext
             throw new ArgumentException("LayoutOrigin must be at (0,0) when RealizationRect is infinite sized.");
         }
     }
-
-    private NonVirtualizingLayoutContext _nonVirtualizingContext;
 }

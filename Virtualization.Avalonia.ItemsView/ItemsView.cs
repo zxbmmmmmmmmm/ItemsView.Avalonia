@@ -251,7 +251,7 @@ public partial class ItemsView : TemplatedControl
         if (itemIndex < 0 || itemsSourceView.Count <= itemIndex) return null;
 
         valueReturned = true;
-        return itemsSourceView.GetAt(itemIndex);
+        return itemsSourceView[itemIndex];
     }
     private Control? TryGetElement(int index)
     {

@@ -7,16 +7,9 @@ using Avalonia.VisualTree;
 
 namespace Virtualization.Avalonia;
 
-internal class ViewManager
+internal class ViewManager(ItemsRepeater ir)
 {
-    public ViewManager(ItemsRepeater ir)
-    {
-        _owner = ir;
-        _resetPool = new UniqueIdElementPool(ir);
-        _phaser = new Phaser(ir);
-        _pinnedPool = new List<PinnedElementInfo>();
-        // ItemsRepeater is not fully constructed yet. Don't interact with it.
-    }
+    // ItemsRepeater is not fully constructed yet (during ctor). Don't interact with it.
 
     internal int FirstRealizedIndex => _firstRealizedElementIndexHeldByLayout;
 
@@ -24,13 +17,13 @@ internal class ViewManager
 
     public Control GetElement(int index, bool forceCreate, bool suppressAutoRecycle)
     {
-        bool elementIsAnchor = false;
+        var elementIsAnchor = false;
         var element = forceCreate ? null : GetElementIfAlreadyHeldByLayout(index);
         if (element == null)
         {
             // check if this is the anchor made through repeater in preparation 
             // for a bring into view.
-            if (_owner.MadeAnchor is Control c)
+            if (ir.MadeAnchor is { } c)
             {
                 var virtInfo = ItemsRepeater.TryGetVirtualizationInfo(c);
                 if (virtInfo.Index == index)
@@ -41,8 +34,7 @@ internal class ViewManager
             }
         }
 
-        if (element == null)
-            element = GetElementFromUniqueIdResetPool(index);
+        element ??= GetElementFromUniqueIdResetPool(index);
 
         if (element == null || elementIsAnchor)
         { 
@@ -58,8 +50,7 @@ internal class ViewManager
             }
         }
 
-        if (element == null)
-            element = GetElementFromElementFactory(index);
+        element ??= GetElementFromElementFactory(index);
 
         var vi = ItemsRepeater.TryGetVirtualizationInfo(element);
         if (suppressAutoRecycle)
@@ -133,7 +124,7 @@ internal class ViewManager
     // Luckily when we create the items, we store whether we were the once setting the DataContext.
     internal void ClearElementToElementFactory(Control element)
     {
-        _owner.OnElementClearing(element);
+        ir.OnElementClearing(element);
 
         var vi = ItemsRepeater.GetVirtualizationInfo(element);
         vi.MoveOwnershipToElementFactory();
@@ -144,12 +135,12 @@ internal class ViewManager
             element.DataContext = null;
         }
 
-        if (_owner.ItemTemplateShim != null)
+        if (ir.ItemTemplateShim != null)
         {
             _elementFactoryRecycleArgs.Element = element;
-            _elementFactoryRecycleArgs.Parent = _owner;
+            _elementFactoryRecycleArgs.Parent = ir;
 
-            _owner.ItemTemplateShim.RecycleElement(_elementFactoryRecycleArgs);
+            ir.ItemTemplateShim.RecycleElement(_elementFactoryRecycleArgs);
 
             _elementFactoryRecycleArgs.Element = null;
             _elementFactoryRecycleArgs.Parent = null;
@@ -157,20 +148,19 @@ internal class ViewManager
         else
         {
             // No ItemTemplate to recycle to, remove the element from the children collection.
-            var children = _owner.Children;
+            var children = ir.Children;
             var idx = children.IndexOf(element);
             children.RemoveAt(idx);
         }
 
         _phaser.StopPhasing(element, vi);
-        if (_lastFocusedElement == element)
-        {
-            // Focused element is going away. Remove the tracked last focused element
-            // and pick a reasonable next focus if we can find one within the layout 
-            // realized elements.
-            var clearedIndex = vi.Index;
-            MoveFocusFromClearedIndex(clearedIndex);
-        }
+        if (_lastFocusedElement != element)
+            return;
+        // Focused element is going away. Remove the tracked last focused element
+        // and pick a reasonable next focus if we can find one within the layout 
+        // realized elements.
+        var clearedIndex = vi.Index;
+        MoveFocusFromClearedIndex(clearedIndex);
 
 #if DEBUG && REPEATER_TRACE
         Log.Debug("Element Cleared");
@@ -179,7 +169,7 @@ internal class ViewManager
 
     private void MoveFocusFromClearedIndex(int clearedIndex)
     {
-        if (FindFocusCandidate(clearedIndex, out var focusedChild) is Control focusCandidate)
+        if (FindFocusCandidate(clearedIndex, out var focusedChild) is { } focusCandidate)
         {
             if (_lastFocusedElement != null)
             {
@@ -201,71 +191,59 @@ internal class ViewManager
         }
     }
 
-    private Control FindFocusCandidate(int clearedIndex, out Control focusedChild)
+    private Control FindFocusCandidate(int clearedIndex, out Control? focusedChild)
     {
         focusedChild = null;
         // Walk through all the children and find elements with index before and after the cleared index.
         // Note that during a delete the next element would now have the same index.
-        int previousIndex = int.MinValue;
-        int nextIndex = int.MaxValue;
-        Control nextElement = null;
-        Control previousElement = null;
-        var children = _owner.Children;
-        for (int i = 0; i < children.Count; i++)
+        var previousIndex = int.MinValue;
+        var nextIndex = int.MaxValue;
+        Control? nextElement = null;
+        Control? previousElement = null;
+        var children = ir.Children;
+        foreach (var child in children)
         {
-            var child = children[i];
             var virtInfo = ItemsRepeater.TryGetVirtualizationInfo(child);
-            if (virtInfo != null && virtInfo.IsHeldByLayout)
+            if (virtInfo is not { IsHeldByLayout: true })
+                continue;
+            int currentIndex = virtInfo.Index;
+            if (currentIndex < clearedIndex)
             {
-                int currentIndex = virtInfo.Index;
-                if (currentIndex < clearedIndex)
-                {
-                    if (currentIndex > previousIndex)
-                    {
-                        previousIndex = currentIndex;
-                        previousElement = child;
-                    }
-                }
-                else if (currentIndex >= clearedIndex)
-                {
-                    // Note that we use >= above because if we deleted the focused element, 
-                    // the next element would have the same index now.
-                    if (currentIndex < nextIndex)
-                    {
-                        nextIndex = currentIndex;
-                        nextElement = child;
-                    }
-                }
+                if (currentIndex <= previousIndex)
+                    continue;
+                previousIndex = currentIndex;
+                previousElement = child;
+            }
+            else if (currentIndex >= clearedIndex)
+            {
+                // Note that we use >= above because if we deleted the focused element, 
+                // the next element would have the same index now.
+                if (currentIndex >= nextIndex)
+                    continue;
+                nextIndex = currentIndex;
+                nextElement = child;
             }
         }
 
         // Find the next element if one exists, if not use the previous element.
         // If the container itself is not focusable, find a descendent that is.
-        Control focusCandidate = null;
+        Control? focusCandidate = null;
         if (nextElement != null)
         {
             focusedChild = nextElement;
             focusCandidate = nextElement;
-            if (focusCandidate == null)
-            {
-                // FocusManager.FindFirstFocusableElement(nextElement);
-            }
         }
 
         if (focusCandidate == null && previousElement != null)
         {
             focusedChild = previousElement;
             focusCandidate = previousElement;
-            if (previousElement == null)
-            {
-                // FocusManager.FindLastFocusableElement(previousElement)
-            }
         }
 
         return focusCandidate;
     }
 
-    internal int GetElementIndex(VirtualizationInfo vInfo)
+    internal int GetElementIndex(VirtualizationInfo? vInfo)
     {
         if (vInfo == null)
             return -1;
@@ -330,165 +308,158 @@ internal class ViewManager
         }
     }
 
-    internal void OnItemsSourceChanged(object _, NotifyCollectionChangedEventArgs args)
+    internal void OnItemsSourceChanged(object? _, NotifyCollectionChangedEventArgs args)
     {
         // Note: For items that have been removed, the index will not be touched. It will hold
         // the old index before it was removed. It is not valid anymore.
         switch (args.Action)
         {
             case NotifyCollectionChangedAction.Add:
+            {
+                var newIndex = args.NewStartingIndex;
+                var newCount = args.NewItems!.Count;
+                EnsureFirstLastRealizedIndices();
+                if (newIndex <= _lastRealizedElementIndexHeldByLayout)
                 {
-                    var newIndex = args.NewStartingIndex;
-                    var newCount = args.NewItems.Count;
-                    EnsureFirstLastRealizedIndices();
-                    if (newIndex <= _lastRealizedElementIndexHeldByLayout)
+                    _lastRealizedElementIndexHeldByLayout += newCount;
+                    foreach (var element in ir.Children)
                     {
-                        _lastRealizedElementIndexHeldByLayout += newCount;
-                        var children = _owner.Children;
-                        var ct = children.Count;
-                        for (int i = 0; i < ct; i++)
-                        {
-                            var element = children[i];
-                            var vi = ItemsRepeater.GetVirtualizationInfo(element);
-                            var dataIndex = vi.Index;
+                        var vi = ItemsRepeater.GetVirtualizationInfo(element);
+                        var dataIndex = vi.Index;
 
-                            if (vi.IsRealized && dataIndex >= newIndex)
-                            {
-                                UpdateElementIndex(element, vi, dataIndex + newCount);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // Indices held by layout are not affected
-                        // We could still have items in the pinned elements that need updates. This is usually a very small vector.
-                        for (int i = 0; i < _pinnedPool.Count; i++)
+                        if (vi.IsRealized && dataIndex >= newIndex)
                         {
-                            var element = _pinnedPool[i];
-                            var vi = element.VirtualizationInfo;
-                            var dataIndex = vi.Index;
-
-                            if (vi.IsPinned && dataIndex >= newIndex)
-                            {
-                                UpdateElementIndex(element.PinnedElement, vi, dataIndex + newCount);
-                            }
+                            UpdateElementIndex(element, vi, dataIndex + newCount);
                         }
                     }
                 }
+                else
+                {
+                    // Indices held by layout are not affected
+                    // We could still have items in the pinned elements that need updates. This is usually a very small vector.
+                    foreach (var element in _pinnedPool)
+                    {
+                        var vi = element.VirtualizationInfo;
+                        var dataIndex = vi.Index;
+
+                        if (vi.IsPinned && dataIndex >= newIndex)
+                        {
+                            UpdateElementIndex(element.PinnedElement, vi, dataIndex + newCount);
+                        }
+                    }
+                }
+            }
                 break;
 
             case NotifyCollectionChangedAction.Replace:
+            {
+                // Requirement: oldStartIndex == newStartIndex. It is not a replace if this is not true.
+                // Two cases here
+                // case 1: oldCount == newCount 
+                //         indices are not affected. nothing to do here.  
+                // case 2: oldCount != newCount
+                //         Replaced with less or more items. This is like an insert or remove
+                //         depending on the counts.
+                var oldStartIndex = args.OldStartingIndex;
+                var newStartingIndex = args.NewStartingIndex;
+                var oldCount = args.OldItems!.Count;
+                var newCount = args.NewItems!.Count;
+                if (oldStartIndex != newStartingIndex)
                 {
-                    // Requirement: oldStartIndex == newStartIndex. It is not a replace if this is not true.
-                    // Two cases here
-                    // case 1: oldCount == newCount 
-                    //         indices are not affected. nothing to do here.  
-                    // case 2: oldCount != newCount
-                    //         Replaced with less or more items. This is like an insert or remove
-                    //         depending on the counts.
-                    var oldStartIndex = args.OldStartingIndex;
-                    var newStartingIndex = args.NewStartingIndex;
-                    var oldCount = args.OldItems.Count;
-                    var newCount = args.NewItems.Count;
-                    if (oldStartIndex != newStartingIndex)
-                    {
-                        throw new InvalidOperationException("Replace is only allowed with OldStartingIndex equals to NewStartingIndex.");
-                    }
-
-                    if (oldCount == 0)
-                    {
-                        throw new InvalidOperationException("Replace notification with args.OldItemsCount value of 0 is not allowed. Use Insert action instead.");
-                    }
-
-                    if (newCount == 0)
-                    {
-                        throw new InvalidOperationException("Replace notification with args.NewItemCount value of 0 is not allowed. Use Remove action instead.");
-                    }
-
-                    int countChange = newCount - oldCount;
-                    if (countChange != 0)
-                    {
-                        // countChange > 0 : countChange items were added
-                        // countChange < 0 : -countChange  items were removed
-                        var children = _owner.Children;
-                        for (int i = 0; i < children.Count; ++i)
-                        {
-                            var element = children[i];
-                            var virtInfo = ItemsRepeater.GetVirtualizationInfo(element);
-                            var dataIndex = virtInfo.Index;
-
-                            if (virtInfo.IsRealized)
-                            {
-                                if (dataIndex >= oldStartIndex + oldCount)
-                                {
-                                    UpdateElementIndex(element, virtInfo, dataIndex + countChange);
-                                }
-                            }
-                        }
-
-                        EnsureFirstLastRealizedIndices();
-                        _lastRealizedElementIndexHeldByLayout += countChange;
-
-                    }
+                    throw new InvalidOperationException(
+                        "Replace is only allowed with OldStartingIndex equals to NewStartingIndex.");
                 }
-                break;
 
-            case NotifyCollectionChangedAction.Remove:
+                if (oldCount == 0)
                 {
-                    var oldStartIndex = args.OldStartingIndex;
-                    var oldCount = args.OldItems.Count;
-                    var children = _owner.Children;
-                    for (int i = 0; i < children.Count; ++i)
+                    throw new InvalidOperationException(
+                        "Replace notification with args.OldItemsCount value of 0 is not allowed. Use Insert action instead.");
+                }
+
+                if (newCount == 0)
+                {
+                    throw new InvalidOperationException(
+                        "Replace notification with args.NewItemCount value of 0 is not allowed. Use Remove action instead.");
+                }
+
+                int countChange = newCount - oldCount;
+                if (countChange != 0)
+                {
+                    // countChange > 0 : countChange items were added
+                    // countChange < 0 : -countChange  items were removed
+                    var children = ir.Children;
+                    foreach (var element in children)
                     {
-                        var element = children[i];
                         var virtInfo = ItemsRepeater.GetVirtualizationInfo(element);
                         var dataIndex = virtInfo.Index;
 
-                        if (virtInfo.IsRealized)
+                        if (!virtInfo.IsRealized)
+                            continue;
+                        if (dataIndex >= oldStartIndex + oldCount)
                         {
-                            if (virtInfo.AutoRecycleCandidate && oldStartIndex <= dataIndex && dataIndex < oldStartIndex + oldCount)
-                            {
-                                // If we are doing the mapping, remove the element who's data was removed.
-                                _owner.ClearElementImpl(element);
-                            }
-                            else if (dataIndex >= (oldStartIndex + oldCount))
-                            {
-                                UpdateElementIndex(element, virtInfo, dataIndex - oldCount);
-                            }
+                            UpdateElementIndex(element, virtInfo, dataIndex + countChange);
                         }
                     }
 
-                    InvalidateRealizedIndicesHeldByLayout();
+                    EnsureFirstLastRealizedIndices();
+                    _lastRealizedElementIndexHeldByLayout += countChange;
 
                 }
+            }
+                break;
+
+            case NotifyCollectionChangedAction.Remove:
+            {
+                var oldStartIndex = args.OldStartingIndex;
+                var oldCount = args.OldItems!.Count;
+                var children = ir.Children;
+                foreach (var element in children)
+                {
+                    var virtInfo = ItemsRepeater.GetVirtualizationInfo(element);
+                    var dataIndex = virtInfo.Index;
+
+                    if (!virtInfo.IsRealized)
+                        continue;
+                    if (virtInfo.AutoRecycleCandidate && oldStartIndex <= dataIndex &&
+                        dataIndex < oldStartIndex + oldCount)
+                    {
+                        // If we are doing the mapping, remove the element who's data was removed.
+                        ir.ClearElementImpl(element);
+                    }
+                    else if (dataIndex >= (oldStartIndex + oldCount))
+                    {
+                        UpdateElementIndex(element, virtInfo, dataIndex - oldCount);
+                    }
+                }
+
+                InvalidateRealizedIndicesHeldByLayout();
+
+            }
                 break;
 
             case NotifyCollectionChangedAction.Reset:
+            {
+                // If we get multiple resets back to back before
+                // running layout, we dont have to clear all the elements again.
+                if (!_isDataSourceStableResetPending)
                 {
-                    // If we get multiple resets back to back before
-                    // running layout, we dont have to clear all the elements again.
-                    if (!_isDataSourceStableResetPending)
-                    {
-                        if (_owner.ItemsSourceView.HasKeyIndexMapping)
-                            _isDataSourceStableResetPending = true;
+                    if (ir.ItemsSourceView.HasKeyIndexMapping)
+                        _isDataSourceStableResetPending = true;
 
-                        // Walk through all the elements and make sure they are cleared, they will go into
-                        // the stable id reset pool.
-                        var children = _owner.Children;
-                        for (int i = 0; i < children.Count; ++i)
+                    // Walk through all the elements and make sure they are cleared, they will go into
+                    // the stable id reset pool.
+                    var children = ir.Children;
+                    foreach (var element in children)
+                        if (ItemsRepeater.GetVirtualizationInfo(element) is
+                            { IsRealized: true, AutoRecycleCandidate: true })
                         {
-                            var element = children[i];
-                            var virtInfo = ItemsRepeater.GetVirtualizationInfo(element);
-                            if (virtInfo.IsRealized && virtInfo.AutoRecycleCandidate)
-                            {
-                                _owner.ClearElementImpl(element);
-                            }
+                            ir.ClearElementImpl(element);
                         }
 
-                    }
-
-                    InvalidateRealizedIndicesHeldByLayout();
                 }
+
+                InvalidateRealizedIndicesHeldByLayout();
+            }
                 break;
         }
     }
@@ -498,13 +469,13 @@ internal class ViewManager
         if (_firstRealizedElementIndexHeldByLayout == FirstRealizedElementIndexDefault)
         {
             // This will ensure that the indexes are updated.
-            var element = GetElementIfAlreadyHeldByLayout(0);
+            _ = GetElementIfAlreadyHeldByLayout(0);
         }
     }
 
     internal void OnLayoutChanging()
     {
-        if (_owner.ItemsSourceView != null && _owner.ItemsSourceView.HasKeyIndexMapping)
+        if (ir.ItemsSourceView is { HasKeyIndexMapping: true })
         {
             _isDataSourceStableResetPending = true;
         }
@@ -512,22 +483,21 @@ internal class ViewManager
 
     internal void OnOwnerArranged()
     {
-        if (_isDataSourceStableResetPending)
+        if (!_isDataSourceStableResetPending)
+            return;
+        _isDataSourceStableResetPending = false;
+        foreach (var entry in _resetPool)
         {
-            _isDataSourceStableResetPending = false;
-            foreach (var entry in _resetPool)
-            {
-                // TODO: Task 14204306: ItemsRepeater: Find better focus candidate when focused element is deleted in the ItemsSource.
-                // Focused element is getting cleared. Need to figure out semantics on where
-                // focus should go when the focused element is removed from the data collection.
-                ClearElement(entry.Value, true /* isClearedDueToCollectionChange */);
-            }
-
-            _resetPool.Clear();
-
-            // Flush the realized indices once the stable reset pool is cleared to start fresh.
-            InvalidateRealizedIndicesHeldByLayout();
+            // TODO: Task 14204306: ItemsRepeater: Find better focus candidate when focused element is deleted in the ItemsSource.
+            // Focused element is getting cleared. Need to figure out semantics on where
+            // focus should go when the focused element is removed from the data collection.
+            ClearElement(entry.Value, true /* isClearedDueToCollectionChange */);
         }
+
+        _resetPool.Clear();
+
+        // Flush the realized indices once the stable reset pool is cleared to start fresh.
+        InvalidateRealizedIndicesHeldByLayout();
     }
 
     // We optimize for the case where index is not realized to return null as quickly as we can.
@@ -535,99 +505,84 @@ internal class ViewManager
     // If an index that is realized is requested by the layout, we unfortunately have to walk the
     // children. Not ideal, but a reasonable default to provide consistent behavior between virtualizing
     // and non-virtualizing hosts.
-    private Control GetElementIfAlreadyHeldByLayout(int index)
+    private Control? GetElementIfAlreadyHeldByLayout(int index)
     {
-        Control element = null;
-
-        bool cachedFirstLastIndicesInvalid = _firstRealizedElementIndexHeldByLayout == FirstRealizedElementIndexDefault;
+        var cachedFirstLastIndicesInvalid = _firstRealizedElementIndexHeldByLayout == FirstRealizedElementIndexDefault;
 
         Debug.Assert(!cachedFirstLastIndicesInvalid || _lastRealizedElementIndexHeldByLayout == LastRealizedElementIndexDefault);
         
-        bool isRequestedIndexInRealizedRange = (_firstRealizedElementIndexHeldByLayout <= index && 
-            index <= _lastRealizedElementIndexHeldByLayout);
+        var isRequestedIndexInRealizedRange = (_firstRealizedElementIndexHeldByLayout <= index && 
+                                               index <= _lastRealizedElementIndexHeldByLayout);
 
-        if (cachedFirstLastIndicesInvalid || isRequestedIndexInRealizedRange)
+        if (!cachedFirstLastIndicesInvalid && !isRequestedIndexInRealizedRange)
+            return null;
+        // Both First and Last indices need to be valid or default.
+        Debug.Assert((_firstRealizedElementIndexHeldByLayout == FirstRealizedElementIndexDefault && 
+                      _lastRealizedElementIndexHeldByLayout == LastRealizedElementIndexDefault) ||
+                     (_firstRealizedElementIndexHeldByLayout != FirstRealizedElementIndexDefault && 
+                      _lastRealizedElementIndexHeldByLayout != LastRealizedElementIndexDefault));
+
+        Control? element = null;
+        var children = ir.Children;
+        foreach (var child in children)
         {
-            // Both First and Last indices need to be valid or default.
-            Debug.Assert((_firstRealizedElementIndexHeldByLayout == FirstRealizedElementIndexDefault && 
-                _lastRealizedElementIndexHeldByLayout == LastRealizedElementIndexDefault) ||
-                (_firstRealizedElementIndexHeldByLayout != FirstRealizedElementIndexDefault && 
-                _lastRealizedElementIndexHeldByLayout != LastRealizedElementIndexDefault));
-
-            var children = _owner.Children;
-            for (int i = 0; i < children.Count; ++i)
-            {
-                var child = children[i];
-                var virtInfo = ItemsRepeater.TryGetVirtualizationInfo(child);
-                if (virtInfo != null && virtInfo.IsHeldByLayout)
-                {
-                    // Only give back elements held by layout. If someone else is holding it, they will be served by other methods.
-                    int childIndex = virtInfo.Index;
-                    _firstRealizedElementIndexHeldByLayout = Math.Min(_firstRealizedElementIndexHeldByLayout, childIndex);
-                    _lastRealizedElementIndexHeldByLayout = Math.Max(_lastRealizedElementIndexHeldByLayout, childIndex);
-                    if (virtInfo.Index == index)
-                    {
-                        element = child;
-                        // If we have valid first/last indices, we don't have to walk the rest, but if we 
-                        // do not, then we keep walking through the entire children collection to get accurate
-                        // indices once.
-                        if (!cachedFirstLastIndicesInvalid)
-                        {
-                            break;
-                        }
-                    }
-                }
-            }
+            if (ItemsRepeater.TryGetVirtualizationInfo(child) is not { IsHeldByLayout: true } virtInfo)
+                continue;
+            // Only give back elements held by layout. If someone else is holding it, they will be served by other methods.
+            var childIndex = virtInfo.Index;
+            _firstRealizedElementIndexHeldByLayout = Math.Min(_firstRealizedElementIndexHeldByLayout, childIndex);
+            _lastRealizedElementIndexHeldByLayout = Math.Max(_lastRealizedElementIndexHeldByLayout, childIndex);
+            if (virtInfo.Index != index)
+                continue;
+            element = child;
+            // If we have valid first/last indices, we don't have to walk the rest, but if we 
+            // do not, then we keep walking through the entire children collection to get accurate
+            // indices once.
+            if (!cachedFirstLastIndicesInvalid)
+                break;
         }
 
         return element;
-
     }
 
-    private Control GetElementFromUniqueIdResetPool(int index)
+    private Control? GetElementFromUniqueIdResetPool(int index)
     {
-        Control element = null;
         // See if you can get it from the reset pool.
-        if (_isDataSourceStableResetPending)
-        {
-            element = _resetPool.Remove(index);
-            if (element != null)
-            {
-                // Make sure that the index is updated to the current one
-                var virtInfo = ItemsRepeater.GetVirtualizationInfo(element);
-                virtInfo.MoveOwnershipToLayoutFromUniqueIdResetPool();
-                UpdateElementIndex(element, virtInfo, index);
+        if (!_isDataSourceStableResetPending)
+            return null;
+        if (_resetPool.Remove(index) is not { } element)
+            return null;
+        // Make sure that the index is updated to the current one
+        var virtInfo = ItemsRepeater.GetVirtualizationInfo(element);
+        virtInfo.MoveOwnershipToLayoutFromUniqueIdResetPool();
+        UpdateElementIndex(element, virtInfo, index);
 
-                // Update realized indices
-                _firstRealizedElementIndexHeldByLayout = Math.Max(_firstRealizedElementIndexHeldByLayout, index);
-                _lastRealizedElementIndexHeldByLayout = Math.Max(_lastRealizedElementIndexHeldByLayout, index);
-            }
-        }
+        // Update realized indices
+        _firstRealizedElementIndexHeldByLayout = Math.Max(_firstRealizedElementIndexHeldByLayout, index);
+        _lastRealizedElementIndexHeldByLayout = Math.Max(_lastRealizedElementIndexHeldByLayout, index);
 
         return element;
     }
 
-    private Control GetElementFromPinnedElements(int index)
+    private Control? GetElementFromPinnedElements(int index)
     {
-        Control element = null;
+        Control? element = null;
 
-        for (int i = 0; i < _pinnedPool.Count; i++)
+        for (var i = 0; i < _pinnedPool.Count; i++)
         {
             var elementInfo = _pinnedPool[i];
             var virtInfo = elementInfo.VirtualizationInfo;
 
-            if (virtInfo.Index == index)
-            {
-                _pinnedPool.RemoveAt(i);
-                element = elementInfo.PinnedElement;
-                elementInfo.VirtualizationInfo.MoveOwnershipToLayoutFromPinnedPool();
+            if (virtInfo.Index != index)
+                continue;
+            _pinnedPool.RemoveAt(i);
+            element = elementInfo.PinnedElement;
+            elementInfo.VirtualizationInfo.MoveOwnershipToLayoutFromPinnedPool();
 
-                // Update realized indices
-                _firstRealizedElementIndexHeldByLayout = Math.Min(_firstRealizedElementIndexHeldByLayout, index);
-                _lastRealizedElementIndexHeldByLayout = Math.Max(_lastRealizedElementIndexHeldByLayout, index);
-                break;
-            }
-
+            // Update realized indices
+            _firstRealizedElementIndexHeldByLayout = Math.Min(_firstRealizedElementIndexHeldByLayout, index);
+            _lastRealizedElementIndexHeldByLayout = Math.Max(_lastRealizedElementIndexHeldByLayout, index);
+            break;
         }
 
         return element;
@@ -651,10 +606,10 @@ internal class ViewManager
     private Control GetElementFromElementFactory(int index)
     {
         // The view generator is the provider of last resort.
-        var data = _owner.ItemsSourceView.GetAt(index);
+        var data = ir.ItemsSourceView[index];
 
-        Control element = null;
-        var providedElementFactory = _owner.ItemTemplateShim;
+        Control? element = null;
+        var providedElementFactory = ir.ItemTemplateShim;
 
         if (providedElementFactory == null)
         {
@@ -665,13 +620,11 @@ internal class ViewManager
         {
             IElementFactory GetElementFactory()
             {
-                if (providedElementFactory == null)
-                {
-                    _owner.ItemTemplate = FuncDataTemplate.Default;
-                    return _owner.ItemTemplateShim;
-                }
-
-                return providedElementFactory;
+                if (providedElementFactory != null)
+                    return providedElementFactory;
+                
+                ir.ItemTemplate = FuncDataTemplate.Default;
+                return ir.ItemTemplateShim;
             }
 
             var args = _elementFactoryGetArgs;
@@ -679,7 +632,7 @@ internal class ViewManager
             try
             {
                 args.Data = data;
-                args.Parent = _owner;
+                args.Parent = ir;
                 args.Index = index;
 
                 element = GetElementFactory().GetElement(args);
@@ -692,14 +645,6 @@ internal class ViewManager
         }
 
         var virtInfo = ItemsRepeater.TryGetVirtualizationInfo(element);
-        if (virtInfo == null)
-        {
-            virtInfo = ItemsRepeater.CreateAndInitializeVirtualizationInfo(element);
-#if DEBUG && REPEATER_TRACE
-            Log.Debug("Element Created");
-#endif
-        }
-        else
         {
             // View obtained from ElementFactory already has a VirtualizationInfo attached to it
             // which means that the element has been recycled and not created from scratch.
@@ -710,8 +655,8 @@ internal class ViewManager
         // Clear flag
         virtInfo.MustClearDataContext = false;
 
-        ContainerContentChangingEventArgs cArgs = null;
-        bool shouldPhase = _owner.ShouldPhase;
+        ContainerContentChangingEventArgs? cArgs = null;
+        var shouldPhase = ir.ShouldPhase;
 
         // NOTE: This code has been changed from WinUI in order to support our version of phased rendering
         if (data != element)
@@ -721,50 +666,43 @@ internal class ViewManager
             // run before setting DataContext, when setting DataContext all the phases will be
             // run in the OnDataContextChanged handler in code generated by the xaml compiler (code-gen).
             
-            if (element is Control)
+            // Set data context only if no x:Bind was used. ie. No data template component on the root.
+            // If the passed in data is a UIElement and is different from the element returned by 
+            // the template factory then we need to propagate the DataContext.
+            // Otherwise just set the DataContext on the element as the data.
+            object? dataContext = null;
+            if (data is Control dataAsElement)
             {
-                // Set data context only if no x:Bind was used. ie. No data template component on the root.
-                // If the passed in data is a UIElement and is different from the element returned by 
-                // the template factory then we need to propagate the DataContext.
-                // Otherwise just set the DataContext on the element as the data.
-                object dataContext = null;
-                if (data is Control dataAsElement)
+                if (dataAsElement.DataContext != null)
                 {
-                    if (dataAsElement.DataContext != null)
-                    {
-                        dataContext = dataAsElement.DataContext;
-                    }
-                }
-                else
-                {
-                    dataContext = data;
-                }
-
-                element.DataContext = dataContext;
-                virtInfo.MustClearDataContext = true;
-
-                // This runs phase 0 of rendering, if we have subscribers to ContainerContentChanging
-                // To initiate other phases, handlers should call RegisterCallback on the ContainerContentChangingEventArgs
-                // which will add that work to the build tree scheduler and phaser to complete
-                if (data != element && shouldPhase)
-                {
-                    virtInfo.UpdatePhasingInfo(data);
-                    cArgs = new ContainerContentChangingEventArgs(index, data, element, virtInfo, 0, _phaser);
-                    _owner.RaiseContainerContentChanging(cArgs);// index, data, element, virtInfo);
+                    dataContext = dataAsElement.DataContext;
                 }
             }
             else
             {
-                Debug.Assert(false, "Element returned by factory is not a FrameworkElement!");
+                dataContext = data;
+            }
+
+            element.DataContext = dataContext;
+            virtInfo.MustClearDataContext = true;
+
+            // This runs phase 0 of rendering, if we have subscribers to ContainerContentChanging
+            // To initiate other phases, handlers should call RegisterCallback on the ContainerContentChangingEventArgs
+            // which will add that work to the build tree scheduler and phaser to complete
+            if (data != element && shouldPhase)
+            {
+                virtInfo.UpdatePhasingInfo(data);
+                cArgs = new ContainerContentChangingEventArgs(index, data, element, virtInfo, 0, _phaser);
+                ir.RaiseContainerContentChanging(cArgs);// index, data, element, virtInfo);
             }
         }
 
         virtInfo.MoveOwnershipToLayoutFromElementFactory(index,
-            _owner.ItemsSourceView.HasKeyIndexMapping ?
-            _owner.ItemsSourceView.KeyFromIndex(index) : string.Empty);
+            ir.ItemsSourceView.HasKeyIndexMapping ?
+            ir.ItemsSourceView.KeyFromIndex(index) : string.Empty);
 
         // The view generator is the only provider that prepares the element.
-        var repeater = _owner;
+        var repeater = ir;
 
         // Add the element to the children collection here before raising OnElementPrepared so 
         // that handlers can walk up the tree in case they want to find their IndexPath in the 
@@ -788,61 +726,58 @@ internal class ViewManager
 
     private bool ClearElementToUniqueIdResetPool(Control element, VirtualizationInfo virtInfo)
     {
-        if (_isDataSourceStableResetPending)
-        {
-            _resetPool.Add(element);
-            virtInfo.MoveOwnershipToUniqueIdResetPoolFromLayout();
-        }
+        if (!_isDataSourceStableResetPending)
+            return false;
+        _resetPool.Add(element);
+        virtInfo.MoveOwnershipToUniqueIdResetPoolFromLayout();
 
-        return _isDataSourceStableResetPending;
+        return true;
     }
 
     private bool ClearElementToAnimator(Control element, VirtualizationInfo virtInfo)
     {
-        bool cleared = _owner.TransitionManager.ClearElement(element);
-        if (cleared)
+        bool cleared = ir.TransitionManager.ClearElement(element);
+        if (!cleared)
+            return false;
+        var clearedIndex = virtInfo.Index;
+        virtInfo.MoveOwnershipToAnimator();
+        if (_lastFocusedElement == element)
         {
-            var clearedIndex = virtInfo.Index;
-            virtInfo.MoveOwnershipToAnimator();
-            if (_lastFocusedElement == element)
-            {
-                // Focused element is going away. Remove the tracked last focused element
-                // and pick a reasonable next focus if we can find one within the layout 
-                // realized elements.
-                MoveFocusFromClearedIndex(clearedIndex);
-            }
+            // Focused element is going away. Remove the tracked last focused element
+            // and pick a reasonable next focus if we can find one within the layout 
+            // realized elements.
+            MoveFocusFromClearedIndex(clearedIndex);
         }
 
-        return cleared;
+        return true;
     }
 
     private bool ClearElementToPinnedPool(Control element, VirtualizationInfo virtInfo, bool isClearedDueToCollectionChange)
     {
         bool moveToPinnedPool = !isClearedDueToCollectionChange && virtInfo.IsPinned;
 
-        if (moveToPinnedPool)
-        {
+        if (!moveToPinnedPool)
+            return false;
 #if DEBUG
-            for (int i = 0; i < _pinnedPool.Count; i++)
-            {
-                Debug.Assert(_pinnedPool[i].PinnedElement != element);
-            }
+        foreach (var t in _pinnedPool)
+        {
+            Debug.Assert(t.PinnedElement != element);
+        }
 #endif
 
-            _pinnedPool.Add(new PinnedElementInfo(element, virtInfo));
-            virtInfo.MoveOwnershipToLayoutFromPinnedPool();
-        }
+        _pinnedPool.Add(new PinnedElementInfo(element, virtInfo));
+        virtInfo.MoveOwnershipToLayoutFromPinnedPool();
 
-        return moveToPinnedPool;
+        return true;
     }
 
     private void UpdateFocusedElement()
     {
-        var owner = _owner;
+        var owner = ir;
 
         var xamlRoot = TopLevel.GetTopLevel(owner);
-        Control child = null;
-        Control focusedElement = null;
+        Control? child = null;
+        Control? focusedElement = null;
 
         if (xamlRoot != null)
         {
@@ -859,11 +794,9 @@ internal class ViewManager
             {
                 if (parent is ItemsRepeater repeater)
                 {
-                    if (child is Control element && repeater == owner &&
-                        ItemsRepeater.GetVirtualizationInfo(element).IsRealized)
-                    {
-                        focusedElement = element;
-                    }
+                    if (repeater == owner &&
+                        ItemsRepeater.GetVirtualizationInfo(child).IsRealized)
+                        focusedElement = child;
 
                     break;
                 }
@@ -875,35 +808,33 @@ internal class ViewManager
 
         // If the focused element has changed,
         // we need to unpin the old one and pin the new one.
-        if (_lastFocusedElement != focusedElement)
+        if (_lastFocusedElement == focusedElement)
+            return;
+        if (_lastFocusedElement != null)
         {
-            if (_lastFocusedElement != null)
-            {
-                UpdatePin(_lastFocusedElement, false /* addPin */);
-            }
-
-            if (focusedElement != null)
-            {
-                UpdatePin(focusedElement, true /* addPin */);
-            }
-
-            _lastFocusedElement = focusedElement;
+            UpdatePin(_lastFocusedElement, false /* addPin */);
         }
+
+        if (focusedElement != null)
+        {
+            UpdatePin(focusedElement, true /* addPin */);
+        }
+
+        _lastFocusedElement = focusedElement;
     }
 
-    private void OnFocusChanged(object _, RoutedEventArgs __)
+    private void OnFocusChanged(object? s, RoutedEventArgs e)
     {
         UpdateFocusedElement();
     }
 
     private void EnsureEventSubscriptions()
     {
-        if (!_gotFocus)
-        {
-            _gotFocus = true;
-            _owner.GotFocus += OnFocusChanged;
-            _owner.LostFocus += OnFocusChanged;
-        }
+        if (_gotFocus)
+            return;
+        _gotFocus = true;
+        ir.GotFocus += OnFocusChanged;
+        ir.LostFocus += OnFocusChanged;
     }
 
     private void UpdateElementIndex(Control element, VirtualizationInfo virtInfo, int index)
@@ -912,7 +843,7 @@ internal class ViewManager
         if (oldIndex != index)
         {
             virtInfo.UpdateIndex(index);
-            _owner.OnElementIndexChanged(element, oldIndex, index);
+            ir.OnElementIndexChanged(element, oldIndex, index);
         }
     }
 
@@ -923,14 +854,13 @@ internal class ViewManager
     }
 
 
-    private readonly ItemsRepeater _owner;
-    private readonly List<PinnedElementInfo> _pinnedPool;
-    private readonly UniqueIdElementPool _resetPool;
+    private readonly List<PinnedElementInfo> _pinnedPool = [];
+    private readonly UniqueIdElementPool _resetPool = new(ir);
 
-    private Control _lastFocusedElement;
+    private Control? _lastFocusedElement;
     private bool _isDataSourceStableResetPending;
 
-    private Phaser _phaser;
+    private Phaser _phaser = new(ir);
 
     // Cached generate/clear contexts to avoid cost of creation every time.
     private readonly ElementFactoryGetArgs _elementFactoryGetArgs = new ElementFactoryGetArgs();
@@ -947,16 +877,10 @@ internal class ViewManager
 
     private bool _gotFocus;
 
-    private struct PinnedElementInfo
+    private struct PinnedElementInfo(Control element, VirtualizationInfo? vi = null)
     {
-        public PinnedElementInfo(Control element, VirtualizationInfo vi = null)
-        {
-            PinnedElement = element;
-            VirtualizationInfo = vi ?? ItemsRepeater.GetVirtualizationInfo(element);
-        }
+        public Control PinnedElement { get; } = element;
 
-        public Control PinnedElement { get; }
-
-        public VirtualizationInfo VirtualizationInfo { get; }
+        public VirtualizationInfo VirtualizationInfo { get; } = vi ?? ItemsRepeater.GetVirtualizationInfo(element);
     }
 }

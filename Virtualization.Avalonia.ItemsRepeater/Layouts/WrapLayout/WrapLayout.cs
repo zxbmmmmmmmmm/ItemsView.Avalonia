@@ -24,11 +24,6 @@ public enum FlowLayoutLineAlignment
 
 public class WrapLayout : VirtualizingLayout, IOrientationBasedMeasures, IFlowLayoutAlgorithmDelegates
 {
-    public WrapLayout()
-    {
-
-    }
-
     public static readonly StyledProperty<FlowLayoutLineAlignment> LineAlignmentProperty = 
         AvaloniaProperty.Register<WrapLayout, FlowLayoutLineAlignment>(nameof(LineAlignment), 
             defaultValue: FlowLayoutLineAlignment.Start);
@@ -135,7 +130,7 @@ public class WrapLayout : VirtualizingLayout, IOrientationBasedMeasures, IFlowLa
         var desiredSize = GetFlowAlgorithm(context).Measure(
             availableSize, context, true /*isWrapping*/,
             MinItemSpacing(), LineSpacing(), int.MaxValue /*maxItemsPerLine*/,
-            ScrollOrientation, false /*disableVirtualization*/, LayoutId);
+            ScrollOrientation, false /*disableVirtualization*/);
         return desiredSize;
     }
 
@@ -143,7 +138,7 @@ public class WrapLayout : VirtualizingLayout, IOrientationBasedMeasures, IFlowLa
     {
         var value = GetFlowAlgorithm(context).Arrange(
             finalSize, context, true /*isWrapping*/,
-            _lineAlignment, LayoutId);
+            _lineAlignment);
         return value;
     }
 

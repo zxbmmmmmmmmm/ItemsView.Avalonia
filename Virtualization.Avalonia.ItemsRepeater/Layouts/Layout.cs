@@ -28,8 +28,6 @@ public enum IndexBasedLayoutOrientation
 /// </summary>
 public abstract class Layout : AvaloniaObject
 {    
-    internal string LayoutId { get; set; }
-
     /// <summary>
     /// 
     /// </summary>
@@ -38,44 +36,38 @@ public abstract class Layout : AvaloniaObject
     /// <summary>
     /// Occurs when the measurement state (layout) has been invalidated.
     /// </summary>
-    public event EventHandler<Layout, EventArgs> MeasureInvalidated;
+    public event EventHandler<Layout, EventArgs>? MeasureInvalidated;
 
     /// <summary>
     /// Occurs when the arrange state(layout) has been invalidated.
     /// </summary>
-    public event EventHandler<Layout, EventArgs> ArrangeInvalidated;
+    public event EventHandler<Layout, EventArgs>? ArrangeInvalidated;
 
     private static VirtualizingLayoutContext GetVirtualizingLayoutContext(LayoutContext context)
     {
-        if (context is VirtualizingLayoutContext vlc)
+        switch (context)
         {
-            return vlc;
-        }
-        else if (context is NonVirtualizingLayoutContext nvlc)
-        {
-            var adapter = nvlc.GetVirtualizingContextAdapter();
-            return adapter;
-        }
-        else
-        {
-            throw new NotImplementedException();
+            case VirtualizingLayoutContext vlc:
+                return vlc;
+            case NonVirtualizingLayoutContext nvlc:
+            {
+                return nvlc.GetVirtualizingContextAdapter();
+            }
+            default:
+                throw new NotImplementedException();
         }
     }
 
     private static NonVirtualizingLayoutContext GetNonVirtualizingLayoutContext(LayoutContext context)
     {
-        if (context is NonVirtualizingLayoutContext nvlc)
+        switch (context)
         {
-            return nvlc;
-        }
-        else if (context is VirtualizingLayoutContext vlc)
-        {
-            var adapter = vlc.GetNonVirtualizingContextAdapter();
-            return adapter;
-        }
-        else
-        {
-            throw new NotImplementedException();
+            case NonVirtualizingLayoutContext nvlc:
+                return nvlc;
+            case VirtualizingLayoutContext vlc:
+                return vlc.NonVirtualizingContextAdapter;
+            default:
+                throw new NotImplementedException();
         }
     }
 
@@ -84,19 +76,22 @@ public abstract class Layout : AvaloniaObject
     /// </summary>
     public void InitializeForContext(LayoutContext context)
     {
-        if (this is VirtualizingLayout vl)
+        switch (this)
         {
-            var vc = GetVirtualizingLayoutContext(context);
-            vl.InitializeForContextCore(vc);
-        }
-        else if (this is NonVirtualizingLayout nvl)
-        {
-            var nvc = GetNonVirtualizingLayoutContext(context);
-            nvl.InitializeForContextCore(nvc);
-        }
-        else
-        {
-            throw new NotImplementedException();
+            case VirtualizingLayout vl:
+            {
+                var vc = GetVirtualizingLayoutContext(context);
+                vl.InitializeForContextCore(vc);
+                break;
+            }
+            case NonVirtualizingLayout nvl:
+            {
+                var nvc = GetNonVirtualizingLayoutContext(context);
+                nvl.InitializeForContextCore(nvc);
+                break;
+            }
+            default:
+                throw new NotImplementedException();
         }
     }
 
@@ -105,19 +100,22 @@ public abstract class Layout : AvaloniaObject
     /// </summary>
     public void UninitializeForContext(LayoutContext context)
     {
-        if (this is VirtualizingLayout vl)
+        switch (this)
         {
-            var vc = GetVirtualizingLayoutContext(context);
-            vl.UninitializeForContextCore(vc);
-        }
-        else if (this is NonVirtualizingLayout nvl)
-        {
-            var nvc = GetNonVirtualizingLayoutContext(context);
-            nvl.UninitializeForContextCore(nvc);
-        }
-        else
-        {
-            throw new NotImplementedException();
+            case VirtualizingLayout vl:
+            {
+                var vc = GetVirtualizingLayoutContext(context);
+                vl.UninitializeForContextCore(vc);
+                break;
+            }
+            case NonVirtualizingLayout nvl:
+            {
+                var nvc = GetNonVirtualizingLayoutContext(context);
+                nvl.UninitializeForContextCore(nvc);
+                break;
+            }
+            default:
+                throw new NotImplementedException();
         }
     }
 
@@ -128,19 +126,20 @@ public abstract class Layout : AvaloniaObject
     /// </summary>
     public Size Measure(LayoutContext context, Size availableSize)
     {
-        if (this is VirtualizingLayout vl)
+        switch (this)
         {
-            var vc = GetVirtualizingLayoutContext(context);
-            return vl.MeasureOverride(vc, availableSize);
-        }
-        else if (this is NonVirtualizingLayout nvl)
-        {
-            var nvc = GetNonVirtualizingLayoutContext(context);
-            return nvl.MeasureOverride(nvc, availableSize);
-        }
-        else
-        {
-            throw new NotImplementedException();
+            case VirtualizingLayout vl:
+            {
+                var vc = GetVirtualizingLayoutContext(context);
+                return vl.MeasureOverride(vc, availableSize);
+            }
+            case NonVirtualizingLayout nvl:
+            {
+                var nvc = GetNonVirtualizingLayoutContext(context);
+                return nvl.MeasureOverride(nvc, availableSize);
+            }
+            default:
+                throw new NotImplementedException();
         }
     }
 
@@ -151,19 +150,20 @@ public abstract class Layout : AvaloniaObject
     /// </summary>
     public Size Arrange(LayoutContext context, Size finalSize)
     {
-        if (this is VirtualizingLayout vl)
+        switch (this)
         {
-            var vc = GetVirtualizingLayoutContext(context);
-            return vl.ArrangeOverride(vc, finalSize);
-        }
-        else if (this is NonVirtualizingLayout nvl)
-        {
-            var nvc = GetNonVirtualizingLayoutContext(context);
-            return nvl.ArrangeOverride(nvc, finalSize);
-        }
-        else
-        {
-            throw new NotImplementedException();
+            case VirtualizingLayout vl:
+            {
+                var vc = GetVirtualizingLayoutContext(context);
+                return vl.ArrangeOverride(vc, finalSize);
+            }
+            case NonVirtualizingLayout nvl:
+            {
+                var nvc = GetNonVirtualizingLayoutContext(context);
+                return nvl.ArrangeOverride(nvc, finalSize);
+            }
+            default:
+                throw new NotImplementedException();
         }
     }
 
@@ -183,5 +183,5 @@ public abstract class Layout : AvaloniaObject
     /// <summary>
     /// 
     /// </summary>
-    protected internal virtual ItemCollectionTransitionProvider CreateDefaultItemTransitionProvider() => null;
+    protected internal virtual ItemCollectionTransitionProvider? CreateDefaultItemTransitionProvider() => null;
 }

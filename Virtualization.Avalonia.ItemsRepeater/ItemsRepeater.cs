@@ -17,8 +17,8 @@ public partial class ItemsRepeater : Panel
     public ItemsRepeater()
     {
         _viewportManager = new ViewportManager(this);
-        _viewManager = new ViewManager(this);
-        _transitionManager = new TransitionManager(this);
+        ViewManager = new ViewManager(this);
+        TransitionManager = new TransitionManager(this);
 
         SetCurrentValue(LayoutProperty, new StackLayout());
 
@@ -51,22 +51,17 @@ public partial class ItemsRepeater : Panel
 
         var layout = GetEffectiveLayout();
 
-        if (layout != null)
+        if (layout is StackLayout stackLayout && ++_stackLayoutMeasureCounter >= MaxStackLayoutIterations)
         {
-            var stackLayout = layout as StackLayout;
-
-            if (stackLayout != null && ++_stackLayoutMeasureCounter >= _maxStackLayoutIterations)
-            {
 #if DEBUG && REPEATER_TRACE
                 //Log.Debug("MeasureOverride shortcut - {Counter}", _stackLayoutMeasureCounter);
 #endif
-                // Shortcut the apparent layout cycle by returning the previous desired size.
-                // This can occur when children have variable sizes that prevent the ItemsPresenter's desired size from settling.
-                Rect layoutExtent = _viewportManager.LayoutExtent;
-                Size desiredSize = new Size(layoutExtent.Width - layoutExtent.X,
-                    layoutExtent.Height - layoutExtent.Y );
-                return desiredSize;
-            }
+            // Shortcut the apparent layout cycle by returning the previous desired size.
+            // This can occur when children have variable sizes that prevent the ItemsPresenter's desired size from settling.
+            Rect layoutExtent = _viewportManager.LayoutExtent;
+            Size desiredSize = new Size(layoutExtent.Width - layoutExtent.X,
+                layoutExtent.Height - layoutExtent.Y );
+            return desiredSize;
         }
 
         _viewportManager.OnOwnerMeasuring();
@@ -74,7 +69,7 @@ public partial class ItemsRepeater : Panel
         try
         {
             _isLayoutInProgress = true;
-            _viewManager.PrunePinnedElements();
+            ViewManager.PrunePinnedElements();
             Rect extent = default;
             Size desiredSize = default;
 
@@ -143,7 +138,7 @@ public partial class ItemsRepeater : Panel
             _isLayoutInProgress = true;
             Size arrangeSize = default;
 
-            if (GetEffectiveLayout() is Layout layout)
+            if (GetEffectiveLayout() is { } layout)
             {
                 arrangeSize = layout.Arrange(GetLayoutContext(), finalSize);
             }
@@ -151,7 +146,7 @@ public partial class ItemsRepeater : Panel
             // The view manager might clear elements during this call.
             // That's why we call it before arranging cleared elements
             // off screen.
-            _viewManager.OnOwnerArranged();
+            ViewManager.OnOwnerArranged();
 
             var children = Children;
             for (int i = 0; i < children.Count; i++)
@@ -175,7 +170,7 @@ public partial class ItemsRepeater : Panel
                     if (vi.ArrangeBounds != ItemsRepeater.InvalidRect &&
                         newBounds != vi.ArrangeBounds)
                     {
-                        _transitionManager.OnElementBoundsChanged(element, vi.ArrangeBounds, newBounds);
+                        TransitionManager.OnElementBoundsChanged(element, vi.ArrangeBounds, newBounds);
                     }
 
                     vi.ArrangeBounds = newBounds;
@@ -183,7 +178,7 @@ public partial class ItemsRepeater : Panel
             }
 
             _viewportManager.OnOwnerArranged();
-            _transitionManager.OnOwnerArranged();
+            TransitionManager.OnOwnerArranged();
 
             return arrangeSize;
         }
@@ -200,17 +195,16 @@ public partial class ItemsRepeater : Panel
 
         if (property == ItemsSourceProperty)
         {
-            if (args.NewValue != args.OldValue)
+            if (args.NewValue == args.OldValue)
+                return;
+            var newValue = args.NewValue;
+            var newDataSource = newValue as FAItemsSourceView;
+            if (newValue != null && newDataSource is null)
             {
-                var newValue = args.NewValue;
-                var newDataSource = newValue as FAItemsSourceView;
-                if (newValue != null && newDataSource == null)
-                {
-                    newDataSource = new FAItemsSourceView(newValue as IEnumerable);
-                }
-
-                OnDataSourcePropertyChanged(_itemsSourceView, newDataSource);
+                newDataSource = new FAItemsSourceView(newValue as IEnumerable);
             }
+
+            OnDataSourcePropertyChanged(ItemsSourceView, newDataSource);
         }
         else if (property == ItemTemplateProperty)
         {
@@ -239,16 +233,16 @@ public partial class ItemsRepeater : Panel
     public int GetElementIndex(Control element) =>
         GetElementIndexImpl(element);
 
-    public Control TryGetElement(int index) =>
+    public Control? TryGetElement(int index) =>
         GetElementFromIndexImpl(index);
 
     public void PinElement(Control element) =>
-        _viewManager.UpdatePin(element, true);
+        ViewManager.UpdatePin(element, true);
 
     public void UnpinElement(Control element) =>
-        _viewManager.UpdatePin(element, false);
+        ViewManager.UpdatePin(element, false);
 
-    public Control GetOrCreateElement(int index) =>
+    public Control? GetOrCreateElement(int index) =>
         GetOrCreateElementImpl(index);
 
     // Change from WinUI, to avoid an extra property read in ViewportManager,
@@ -258,59 +252,47 @@ public partial class ItemsRepeater : Panel
     internal void OnElementPrepared(Control element, int index, VirtualizationInfo vInfo)
     {
         _viewportManager.OnElementPrepared(element, vInfo);
-        if (ElementPrepared != null)
-        {
-            if (_elementPreparedArgs == null)
-            {
-                _elementPreparedArgs = new ItemsRepeaterElementPreparedEventArgs(element, index);
-            }
-            else
-            {
-                _elementPreparedArgs.Update(element, index);
-            }
+        if (ElementPrepared is null)
+            return;
+        if (_elementPreparedArgs is null)
+            _elementPreparedArgs = new ItemsRepeaterElementPreparedEventArgs(element, index);
+        else
+            _elementPreparedArgs.Update(element, index);
 
-            ElementPrepared.Invoke(this, _elementPreparedArgs);
-        }
+        ElementPrepared.Invoke(this, _elementPreparedArgs);
     }
 
     internal void OnElementClearing(Control element)
     {
-        if (ElementClearing != null)
-        {
-            if (_elementClearingArgs == null)
-            {
-                _elementClearingArgs = new ItemsRepeaterElementClearingEventArgs(element);
-            }
-            else
-            {
-                _elementClearingArgs.Update(element);
-            }
+        if (ElementClearing is null)
+            return;
+        if (_elementClearingArgs is null)
+            _elementClearingArgs = new(element);
+        else
+            _elementClearingArgs.Update(element);
 
-            ElementClearing.Invoke(this, _elementClearingArgs);
-        }
+        ElementClearing.Invoke(this, _elementClearingArgs);
     }
 
     internal void OnElementIndexChanged(Control element, int oldIndex, int newIndex)
     {
-        if (ElementIndexChanged != null)
+        if (ElementIndexChanged is null)
+            return;
+        if (_elementIndexChangedArgs is null)
         {
-            if (_elementIndexChangedArgs == null)
-            {
-                _elementIndexChangedArgs = new ItemsRepeaterElementIndexChangedEventArgs(element, oldIndex, newIndex);
-            }
-            else
-            {
-                _elementIndexChangedArgs.Update(element, oldIndex, newIndex);
-            }
-
-            ElementIndexChanged.Invoke(this, _elementIndexChangedArgs);
+            _elementIndexChangedArgs = new(element, oldIndex, newIndex);
         }
+        else
+        {
+            _elementIndexChangedArgs.Update(element, oldIndex, newIndex);
+        }
+
+        ElementIndexChanged.Invoke(this, _elementIndexChangedArgs);
     }
 
     internal Control GetElementImpl(int index, bool forceCreate, bool suppressAutoRecycle)
     {
-        var element = _viewManager.GetElement(index, forceCreate, suppressAutoRecycle);
-        return element;
+        return ViewManager.GetElement(index, forceCreate, suppressAutoRecycle);
     }
 
     internal void ClearElementImpl(Control element)
@@ -320,11 +302,12 @@ public partial class ItemsRepeater : Panel
         // unpinned and sent back to the view generator.
         bool isClearedDueToCollectionChange =
             IsProcessingCollectionChange &&
-            (_processingItemsSourceChange.Action == NotifyCollectionChangedAction.Remove ||
-            _processingItemsSourceChange.Action == NotifyCollectionChangedAction.Replace ||
-            _processingItemsSourceChange.Action == NotifyCollectionChangedAction.Reset);
+            _processingItemsSourceChange.Action is
+                NotifyCollectionChangedAction.Remove or
+                NotifyCollectionChangedAction.Replace or
+                NotifyCollectionChangedAction.Reset;
 
-        _viewManager.ClearElement(element, isClearedDueToCollectionChange);
+        ViewManager.ClearElement(element, isClearedDueToCollectionChange);
         _viewportManager.OnElementCleared(element);
     }
 
@@ -332,35 +315,24 @@ public partial class ItemsRepeater : Panel
     {
         // Verify that element is actually a child of this ItemsRepeater
         var parent = element.GetVisualParent();
-        if (parent == this)
-        {
-            var virtInfo = TryGetVirtualizationInfo(element);
-            return _viewManager.GetElementIndex(virtInfo);
-        }
-        return -1;
+        if (parent != this)
+            return -1;
+        var virtInfo = TryGetVirtualizationInfo(element);
+        return ViewManager.GetElementIndex(virtInfo);
     }
 
-    private Control GetElementFromIndexImpl(int index)
+    private Control? GetElementFromIndexImpl(int index)
     {
-        Control result = null;
+        foreach (var element in Children)
+            if (TryGetVirtualizationInfo(element) is { IsRealized: true } virtInfo && virtInfo.Index == index)
+                return element;
 
-        var children = Children;
-        for (int i = 0; i < children.Count && (result == null); ++i)
-        {
-            var element = children[i];
-            var virtInfo = TryGetVirtualizationInfo(element);
-            if (virtInfo != null && virtInfo.IsRealized && virtInfo.Index == index)
-            {
-                result = element;
-            }
-        }
-
-        return result;
+        return null;
     }
 
-    private Control GetOrCreateElementImpl(int index)
+    private Control? GetOrCreateElementImpl(int index)
     {
-        if (ItemsSourceView == null)
+        if (ItemsSourceView is null)
             throw new Exception("ItemsSource doesn't have a value");
 
         if (index >= 0 && index >= ItemsSourceView.Count)
@@ -370,13 +342,10 @@ public partial class ItemsRepeater : Panel
             throw new Exception("GetOrCreateElement invocation is not allowed during layout");
 
         var element = GetElementFromIndexImpl(index);
-        bool isAnchorOutsideRealizedRange = element == null;
+        var isAnchorOutsideRealizedRange = element is null;
 
         if (isAnchorOutsideRealizedRange)
         {
-            if (GetEffectiveLayout() == null)
-                throw new Exception("Cannot make an anchor when there is no attached layout");
-
             element = GetLayoutContext().GetOrCreateElementAt(index);
             element.Measure(Size.Infinity);
         }
@@ -393,15 +362,15 @@ public partial class ItemsRepeater : Panel
         return 4;
     }
 
-    private IEnumerable<Control> GetChildrenInTabFocusOrder() =>
+    private IEnumerable<Control>? GetChildrenInTabFocusOrder() =>
         CreateChildrenInTabFocusOrderIterable();
 
-    private void OnBringIntoViewRequested(object sender, RequestBringIntoViewEventArgs args)
+    private void OnBringIntoViewRequested(object? sender, RequestBringIntoViewEventArgs args)
     {
         _viewportManager.OnBringIntoViewRequested(args);
     }
 
-    private void OnRepeaterLoaded(object sender, RoutedEventArgs e)
+    private void OnRepeaterLoaded(object? sender, RoutedEventArgs e)
     {
         // If we skipped an unload event, reset the scrollers now and invalidate measure so that we get a new
         // layout pass during which we will hookup new scrollers.
@@ -413,7 +382,7 @@ public partial class ItemsRepeater : Panel
         ++_loadedCounter;
     }
 
-    private void OnRepeaterUnloaded(object sender, RoutedEventArgs e)
+    private void OnRepeaterUnloaded(object? sender, RoutedEventArgs e)
     {
         _stackLayoutMeasureCounter = 0;
         ++_unloadedCounter;
@@ -425,7 +394,7 @@ public partial class ItemsRepeater : Panel
         }
     }
 
-    private void OnLayoutUpdated(object sender, EventArgs e)
+    private void OnLayoutUpdated(object? sender, EventArgs e)
     { 
         // Now that the layout has settled, reset the measure counter to detect the next potential StackLayout layout cycle.
         _stackLayoutMeasureCounter = 0;
@@ -433,57 +402,54 @@ public partial class ItemsRepeater : Panel
         EnsureDefaultLayoutState();
     }
 
-    private void OnDataSourcePropertyChanged(FAItemsSourceView oldValue, FAItemsSourceView newValue)
+    private void OnDataSourcePropertyChanged(FAItemsSourceView? oldValue, FAItemsSourceView? newValue)
     {
         if (_isLayoutInProgress)
             throw new Exception();
 
         EnsureDefaultLayoutState();
 
-        if (_itemsSourceView != null)
-            _itemsSourceView.CollectionChanged -= OnItemsSourceViewChanged;
+        if (ItemsSourceView != null)
+            ItemsSourceView.CollectionChanged -= OnItemsSourceViewChanged;
 
-        _itemsSourceView = newValue;
+        ItemsSourceView = newValue;
 
-        if (newValue != null)
-            _itemsSourceView.CollectionChanged += OnItemsSourceViewChanged;
+        if (ItemsSourceView != null)
+            ItemsSourceView.CollectionChanged += OnItemsSourceViewChanged;
 
-        if (GetEffectiveLayout() is Layout l)
+        if (GetEffectiveLayout() is not { } l)
+            return;
+        var args = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset);
+        try
         {
-            var args = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset);
-            try
+            _processingItemsSourceChange = args;
+            if (l is VirtualizingLayout vl)
             {
-                _processingItemsSourceChange = args;
-                if (l is VirtualizingLayout vl)
-                {
-                    vl.OnItemsChangedCore(GetLayoutContext(), newValue, args);
-                }
-                else if (Layout is NonVirtualizingLayout nvl)
-                {
-                    // Walk through all the elements and make sure they are cleared for
-                    // non-virtualizing layouts.
-                    foreach (var item in Children)
-                    {
-                        if (GetVirtualizationInfo(item).IsRealized)
-                            ClearElementImpl(item);
-                    }
-
-                    Children.Clear();
-                }
-
-                InvalidateMeasure();
+                vl.OnItemsChangedCore(GetLayoutContext(), newValue, args);
             }
-            finally
+            else if (Layout is NonVirtualizingLayout nvl)
             {
-                _processingItemsSourceChange = null;
+                // Walk through all the elements and make sure they are cleared for
+                // non-virtualizing layouts.
+                foreach (var item in Children)
+                    if (GetVirtualizationInfo(item).IsRealized)
+                        ClearElementImpl(item);
+
+                Children.Clear();
             }
+
+            InvalidateMeasure();
+        }
+        finally
+        {
+            _processingItemsSourceChange = null;
         }
     }
 
     // WinUI has type of IElementFactory here, but we need to use IDataTemplate
     // In WinUI, DataTemplate inherits from IElementFactory so that covers everything
     // For us, we need to work with what Avalonia gives us, easiest is IDataTemplate
-    private void OnItemTemplateChanged(IDataTemplate oldValue, IDataTemplate newValue)
+    private void OnItemTemplateChanged(IDataTemplate? oldValue, IDataTemplate? newValue)
     {
         if (_isLayoutInProgress && oldValue != null)
             throw new InvalidOperationException("ItemTemplate cannot be changed during layout.");
@@ -494,27 +460,27 @@ public partial class ItemsRepeater : Panel
         // have already been created and are now in the tree. The easiest way to do that
         // would be to do a reset.. Note that this has to be done before we change the template
         // so that the cleared elements go back into the old template.
-        if (GetEffectiveLayout() is Layout layout)
+        if (GetEffectiveLayout() is { } layout)
         {
             var args = new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset);
             try
             {
                 _processingItemsSourceChange = args;
 
-                if (layout is VirtualizingLayout vl)
+                switch (layout)
                 {
-                    vl.OnItemsChangedCore(GetLayoutContext(), newValue, args);
-                }
-                else if (layout is NonVirtualizingLayout nvl)
-                {
-                    // Walk through all the elements and make sure they are cleared for
-                    // non-virtualizing layouts.
-                    foreach (var child in Children)
+                    case VirtualizingLayout vl:
+                        vl.OnItemsChangedCore(GetLayoutContext(), newValue, args);
+                        break;
+                    case NonVirtualizingLayout nvl:
                     {
-                        if (GetVirtualizationInfo(child).IsRealized)
-                        {
-                            ClearElementImpl(child);
-                        }
+                        // Walk through all the elements and make sure they are cleared for
+                        // non-virtualizing layouts.
+                        foreach (var child in Children)
+                            if (GetVirtualizationInfo(child).IsRealized)
+                                ClearElementImpl(child);
+
+                        break;
                     }
                 }
             }
@@ -525,41 +491,35 @@ public partial class ItemsRepeater : Panel
         }
 
         _isItemTemplateEmpty = false;
-        _itemTemplateWrapper = newValue as IElementFactory;
-        if (_itemTemplateWrapper == null)
+        ItemTemplateShim = newValue as IElementFactory;
+        if (ItemTemplateShim is null)
         {
             // ItemTemplate set does not implement IElementFactoryShim. We also 
             // want to support DataTemplate and DataTemplateSelectors automagically.
-            if (newValue is IDataTemplate template)
+            if (newValue is not null)
             {
-                _itemTemplateWrapper = new ItemTemplateWrapper(template);
-                //_isItemTemplateEmpty = template.Build(null) == null;
+                ItemTemplateShim = new ItemTemplateWrapper(newValue);
+                //_isItemTemplateEmpty = template.Build(null) is null;
             }
         }
 
         InvalidateMeasure();
     }
 
-    private void OnLayoutChanged(Layout oldValue, Layout newValue)
+    private void OnLayoutChanged(Layout? oldValue, Layout? newValue)
     {
-        bool isInitialSetup = !_wasLayoutChangedCalled;
+        var isInitialSetup = !_wasLayoutChangedCalled;
         _wasLayoutChangedCalled = true;
 
         if (_isLayoutInProgress)
             throw new InvalidOperationException("Layout cannot be changed during layout.");
 
-        _viewManager.OnLayoutChanging();
-        _transitionManager.OnLayoutChanging();
+        ViewManager.OnLayoutChanging();
+        TransitionManager.OnLayoutChanging();
 
-        if (oldValue == null & !isInitialSetup)
-        {
+        if (oldValue is null & !isInitialSetup)
             oldValue = GetDefaultLayout();
-        }
-        if (newValue == null)
-        {
-            newValue = GetDefaultLayout();
-        }    
-
+        newValue ??= GetDefaultLayout();    
 
         if (oldValue != null)
         {
@@ -569,32 +529,21 @@ public partial class ItemsRepeater : Panel
             _stackLayoutMeasureCounter = 0;
 
             // Walk through all the elements and make sure they are cleared
-            var children = Children;
-            for (int i = 0; i < children.Count; ++i)
-            {
-                var element = children[i];
+            foreach (var element in Children)
                 if (GetVirtualizationInfo(element).IsRealized)
-                {
                     ClearElementImpl(element);
-                }
-            }
 
-            _layoutState = null;
+            LayoutState = null;
         }
 
-        if (newValue != null)
-        {
-            newValue.InitializeForContext(GetLayoutContext());
-            newValue.MeasureInvalidated += InvalidateMeasureForLayout;
-            newValue.ArrangeInvalidated += InvalidateArrangeForLayout;
+        newValue.InitializeForContext(GetLayoutContext());
+        newValue.MeasureInvalidated += InvalidateMeasureForLayout;
+        newValue.ArrangeInvalidated += InvalidateArrangeForLayout;
 
-            if (_ownsTransitionProvider)
-            {
-                _transitionManager.OnTransitionProviderChanged(newValue.CreateDefaultItemTransitionProvider());
-            }
-        }
+        if (_ownsTransitionProvider)
+            TransitionManager.OnTransitionProviderChanged(newValue.CreateDefaultItemTransitionProvider());
 
-        bool isVirtualizingLayout = newValue != null && newValue is VirtualizingLayout;
+        var isVirtualizingLayout = newValue is VirtualizingLayout;
         _viewportManager.OnLayoutChanged(isVirtualizingLayout);
         InvalidateMeasure();
     }
@@ -602,10 +551,10 @@ public partial class ItemsRepeater : Panel
     private void OnTransitionProviderChanged(ItemCollectionTransitionProvider _, ItemCollectionTransitionProvider newValue)
     {
         _ownsTransitionProvider = false;
-        _transitionManager.OnTransitionProviderChanged(newValue);
+        TransitionManager.OnTransitionProviderChanged(newValue);
     }
 
-    private void OnItemsSourceViewChanged(object sender, NotifyCollectionChangedEventArgs args)
+    private void OnItemsSourceViewChanged(object? sender, NotifyCollectionChangedEventArgs args)
     {
         if (_isLayoutInProgress)
             throw new InvalidOperationException("Changes in data source are not allowed during layout.");
@@ -617,20 +566,15 @@ public partial class ItemsRepeater : Panel
         {
             _processingItemsSourceChange = args;
 
-            _transitionManager.OnItemsSourceChanged(sender, args);
-            _viewManager.OnItemsSourceChanged(sender, args);
+            TransitionManager.OnItemsSourceChanged(sender, args);
+            ViewManager.OnItemsSourceChanged(sender, args);
 
-            if (GetEffectiveLayout() is Layout layout)
-            {
-                if (layout is VirtualizingLayout vl)
-                {
-                    vl.OnItemsChangedCore(GetLayoutContext(), sender, args);
-                }
-                else
-                {
-                    InvalidateMeasure();
-                }
-            }
+            if (GetEffectiveLayout() is not { } layout)
+                return;
+            if (layout is VirtualizingLayout vl)
+                vl.OnItemsChangedCore(GetLayoutContext(), sender, args);
+            else
+                InvalidateMeasure();
         }
         finally
         {
@@ -638,83 +582,51 @@ public partial class ItemsRepeater : Panel
         }
     }
 
-    private void InvalidateMeasureForLayout(Layout sender, EventArgs args)
-    {
-        InvalidateMeasure();
-    }
+    private void InvalidateMeasureForLayout(Layout sender, EventArgs args) => InvalidateMeasure();
 
-    private void InvalidateArrangeForLayout(Layout sender, EventArgs args)
-    {
-        InvalidateArrange();
-    }
+    private void InvalidateArrangeForLayout(Layout sender, EventArgs args) => InvalidateArrange();
 
     private void EnsureDefaultLayoutState()
     {
-        if (!_wasLayoutChangedCalled)
-        {
-            // Initialize the cached layout to the default value
-            // OnLayoutChanged has not been called yet for this ItemsRepeater.
-            // This is the first call for the default VirtualizingLayout layout after the control's creation.
-            var layout = GetEffectiveLayout() as VirtualizingLayout;
-            OnLayoutChanged(null, layout);
-        }
+        if (_wasLayoutChangedCalled)
+            return;
+        // Initialize the cached layout to the default value
+        // OnLayoutChanged has not been called yet for this ItemsRepeater.
+        // This is the first call for the default VirtualizingLayout layout after the control's creation.
+        var layout = GetEffectiveLayout() as VirtualizingLayout;
+        OnLayoutChanged(null, layout);
     }
 
     private VirtualizingLayoutContext GetLayoutContext()
     {
-        _layoutContext ??= new RepeaterLayoutContext(this);
-
-        return _layoutContext;
+        return _layoutContext ??= new RepeaterLayoutContext(this);
     }
 
-    private IEnumerable<Control> CreateChildrenInTabFocusOrderIterable()
-    {
-        var children = Children;
-        if (children.Count == 0)
-        {
-            return new ChildrenInTabFocusOrderIterable(this);
-        }
-        return null;
-    }
+    private IEnumerable<Control>? CreateChildrenInTabFocusOrderIterable()
+        => Children.Count is 0 ? new ChildrenInTabFocusOrderIterable(this) : null;
 
-    private Layout GetEffectiveLayout()
-    {
-        var l = Layout;
-        if (l != null)
-            return l;
+    private Layout GetEffectiveLayout() => Layout ?? GetDefaultLayout();
 
-        return GetDefaultLayout();
-    }
-
-    private Layout GetDefaultLayout()
-    {
+    private Layout GetDefaultLayout() =>
         // Default to StackLayout if the Layout property was not set.
         // We use thread_local here to get a unique instance per thread, since Layout objects
         // are not sharable across different xaml threads.
         //static thread_local winrt::Layout defaultLayout = winrt::StackLayout();
         //return defaultLayout;
-
-        return new StackLayout();
-    }
-
+        new StackLayout();
 
     // StackLayout measurements are shortcut when m_stackLayoutMeasureCounter reaches this value
     // to prevent a layout cycle exception.
     // The XAML Framework's iteration limit is 250, but that limit has been reached in practice
     // with this value as small as 61. It was never reached with 60. 
-    internal const short _maxStackLayoutIterations = 60;
+    internal const short MaxStackLayoutIterations = 60;
     internal static Point ClearedElementsArrangePosition = new Point(-10000, -10000);
     internal static Rect InvalidRect = new Rect(-1,-1,-1,-1);
 
-    private readonly TransitionManager _transitionManager;
-    private readonly ViewManager _viewManager;
     private readonly ViewportManager _viewportManager;
 
-    private FAItemsSourceView _itemsSourceView;
-    private IElementFactory _itemTemplateWrapper;
     private VirtualizingLayoutContext _layoutContext;
-    private object _layoutState;
-    private NotifyCollectionChangedEventArgs _processingItemsSourceChange;
+    private NotifyCollectionChangedEventArgs? _processingItemsSourceChange;
     
     private Size _lastAvailableSize;
     private bool _isLayoutInProgress = false;
@@ -723,9 +635,9 @@ public partial class ItemsRepeater : Panel
     private Point _layoutOrigin;
 
     // Cached Event args to avoid creation cost every time
-    private ItemsRepeaterElementPreparedEventArgs _elementPreparedArgs;
-    private ItemsRepeaterElementClearingEventArgs _elementClearingArgs;
-    private ItemsRepeaterElementIndexChangedEventArgs _elementIndexChangedArgs;
+    private ItemsRepeaterElementPreparedEventArgs? _elementPreparedArgs;
+    private ItemsRepeaterElementClearingEventArgs? _elementClearingArgs;
+    private ItemsRepeaterElementIndexChangedEventArgs? _elementIndexChangedArgs;
 
     // Loaded events fire on the first tick after an element is put into the tree 
     // while unloaded is posted on the UI tree and may be processed out of sync with subsequent loaded
@@ -735,16 +647,16 @@ public partial class ItemsRepeater : Panel
 
     // Used to avoid layout cycles with StackLayout layouts where variable sized children prevent
     // the ItemsRepeater's layout to settle.
-    private byte _stackLayoutMeasureCounter = 0;
+    private byte _stackLayoutMeasureCounter;
 
     // Bug in framework's reference tracking causes crash during
     // UIAffinityQueue cleanup. To avoid that bug, take a strong ref
-    private IElementFactory _itemTemplate;
+    // private IElementFactory _itemTemplate;
 
     // Bug where DataTemplate with no content causes a crash.
     // See: https://github.com/microsoft/microsoft-ui-xaml/issues/776
     // Solution: Have flag that is only true when DataTemplate exists but it is empty.
-    private bool _isItemTemplateEmpty = false;
+    private bool _isItemTemplateEmpty;
 
     // If no ItemCollectionTransitionProvider is explicitly provided, we'll retrieve a default one
     // from the Layout object. In that case, we'll want to know that we own that object and can

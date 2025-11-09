@@ -4,20 +4,15 @@ namespace Virtualization.Avalonia;
 
 internal class VirtualizationInfo
 {
-    public VirtualizationInfo()
-    {
-        ArrangeBounds = ItemsRepeater.InvalidRect;
-    }
-
-    public int Index => _index;
+    public int Index { get; private set; } = -1;
 
     public bool IsPinned => _pinCounter > 0;
 
-    public bool IsHeldByLayout => _owner == ElementOwner.Layout;
+    public bool IsHeldByLayout => Owner == ElementOwner.Layout;
 
-    public bool IsRealized => IsHeldByLayout || _owner == ElementOwner.PinnedPool;
+    public bool IsRealized => IsHeldByLayout || Owner == ElementOwner.PinnedPool;
 
-    public bool IsInUniqueIdResetPool => _owner == ElementOwner.UniqueIdResetPool;
+    public bool IsInUniqueIdResetPool => Owner == ElementOwner.UniqueIdResetPool;
 
     public bool AutoRecycleCandidate { get; set; }
 
@@ -28,51 +23,47 @@ internal class VirtualizationInfo
     // would be an extra property read and possible perf issue)
     public bool CanBeScrollAnchor { get; set; }
 
-    public ElementOwner Owner => _owner;
+    public ElementOwner Owner { get; private set; }
 
     public bool KeepAlive { get; set; }
 
-    public Rect ArrangeBounds { get; set; }
+    public Rect ArrangeBounds { get; set; } = ItemsRepeater.InvalidRect;
 
-    public string UniqueId => _uniqueId;
+    public string? UniqueId { get; private set; }
 
-    public object Data => _data == null ? null :
-        _data.TryGetTarget(out var target) ? target : null;
+    public object? Data => _data == null ? null : _data.TryGetTarget(out var target) ? target : null;
  
-    internal void UpdatePhasingInfo(object data)
-    {
-        _data = new WeakReference<object>(data);
-    }
+    internal void UpdatePhasingInfo(object data) => _data = new(data);
 
     internal void MoveOwnershipToLayoutFromElementFactory(int index, string uniqueId)
     {
-        _owner = ElementOwner.Layout;
-        _index = index;
-        _uniqueId = uniqueId;
+        Owner = ElementOwner.Layout;
+        Index = index;
+        UniqueId = uniqueId;
     }
 
     internal void MoveOwnershipToLayoutFromUniqueIdResetPool()
     {
-        _owner = ElementOwner.Layout;
+        Owner = ElementOwner.Layout;
     }
 
     internal void MoveOwnershipToLayoutFromPinnedPool()
     {
-        _owner = ElementOwner.Layout;
+        Owner = ElementOwner.Layout;
     }
 
     internal void MoveOwnershipToElementFactory()
     {
-        _owner = ElementOwner.ElementFactory;
+        Owner = ElementOwner.ElementFactory;
         _pinCounter = 0;
-        _index = -1;
-        _uniqueId = null;
+        Index = -1;
+        UniqueId = null;
         ArrangeBounds = ItemsRepeater.InvalidRect;
     }
 
     internal void MoveOwnershipToUniqueIdResetPoolFromLayout()
     {
-        _owner = ElementOwner.UniqueIdResetPool;
+        Owner = ElementOwner.UniqueIdResetPool;
         // Keep the pinCounter the same. If the container survives the reset
         // it can go on being pinned as if nothing happened.
     }
@@ -82,14 +73,14 @@ internal class VirtualizationInfo
         // During a unique id reset, some elements might get removed.
         // Their ownership will go from the UniqueIdResetPool to the Animator.
         // The common path though is for ownership to go from Layout to Animator.
-        _owner = ElementOwner.Animator;
-        _index = -1;
+        Owner = ElementOwner.Animator;
+        Index = -1;
         _pinCounter = 0;
     }
 
     internal void MoveOwnershipToPinnedPool()
     {
-        _owner = ElementOwner.PinnedPool;
+        Owner = ElementOwner.PinnedPool;
     }
 
     internal uint AddPin()
@@ -113,15 +104,12 @@ internal class VirtualizationInfo
 
     internal void UpdateIndex(int newIndex)
     {
-        _index = newIndex;
+        Index = newIndex;
     }
 
     private uint _pinCounter;
-    private int _index = -1;
-    private string _uniqueId;
-    private ElementOwner _owner;
 
-    private WeakReference<object> _data;    
+    private WeakReference<object>? _data;    
 
     internal const int PhaseReachedEnd = -1;
 

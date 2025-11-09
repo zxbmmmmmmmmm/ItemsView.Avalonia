@@ -8,9 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
   	<PackageReference Include="Avalonia" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Virtualization.Avalonia.Layouts\Virtualization.Avalonia.Layouts.csproj" />
+    <PackageReference Include="PropertyGenerator.Avalonia" />
   </ItemGroup>
 
 </Project>

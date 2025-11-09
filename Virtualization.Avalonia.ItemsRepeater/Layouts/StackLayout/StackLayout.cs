@@ -14,8 +14,6 @@ public class StackLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IO
 {
     public StackLayout()
     {
-        LayoutId = "StackLayout";
-
         UpdateIndexBasedLayoutOrientation(Orientation.Vertical);
     }
 
@@ -98,7 +96,7 @@ public class StackLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IO
         var desiredSize = GetFlowAlgorithm(context).Measure(
             availableSize, context, false /*isWrapping*/, 0/*minItemsSpacing*/,
             _itemSpacing, int.MaxValue /*maxItemsPerLine*/,
-            ScrollOrientation, DisableVirtualization, LayoutId);
+            ScrollOrientation, DisableVirtualization);
 
         return desiredSize;
     }
@@ -110,7 +108,7 @@ public class StackLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IO
 
         var value = GetFlowAlgorithm(context).Arrange(
             finalSize, context, false /*isWrapping*/,
-            FlowLayoutAlgorithm.LineAlignment.Start, LayoutId);
+            FlowLayoutAlgorithm.LineAlignment.Start);
 
         return value;
     }
@@ -204,7 +202,7 @@ public class StackLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IO
         Size measureSize, Size desiredSize, Size provisionalArrangeSize,
         VirtualizingLayoutContext context)
     {
-        if (context is VirtualizingLayoutContext ctx)
+        if (context is { } ctx)
         {
             var stackState = GetAsStackState(ctx.LayoutState);
             stackState.OnElementMeasured(index,
@@ -263,7 +261,7 @@ public class StackLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IO
             firstRealizedIndex, firstRealizedLayoutBounds,
             lastRealized, lastRealizedItemIndex, lastRealizedLayoutBounds);
     }
-
+    
     void IFlowLayoutAlgorithmDelegates.Algorithm_OnElementMeasured(Control element, int index, Size availableSize, 
         Size measureSize, Size desiredSize, Size provisionalArrangeSize, VirtualizingLayoutContext context)
     {

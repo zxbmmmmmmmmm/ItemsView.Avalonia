@@ -4,92 +4,65 @@ using Virtualization.Avalonia.Layouts;
 
 namespace Virtualization.Avalonia;
 
-internal class RepeaterLayoutContext : VirtualizingLayoutContext
+internal class RepeaterLayoutContext(ItemsRepeater owner) : VirtualizingLayoutContext
 {
-    public RepeaterLayoutContext(ItemsRepeater owner)
-    {
-        _owner = new WeakReference<ItemsRepeater>(owner);
-    }
-
-    protected internal override int ItemCountCore()
-    {
-        var dataSource = GetOwner()?.ItemsSourceView;
-        return dataSource?.Count ?? 0;
-    }
+    protected internal override int ItemCountCore() => GetOwner()?.ItemsSourceView?.Count ?? 0;
 
     protected override Control GetOrCreateElementAtCore(int index, ElementRealizationOptions options)
     {
-        return GetOwner()?.GetElementImpl(index,
+        var owner = GetOwner() ?? throw new NullReferenceException();
+        return owner.GetElementImpl(index,
             (options & ElementRealizationOptions.ForceCreate) == ElementRealizationOptions.ForceCreate,
             (options & ElementRealizationOptions.SuppressAutoRecycle) == ElementRealizationOptions.SuppressAutoRecycle);
     }
 
-    protected internal override object LayoutStateCore
+    protected internal override object? LayoutStateCore
     {
         get => GetOwner()?.LayoutState;
         set
         {
-            if (GetOwner() is ItemsRepeater ir)
-            {
+            if (GetOwner() is { } ir)
                 ir.LayoutState = value;
-            }
         }
     }
 
-    protected override object GetItemAtCore(int index)
-    {
-        return GetOwner()?.ItemsSourceView?.GetAt(index);
-    }
+    protected override object? GetItemAtCore(int index) => GetOwner()?.ItemsSourceView?[index];
 
     protected override void RecycleElementCore(Control element)
     {
         var owner = GetOwner();
 #if DEBUG && REPEATER_TRACE
         var x = Log.Logger;
-        Log.Debug("RepeaterLayout - RecycleElement {Index}", owner.GetElementIndex(element));
+        Log.Debug("RepeaterLayout - RecycleElement {Index}", owner?.GetElementIndex(element));
 #endif
         owner?.ClearElementImpl(element);
     }
 
-    protected override Rect VisibleRectCore()
-    {
-        return GetOwner()?.VisibleWindow ?? default;
-    }
+    protected override Rect VisibleRectCore() => GetOwner()?.VisibleWindow ?? default;
 
-    protected override Rect RealizationRectCore()
-    {
-        return GetOwner()?.RealizationWindow ?? default;
-    }
+    protected override Rect RealizationRectCore() => GetOwner()?.RealizationWindow ?? default;
 
     protected override int RecommendedAnchorIndexCore()
     {
-        int anchorIndex = -1;
-        var repeater = GetOwner();
-        var anchor = repeater?.SuggestedAnchor;
-        if (anchor != null)
+        if (GetOwner() is { SuggestedAnchor: { } anchor } repeater)
         {
-            anchorIndex = repeater.GetElementIndex(anchor);
+            return repeater.GetElementIndex(anchor);
         }
 
-        return anchorIndex;
+        return -1;
     }
 
-    protected override Point LayoutOriginCore() =>
-        GetOwner()?.LayoutOrigin ?? default;
+    protected override Point LayoutOriginCore() => GetOwner()?.LayoutOrigin ?? default;
 
     protected override void LayoutOriginCore(Point value)
     {
-        if (GetOwner() is ItemsRepeater ir)
+        if (GetOwner() is { } ir)
             ir.LayoutOrigin = value;
     }
 
-    private ItemsRepeater GetOwner()
-    {
-        if (_owner.TryGetTarget(out var target))
-            return target;
+    private ItemsRepeater? GetOwner() => _owner.TryGetTarget(out var target) 
+        ? target 
+        : null;
 
-        return null;
-    }
-
-    private WeakReference<ItemsRepeater> _owner;
+    private readonly WeakReference<ItemsRepeater> _owner = new(owner);
 }

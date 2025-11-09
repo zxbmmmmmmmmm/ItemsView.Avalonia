@@ -1,4 +1,5 @@
-﻿using Avalonia;
+﻿using System.Diagnostics.CodeAnalysis;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Threading;
@@ -8,13 +9,8 @@ namespace Virtualization.Avalonia;
 
 // Note: this source should come from ViewportManagerWithPlatformFeatures.cpp
 
-internal class ViewportManager
+internal class ViewportManager(ItemsRepeater owner)
 {
-    public ViewportManager(ItemsRepeater owner)
-    {
-        _owner = owner;
-    }
-
     public double HorizontalCacheLength
     {
         get => _maximumHorizontalCacheLength;
@@ -37,37 +33,35 @@ internal class ViewportManager
         }
     }
 
-    public Control SuggestedAnchor
+    public Control? SuggestedAnchor
     {
         get
         {
             // The element generated during the ItemsRepeater.MakeAnchor call has precedence over the next tick.
-            Control suggestedAnchor = _makeAnchorElement;
-            Control owner = _owner;
+            var suggestedAnchor = MadeAnchor;
+            Control owner1 = owner;
 
-            if (suggestedAnchor == null)
+            if (suggestedAnchor != null)
+                return suggestedAnchor;
+            var anchorElement = _scroller?.CurrentAnchor;
+
+            if (anchorElement == null)
+                return suggestedAnchor;
+            // We can't simply return anchorElement because, in case of nested Repeaters, it may not
+            // be a direct child of ours, or even an indirect child. We need to walk up the tree starting
+            // from anchorElement to figure out what child of ours (if any) to use as the suggested element.
+            var child = anchorElement;
+            var parent = child.GetVisualParent();
+            while (parent != null)
             {
-                var anchorElement = _scroller?.CurrentAnchor;
-
-                if (anchorElement != null)
+                if (parent == owner1)
                 {
-                    // We can't simply return anchorElement because, in case of nested Repeaters, it may not
-                    // be a direct child of ours, or even an indirect child. We need to walk up the tree starting
-                    // from anchorElement to figure out what child of ours (if any) to use as the suggested element.
-                    var child = anchorElement;
-                    var parent = child.GetVisualParent();
-                    while (parent != null)
-                    {
-                        if (parent == owner)
-                        {
-                            suggestedAnchor = child;
-                            break;
-                        }
-
-                        child = (Control)parent;
-                        parent = parent.GetVisualParent();
-                    }
+                    suggestedAnchor = child;
+                    break;
                 }
+
+                child = (Control)parent;
+                parent = parent.GetVisualParent();
             }
 
             return suggestedAnchor;
@@ -76,8 +70,9 @@ internal class ViewportManager
 
     public Rect LayoutExtent => _layoutExtent;
 
-    public Control MadeAnchor => _makeAnchorElement;
+    public Control? MadeAnchor { get; private set; }
 
+    [MemberNotNullWhen(true, nameof(MadeAnchor))]
     private bool HasScroller => _scroller != null;
         
     public Rect GetLayoutVisibleWindowDiscardAnchor()
@@ -99,7 +94,7 @@ internal class ViewportManager
     {
         var visibleWindow = _visibleWindow;
 
-        if (_makeAnchorElement != null && _isAnchorOutsideRealizedRange)
+        if (MadeAnchor != null && _isAnchorOutsideRealizedRange)
         {
             // The anchor is not necessarily laid out yet. Its position should default
             // to zero and the layout origin is expected to change once layout is done.
@@ -166,7 +161,7 @@ internal class ViewportManager
             if (!_layoutUpdatedRevoker)
             {
                 _layoutUpdatedRevoker = true;
-                _owner.LayoutUpdated += OnLayoutUpdated;
+                owner.LayoutUpdated += OnLayoutUpdated;
             }
         }
 
@@ -175,10 +170,8 @@ internal class ViewportManager
 
         // We just finished a measure pass and have a new extent.
         // Let's make sure the scrollers will run its arrange so that they track the anchor.
-        if (_scroller != null)
-        {
-            (_scroller as Control).InvalidateArrange();
-        }
+        if (_scroller is Control control)
+            control.InvalidateArrange();
     }
 
     public void OnLayoutChanged(bool isVirtualizing)
@@ -191,13 +184,13 @@ internal class ViewportManager
 
         if (_managingViewportDisabled)
         {
-            _owner.EffectiveViewportChanged -= OnEffectiveViewportChanged;
+            owner.EffectiveViewportChanged -= OnEffectiveViewportChanged;
             _effectiveViewportChangedRevoker = false;
         }
         else if (!_effectiveViewportChangedRevoker)
         {
             _effectiveViewportChangedRevoker = true;
-            _owner.EffectiveViewportChanged += OnEffectiveViewportChanged;
+            owner.EffectiveViewportChanged += OnEffectiveViewportChanged;
         }
 
         _unshiftableShift = default;
@@ -233,42 +226,39 @@ internal class ViewportManager
     {
         _expectedViewportShift = default;
 
-        if (!_managingViewportDisabled)
-        {
-            // This is because of a bug that causes effective viewport to not 
-            // fire if you register during arrange.
-            // Bug 17411076: EffectiveViewport: registering for effective viewport in arrange should invalidate viewport
-            // EnsureScroller();
+        if (_managingViewportDisabled)
+            return;
+        // This is because of a bug that causes effective viewport to not 
+        // fire if you register during arrange.
+        // Bug 17411076: EffectiveViewport: registering for effective viewport in arrange should invalidate viewport
+        // EnsureScroller();
 
-            if (HasScroller)
-            {
-                double maximumHorizontalCacheBufferPerSide = _maximumHorizontalCacheLength * _visibleWindow.Width / 2;
-                double maximumVerticalCacheBufferPerSide = _maximumVerticalCacheLength * _visibleWindow.Height / 2;
+        if (!HasScroller)
+            return;
+        double maximumHorizontalCacheBufferPerSide = _maximumHorizontalCacheLength * _visibleWindow.Width / 2;
+        double maximumVerticalCacheBufferPerSide = _maximumVerticalCacheLength * _visibleWindow.Height / 2;
 
-                bool continueBuildingCache =
-                    _horizontalCacheBufferPerSide < maximumHorizontalCacheBufferPerSide ||
-                    _verticalCacheBufferPerSide < maximumVerticalCacheBufferPerSide;
+        bool continueBuildingCache =
+            _horizontalCacheBufferPerSide < maximumHorizontalCacheBufferPerSide ||
+            _verticalCacheBufferPerSide < maximumVerticalCacheBufferPerSide;
 
-                if (continueBuildingCache)
-                {
-                    _horizontalCacheBufferPerSide += CacheBufferPerSideInflationPixelDelta;
-                    _verticalCacheBufferPerSide += CacheBufferPerSideInflationPixelDelta;
+        if (!continueBuildingCache)
+            return;
+        _horizontalCacheBufferPerSide += CacheBufferPerSideInflationPixelDelta;
+        _verticalCacheBufferPerSide += CacheBufferPerSideInflationPixelDelta;
 
-                    _horizontalCacheBufferPerSide = Math.Min(_horizontalCacheBufferPerSide, maximumHorizontalCacheBufferPerSide);
-                    _verticalCacheBufferPerSide = Math.Min(_verticalCacheBufferPerSide, maximumVerticalCacheBufferPerSide);
+        _horizontalCacheBufferPerSide = Math.Min(_horizontalCacheBufferPerSide, maximumHorizontalCacheBufferPerSide);
+        _verticalCacheBufferPerSide = Math.Min(_verticalCacheBufferPerSide, maximumVerticalCacheBufferPerSide);
 
-                    // Since we grow the cache buffer at the end of the arrange pass,
-                    // we need to register work even if we just reached cache potential.
-                    RegisterCacheBuildWork();
-                }
-            }
-        }
+        // Since we grow the cache buffer at the end of the arrange pass,
+        // we need to register work even if we just reached cache potential.
+        RegisterCacheBuildWork();
     }
 
-    private void OnLayoutUpdated(object sender, EventArgs e)
+    private void OnLayoutUpdated(object? sender, EventArgs e)
     {
         _layoutUpdatedRevoker = false;
-        _owner.LayoutUpdated -= OnLayoutUpdated;
+        owner.LayoutUpdated -= OnLayoutUpdated;
 
         if (_managingViewportDisabled)
             return;
@@ -278,26 +268,25 @@ internal class ViewportManager
         // adjust our expected shift to track that. One case where this can happen is when there is no scrollviewer
         // that can scroll in the direction where the shift is expected.
 
-        if (_pendingViewportShift.X != 0 && _pendingViewportShift.Y != 0)
-        {
+        if (_pendingViewportShift.X == 0 || _pendingViewportShift.Y == 0)
+            return;
 #if DEBUG && REPEATER_TRACE
             Log.Debug("{Layout}: Layout updated with pending shift {Shift} - invalidating measure",
                 GetLayoutId(), _pendingViewportShift);
 #endif
 
-            _unshiftableShift = new Point(
-                _unshiftableShift.X + _pendingViewportShift.X,
-                _unshiftableShift.Y + _pendingViewportShift.Y);
-            _pendingViewportShift = default;
-            _expectedViewportShift = default;
+        _unshiftableShift = new Point(
+            _unshiftableShift.X + _pendingViewportShift.X,
+            _unshiftableShift.Y + _pendingViewportShift.Y);
+        _pendingViewportShift = default;
+        _expectedViewportShift = default;
 
-            TryInvalidateMeasure();
-        }
+        TryInvalidateMeasure();
     }
 
-    public void OnMakeAnchor(Control anchor, bool isAnchorOutsideRealizedRange)
+    public void OnMakeAnchor(Control? anchor, bool isAnchorOutsideRealizedRange)
     {
-        _makeAnchorElement = anchor;
+        MadeAnchor = anchor;
         _isAnchorOutsideRealizedRange = isAnchorOutsideRealizedRange;
     }
 
@@ -326,16 +315,15 @@ internal class ViewportManager
         var targetChild = GetImmediateChildOfRepeater((Control)args.TargetObject);
 
         // Make sure that only the target child can be the anchor during the bring into view operation.
-        foreach (var child in _owner.Children)
+        foreach (var child in owner.Children)
         {
             var vInfo = ItemsRepeater.GetVirtualizationInfo(child);
-            if (vInfo.CanBeScrollAnchor && child != targetChild)
-            {
-                // In WinUI, CanBeScrollAnchor is used to automatically set the scroll
-                // anchor on the IScrollAnchorProvider - here we have to do that manually
-                _scroller?.UnregisterAnchorCandidate(child);
-                vInfo.CanBeScrollAnchor = false;
-            }
+            if (!vInfo.CanBeScrollAnchor || child == targetChild)
+                continue;
+            // In WinUI, CanBeScrollAnchor is used to automatically set the scroll
+            // anchor on the IScrollAnchorProvider - here we have to do that manually
+            _scroller?.UnregisterAnchorCandidate(child);
+            vInfo.CanBeScrollAnchor = false;
         }
 
         // Register to rendering event to go back to how things were before where any child can be the anchor.
@@ -353,14 +341,14 @@ internal class ViewportManager
         }
     }
 
-    private Control GetImmediateChildOfRepeater(Control descendant)
+    private Control? GetImmediateChildOfRepeater(Control descendant)
     {
-        Control targetChild = descendant;
-        Control parent = (Control)descendant.GetVisualParent();
-        while (parent != null && parent != _owner)
+        var targetChild = descendant;
+        var parent = (Control?)descendant.GetVisualParent();
+        while (parent != null && parent != owner)
         {
             targetChild = parent;
-            parent = (Control)parent.GetVisualParent();
+            parent = (Control?)parent.GetVisualParent();
         }
 
         // This is what WinUI does, but this can be hit in Avalonia...
@@ -372,10 +360,7 @@ internal class ViewportManager
         //{
         //    throw new InvalidOperationException("OnBringIntoViewRequested called with args.target element not under the ItemsRepeater that recieved the call");
         //}
-        if (parent == null)
-            return null;
-
-        return targetChild;
+        return parent is null ? null : targetChild;
     }
 
     private void OnCompositionTargetRendering()
@@ -384,28 +369,27 @@ internal class ViewportManager
         //CompositionTarget.Rendering -= OnCompositionTargetRendering;
 
         _isBringIntoViewInProgress = false;
-        _makeAnchorElement = null;
+        MadeAnchor = null;
 
         // Now that the item has been brought into view, we can let the anchor provider pick a new anchor.
-        foreach (var child in _owner.Children)
+        foreach (var child in owner.Children)
         {
             // Change from WinUI - unfortunately need the property read here regardless since
             // we need to store CanBeScrollAnchor on the Virt Info
             // Fortunately this only happens after a BringIntoView request, which shouldn't
             // be a common case
             var info = ItemsRepeater.GetVirtualizationInfo(child);
-            if (!info.CanBeScrollAnchor && info.IsRealized && info.IsHeldByLayout)
-            {
-                _scroller?.RegisterAnchorCandidate(child);
-                info.CanBeScrollAnchor = true;
-            }
+            if (info is not { CanBeScrollAnchor: false, IsRealized: true, IsHeldByLayout: true })
+                continue;
+            _scroller?.RegisterAnchorCandidate(child);
+            info.CanBeScrollAnchor = true;
         }
     }
 
     internal void ResetScrollers()
     {
         _scroller = null;
-        _owner.EffectiveViewportChanged -= OnEffectiveViewportChanged;
+        owner.EffectiveViewportChanged -= OnEffectiveViewportChanged;
         _effectiveViewportChangedRevoker = false;
         _ensuredScroller = false;
     }
@@ -414,10 +398,10 @@ internal class ViewportManager
     {
         _cacheBuildAction = null;
         if (!_managingViewportDisabled)
-            _owner.InvalidateMeasure();
+            owner.InvalidateMeasure();
     }
 
-    private void OnEffectiveViewportChanged(object sender, EffectiveViewportChangedEventArgs args)
+    private void OnEffectiveViewportChanged(object? sender, EffectiveViewportChangedEventArgs args)
     {
 #if DEBUG && REPEATER_TRACE
         Debug.Assert(!_managingViewportDisabled);
@@ -439,7 +423,7 @@ internal class ViewportManager
         if (_layoutUpdatedRevoker)
         {
             _layoutUpdatedRevoker = false;
-            _owner.LayoutUpdated -= OnLayoutUpdated;
+            owner.LayoutUpdated -= OnLayoutUpdated;
         }
     }
 
@@ -449,7 +433,7 @@ internal class ViewportManager
         {
             ResetScrollers();
 
-            _scroller = _owner.FindAncestorOfType<IScrollAnchorProvider>();
+            _scroller = owner.FindAncestorOfType<IScrollAnchorProvider>();
 
             if (!_managingViewportDisabled)
             {
@@ -462,7 +446,7 @@ internal class ViewportManager
                 else
                 {
                     _effectiveViewportChangedRevoker = true;
-                    _owner.EffectiveViewportChanged += OnEffectiveViewportChanged;
+                    owner.EffectiveViewportChanged += OnEffectiveViewportChanged;
                 }
             }
 
@@ -523,7 +507,7 @@ internal class ViewportManager
 
     private void RegisterCacheBuildWork()
     {
-        if (_owner.Layout != null && _cacheBuildAction == null)
+        if (owner.Layout != null && _cacheBuildAction == null)
         {
             // We capture 'owner' (a strong refernce on ItemsRepeater) to make sure ItemsRepeater is still around
             // when the async action completes. By protecting ItemsRepeater, we also ensure that this instance
@@ -548,19 +532,15 @@ internal class ViewportManager
 #if DEBUG && REPEATER_TRACE
             Log.Debug("{Layout}: Invalidating measure due to viewport change", GetLayoutId());
 #endif
-            _owner.InvalidateMeasure();
+            owner.InvalidateMeasure();
         }
     }
 
-    string GetLayoutId() => _owner?.Layout?.LayoutId ?? string.Empty;
-
-    private ItemsRepeater _owner;
     private bool _ensuredScroller;
-    private IScrollAnchorProvider _scroller;
-    private Control _makeAnchorElement;
+    private IScrollAnchorProvider? _scroller;
     private bool _isAnchorOutsideRealizedRange;
 
-    private Action _cacheBuildAction;
+    private Action? _cacheBuildAction;
 
     private Rect _visibleWindow;
     private Rect _layoutExtent;
@@ -581,7 +561,7 @@ internal class ViewportManager
     private double _horizontalCacheBufferPerSide;
     private double _verticalCacheBufferPerSide;
 
-    private bool _isBringIntoViewInProgress = false;
+    private bool _isBringIntoViewInProgress;
     // For non-virtualizing layouts, we do not need to keep
     // updating viewports and invalidating measure often. So when
     // a non virtualizing layout is used, we stop doing all that work.

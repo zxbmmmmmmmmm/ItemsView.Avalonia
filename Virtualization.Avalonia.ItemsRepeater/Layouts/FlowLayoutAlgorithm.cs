@@ -33,7 +33,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
     public Size Measure(Size availableSize, VirtualizingLayoutContext context,
         bool isWrapping, double minItemSpacing, double lineSpacing,
         int maxItemsPerLine, ScrollOrientation orientation,
-        bool disableVirtualization, string layoutId)
+        bool disableVirtualization)
     {
         ScrollOrientation = orientation;
 
@@ -41,7 +41,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
         _scrollOrientationSameAsFlow = double.IsInfinity(this.Minor(availableSize));
         var realizationRect = RealizationRect();
 #if DEBUG && REPEATER_TRACE
-        Log.Debug("{Layout}: MeasureLayout realization {Rect}", layoutId, realizationRect);
+        Log.Debug("MeasureLayout realization {Rect}", realizationRect);
 #endif
         var suggestedAnchorIndex = _context.RecommendedAnchorIndex;
         if (_elementManager.IsIndexValidInData(suggestedAnchorIndex))
@@ -59,41 +59,37 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
         }
 
         int anchorIndex = GetAnchorIndex(availableSize, isWrapping,
-            minItemSpacing, disableVirtualization, layoutId);
+            minItemSpacing, disableVirtualization);
         Generate(GenerateDirection.Forward, anchorIndex, availableSize,
-            minItemSpacing, lineSpacing, maxItemsPerLine, disableVirtualization, layoutId);
+            minItemSpacing, lineSpacing, maxItemsPerLine, disableVirtualization);
         Generate(GenerateDirection.Backward, anchorIndex, availableSize,
-            minItemSpacing, lineSpacing, maxItemsPerLine, disableVirtualization, layoutId);
+            minItemSpacing, lineSpacing, maxItemsPerLine, disableVirtualization);
 
         if (isWrapping && IsReflowRequired())
         {
 #if DEBUG && REPEATER_TRACE
-            Log.Debug("{Layout}: Reflow Pass", layoutId);
+            Log.Debug("Reflow Pass");
 #endif
             var firstElementBounds = _elementManager.GetLayoutBoundsForRealizedIndex(0);
             this.SetMinorStart(ref firstElementBounds, 0);
             _elementManager.SetLayoutBoundsForRealizedIndex(0, firstElementBounds);
             Generate(GenerateDirection.Forward, 0 /*anchorIndex*/,
                 availableSize, minItemSpacing, lineSpacing, maxItemsPerLine,
-                disableVirtualization, layoutId);
+                disableVirtualization);
         }
 
         RaiseLineArranged();
         _collectionChangePending = false;
-        _lastExtent = EstimateExtent(availableSize, layoutId);
+        _lastExtent = EstimateExtent(availableSize);
         SetLayoutOrigin();
 
         return _lastExtent.Size;
     }
 
     public Size Arrange(Size finalSize, VirtualizingLayoutContext context,
-        bool isWrapping, LineAlignment lineAlignment,
-        string layoutId)
+        bool isWrapping, LineAlignment lineAlignment)
     {
-#if DEBUG && REPEATER_TRACE
-        Log.Debug("{Layout}: ArrangeLayout", layoutId);
-#endif
-        ArrangeVirtualizingLayout(finalSize, lineAlignment, isWrapping, layoutId);
+        ArrangeVirtualizingLayout(finalSize, lineAlignment, isWrapping);
 
         return new Size(
             Math.Max(finalSize.Width, _lastExtent.Width),
@@ -143,7 +139,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
     }
 
     private int GetAnchorIndex(Size availableSize, bool isWrapping,
-        double minItemSpacing, bool disableVirtualization, string layoutId)
+        double minItemSpacing, bool disableVirtualization)
     {
         int anchorIndex = -1;
         Point anchorPosition = default;
@@ -175,7 +171,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             if (isAnchorSuggestionValid)
             {
 #if DEBUG && REPEATER_TRACE
-                Log.Debug("{Layout}: Using suggested anchor {index}", layoutId, suggestedAnchorIndex);
+                Log.Debug("Using suggested anchor {index}", suggestedAnchorIndex);
 #endif
                 anchorIndex = _algorithmCallbacks.Algorithm_GetAnchorForTargetElement(
                     suggestedAnchorIndex, availableSize, context).Index;
@@ -205,7 +201,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
                     Debug.Assert(anchorIndex < firstRealizedDataIndex);
                     for (int i = firstRealizedDataIndex - 1; i >= anchorIndex; i--)
                     {
-                        _elementManager.EnsureElementRealized(false /*forward*/, i, layoutId);
+                        _elementManager.EnsureElementRealized(false /*forward*/, i);
                     }
 
                     var anchorBounds = _elementManager.GetLayoutBoundsForDataIndex(suggestedAnchorIndex);
@@ -216,9 +212,9 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             {
 #if DEBUG && REPEATER_TRACE
                 if (needAnchorColumnRevaluation)
-                    Log.Debug("{Layout}: NeedAnchorColumnRevaluation", layoutId);
+                    Log.Debug("NeedAnchorColumnRevaluation");
                 if (!isRealizationWindowConnected)
-                    Log.Debug("{Layout}: Disconnected Window", layoutId);
+                    Log.Debug("Disconnected Window");
 #endif
 
                 // The anchor is based on the realization window because a connected ItemsRepeater might intersect the realization window
@@ -231,7 +227,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             else
             {
 #if DEBUG && REPEATER_TRACE
-                Log.Debug("{Layout}: Connected window - picking first realized element as anchor", layoutId);
+                Log.Debug("Connected window - picking first realized element as anchor");
 #endif
                 // No suggestion - just pick first in realized range
                 anchorIndex = _elementManager.GetDataIndexFromRealizedRangeIndex(0);
@@ -241,7 +237,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
         }
 
 #if DEBUG && REPEATER_TRACE
-        Log.Debug("{Layout}: Picked anchor {index}", layoutId, anchorIndex);
+        Log.Debug("Picked anchor {index}", anchorIndex);
 #endif
         Debug.Assert(anchorIndex == -1 || _elementManager.IsIndexValidInData(anchorIndex));
         _firstRealizedDataIndexInsideRealizationWindow = _lastRealizedDataIndexInsideRealizationWindow = anchorIndex;
@@ -251,7 +247,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             if (!_elementManager.IsDataIndexRealized(anchorIndex))
             {
 #if DEBUG && REPEATER_TRACE
-                Log.Debug("{Layout} Disconnected Window - throwing away all realized elements", layoutId);
+                Log.Debug("Disconnected Window - throwing away all realized elements");
 #endif
                 // Disconnected, throw everything and create new anchor
                 _elementManager.ClearRealizedRange();
@@ -266,14 +262,13 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             _elementManager.SetLayoutBoundsForDataIndex(anchorIndex, layoutBounds);
 
 #if DEBUG && REPEATER_TRACE
-            Log.Debug("{Layout} Layout bounds of anchor {Index} are {Bounds}", layoutId,
-                anchorIndex, layoutBounds);
+            Log.Debug("Layout bounds of anchor {Index} are {Bounds}", anchorIndex, layoutBounds);
 #endif
         }
         else
         {
 #if DEBUG && REPEATER_TRACE
-            Log.Debug("{Layout} Anchor index is not valid - throwing away all realized elements", layoutId);
+            Log.Debug("Anchor index is not valid - throwing away all realized elements");
 #endif
             // Throw everything away
             _elementManager.ClearRealizedRange();
@@ -288,15 +283,14 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
 
     private void Generate(GenerateDirection direction, int anchorIndex, Size availableSize,
         double minItemSpacing, double lineSpacing, int maxItemsPerLine,
-        bool disableVirtualization, string layoutId)
+        bool disableVirtualization)
     {
         if (anchorIndex == -1)
             return;
 
         int step = direction == GenerateDirection.Forward ? 1 : -1;
 #if DEBUG && REPEATER_TRACE
-        Log.Debug("{LayoutId}: Generating {Direction} from anchor {Index}",
-            layoutId, direction, anchorIndex);
+        Log.Debug("{Generating {Direction} from anchor {Index}", direction, anchorIndex);
 #endif
         int previousIndex = anchorIndex;
         int currentIndex = anchorIndex + step;
@@ -310,7 +304,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             (disableVirtualization || ShouldContinueFillingUpSpace(previousIndex, direction)))
         {
             // Ensure layout element.
-            _elementManager.EnsureElementRealized(direction == GenerateDirection.Forward, currentIndex, layoutId);
+            _elementManager.EnsureElementRealized(direction == GenerateDirection.Forward, currentIndex);
             var currentElement = _elementManager.GetRealizedElement(currentIndex);
             var desiredSize = MeasureElement(currentElement, currentIndex, availableSize, _context);
 
@@ -394,8 +388,8 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
                                 this.SetMajorSize(ref bounds, lineMajorSize);
                                 _elementManager.SetLayoutBoundsForDataIndex(dataIndex, bounds);
 #if DEBUG && REPEATER_TRACE
-                                Log.Debug("{Layout}: Corrected Layout bounds of element {Index} are {X} {Y} {Width} {Height}",
-                                    layoutId, dataIndex,
+                                Log.Debug("Corrected Layout bounds of element {Index} are {X} {Y} {Width} {Height}",
+                                    dataIndex,
                                     bounds.X, bounds.Y, bounds.Width, bounds.Height);
 #endif
                             }
@@ -422,8 +416,8 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
 
             _elementManager.SetLayoutBoundsForDataIndex(currentIndex, currentBounds);
 #if DEBUG && REPEATER_TRACE
-            Log.Debug("{Layout} Layout bounds of element {Index} are {X} {Y} {Width} {Height}",
-                layoutId, currentIndex, 
+            Log.Debug("Layout bounds of element {Index} are {X} {Y} {Width} {Height}",
+                currentIndex, 
                 currentBounds.X, currentBounds.Y, currentBounds.Width, currentBounds.Height);
 #endif
             previousIndex = currentIndex;
@@ -491,7 +485,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
         return shouldContinue;
     }
 
-    private Rect EstimateExtent(Size availableSize, string layoutId)
+    private Rect EstimateExtent(Size availableSize)
     {
         Control firstRealizedElement = null;
         Rect firstBounds = default;
@@ -516,7 +510,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             availableSize, _context, firstRealizedElement, firstDataIndex, firstBounds,
             lastRealizedElement, lastDataIndex, lastBounds);
 #if DEBUG && REPEATER_TRACE
-        Log.Debug("{Layout}: Extent: {Rect}", layoutId, extent);
+        Log.Debug("Extent: {Rect}", extent);
 #endif
         return extent;
     }
@@ -559,7 +553,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
         }
     }
 
-    private void ArrangeVirtualizingLayout(Size finalSize, LineAlignment lineAlignment, bool isWrapping, string layoutId)
+    private void ArrangeVirtualizingLayout(Size finalSize, LineAlignment lineAlignment, bool isWrapping)
     {
         // Walk through the realized elements one line at a time and
         // align them, Then call element.Arrange with the arranged bounds.
@@ -579,7 +573,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
                 {
                     spaceAtLineEnd = this.Minor(finalSize) - this.MinorStart(previousElementBounds) - this.MinorSize(previousElementBounds);
                     PerformLineAlignment(i - countInLine, countInLine, spaceAtLineStart, spaceAtLineEnd, 
-                        currentLineSize, lineAlignment, isWrapping, finalSize, layoutId);
+                        currentLineSize, lineAlignment, isWrapping, finalSize);
                     spaceAtLineStart = this.MinorStart(currentBounds);
                     countInLine = 0;
                     currentLineOffset = this.MajorStart(currentBounds);
@@ -598,7 +592,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
                 double spaceAtEnd = this.Minor(finalSize) - this.MinorStart(previousElementBounds) - this.MinorSize(previousElementBounds);
                 PerformLineAlignment(realizedElementCount - countInLine, countInLine, 
                     spaceAtLineStart, spaceAtEnd, currentLineSize, lineAlignment, 
-                    isWrapping, finalSize, layoutId);
+                    isWrapping, finalSize);
             }
         }
     }
@@ -607,7 +601,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
     // repeated measures, the LayoutBounds remain the same in each layout.
     private void PerformLineAlignment(int lineStartIndex, int countInLine, double spaceAtLineStart,
         double spaceAtLineEnd, double lineSize, LineAlignment lineAlignment, bool isWrapping,
-        Size finalSize, string layoutId)
+        Size finalSize)
     {
         for (int rangeIndex = lineStartIndex; rangeIndex < lineStartIndex + countInLine; ++rangeIndex)
         {
@@ -683,8 +677,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             var element = _elementManager.GetAt(rangeIndex);
 
 #if DEBUG && REPEATER_TRACE
-            Log.Debug("{Layout}: Arranging element {Index} at {Bounds}",
-                layoutId,
+            Log.Debug("Arranging element {Index} at {Bounds}",
                 _elementManager.GetDataIndexFromRealizedRangeIndex(rangeIndex),
                 bounds);
 #endif

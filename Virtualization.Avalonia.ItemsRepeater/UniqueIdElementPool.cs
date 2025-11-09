@@ -3,39 +3,29 @@ using Avalonia.Controls;
 
 namespace Virtualization.Avalonia;
 
-internal class UniqueIdElementPool
+internal class UniqueIdElementPool(ItemsRepeater ir)
 {
-    public UniqueIdElementPool(ItemsRepeater ir)
-    {
-        _owner = ir;
-        // ItemsRepeater is not fully constructed yet. Don't interact with it.
-    }
+    // ItemsRepeater is not fully constructed yet. Don't interact with it.
 
     public void Add(Control element)
     {
-        Debug.Assert(_owner.ItemsSourceView.HasKeyIndexMapping);
+        Debug.Assert(ir.ItemsSourceView!.HasKeyIndexMapping);
 
         var virtInfo = ItemsRepeater.GetVirtualizationInfo(element);
         var key = virtInfo.UniqueId;
 
-        if (_elementMap.ContainsKey(key))
+        if (!_elementMap.TryAdd(key, element))
         {
             throw new InvalidOperationException("The ID is not unique");
         }
-
-        _elementMap.Add(key, element);
     }
 
-    public Control Remove(int index)
+    public Control? Remove(int index)
     {
-        Debug.Assert(_owner.ItemsSourceView.HasKeyIndexMapping);
+        Debug.Assert(ir.ItemsSourceView!.HasKeyIndexMapping);
 
-        Control element = null;
-        string key = _owner.ItemsSourceView.KeyFromIndex(index);
-        if (_elementMap.TryGetValue(key, out element))
-        {
-            _elementMap.Remove(key);
-        }
+        var key = ir.ItemsSourceView.KeyFromIndex(index);
+        _elementMap.Remove(key, out var element);
 
         return element;
     }
@@ -44,6 +34,5 @@ internal class UniqueIdElementPool
 
     public IEnumerator<KeyValuePair<string, Control>> GetEnumerator() => _elementMap.GetEnumerator();
 
-    private readonly ItemsRepeater _owner;
-    private readonly Dictionary<string, Control> _elementMap = new Dictionary<string, Control>();
+    private readonly Dictionary<string, Control> _elementMap = new();
 }

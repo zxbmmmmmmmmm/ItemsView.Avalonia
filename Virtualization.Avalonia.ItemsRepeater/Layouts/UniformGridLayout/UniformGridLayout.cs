@@ -13,8 +13,6 @@ public class UniformGridLayout : VirtualizingLayout, IOrientationBasedMeasures, 
 {
     public UniformGridLayout()
     {
-        LayoutId = "UniformGridLayout";
-
         UpdateIndexBasedLayoutOrientation(Orientation.Horizontal);
     }
 
@@ -236,8 +234,7 @@ public class UniformGridLayout : VirtualizingLayout, IOrientationBasedMeasures, 
             MinItemSpacing, LineSpacing,
             _maximumRowsOrColumns /*maxItemsPerLine*/,
             ScrollOrientation,
-            false /*disableVirtualization*/,
-            LayoutId);
+            false /*disableVirtualization*/);
 
         return desiredSize;
     }
@@ -246,8 +243,7 @@ public class UniformGridLayout : VirtualizingLayout, IOrientationBasedMeasures, 
     {
         var value = GetFlowAlgorithm(context).Arrange(
             finalSize, context, true /*isWrapping*/,
-            (FlowLayoutAlgorithm.LineAlignment)_itemsJustification,
-            LayoutId);
+            (FlowLayoutAlgorithm.LineAlignment)_itemsJustification);
 
         GetAsGridState(context.LayoutState).InvalidateElementSize();
 

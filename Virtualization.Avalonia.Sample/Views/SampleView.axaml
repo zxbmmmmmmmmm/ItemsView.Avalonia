@@ -1,28 +1,28 @@
 <UserControl
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    mc:Ignorable="d"
     x:Class="Virtualization.Avalonia.Sample.SampleView"
+    x:DataType="viewModels:SampleViewModel"
     xmlns="https://github.com/avaloniaui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:avalonia="using:Virtualization.Avalonia"
     xmlns:controls="using:Avalonia.PropertyGrid.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:layouts="using:Virtualization.Avalonia.Layouts"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:viewModels="using:Virtualization.Avalonia.Sample.ViewModels"
-    d:DesignHeight="450"
-    d:DesignWidth="800"
-    x:DataType="viewModels:SampleViewModel"
-    mc:Ignorable="d">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <UserControl.DataContext>
         <viewModels:SampleViewModel />
     </UserControl.DataContext>
 
     <Grid ColumnDefinitions="*,400">
         <avalonia:ItemsView
-            x:Name="ItemsView"
             Grid.Column="0"
             ItemTemplate="{Binding ItemTemplate, Mode=OneWay}"
             ItemsSource="{Binding Items, Mode=OneWay}"
-            Layout="{Binding SelectedItem, ElementName=LayoutComboBox}" />
+            Layout="{Binding SelectedItem, ElementName=LayoutComboBox}"
+            x:Name="ItemsView" />
         <ScrollViewer Grid.Column="1">
             <StackPanel Margin="16" Spacing="8">
                 <TextBlock Text="Data Source" />
@@ -33,6 +33,7 @@
                         <x:Static Member="viewModels:DataType.AsyncImageItems" />
                     </ComboBox>
                     <Button Command="{Binding OpenFolderCommand}" Content="Open Folder..." />
+                    <Button Click="Button_OnClick" Content="scroll" />
                 </StackPanel>
 
                 <TextBlock Margin="0,8,0,0" Text="Image Stretch" />
@@ -55,7 +56,7 @@
                 </StackPanel>
 
                 <TextBlock Margin="0,8,0,0" Text="Layout" />
-                <ComboBox x:Name="LayoutComboBox" SelectedIndex="0">
+                <ComboBox SelectedIndex="0" x:Name="LayoutComboBox">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}}" />

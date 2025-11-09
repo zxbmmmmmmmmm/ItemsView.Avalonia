@@ -24,9 +24,9 @@ public class ItemsRepeaterAutomationPeer : ControlAutomationPeer
         for (int i = 0; i < peerCount; i++)
         {
             var childPeer = childrenPeers[i];
-            if (GetElement((ControlAutomationPeer)childPeer, repeater) is Control c)
+            if (GetElement((ControlAutomationPeer)childPeer, repeater) is { } c)
             {
-                if (ItemsRepeater.GetVirtualizationInfo(c) is VirtualizationInfo vi && vi.IsRealized)
+                if (ItemsRepeater.GetVirtualizationInfo(c) is { } vi && vi.IsRealized)
                 {
                     realizedPeers.Add((vi.Index, childPeer));
                 }
