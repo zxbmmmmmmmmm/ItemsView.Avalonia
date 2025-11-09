@@ -5,15 +5,15 @@
     xmlns:avalonia="using:Virtualization.Avalonia"
     xmlns:controls="using:Avalonia.PropertyGrid.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:layouts="using:Virtualization.Avalonia.Layouts"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:models="using:Virtualization.Avalonia.Sample.Models"
-    xmlns:viewmodels="using:Virtualization.Avalonia.Sample.ViewModels"
+    xmlns:viewModels="using:Virtualization.Avalonia.Sample.ViewModels"
     d:DesignHeight="450"
     d:DesignWidth="800"
-    x:DataType="viewmodels:SampleViewModel"
+    x:DataType="viewModels:SampleViewModel"
     mc:Ignorable="d">
     <UserControl.DataContext>
-        <viewmodels:SampleViewModel />
+        <viewModels:SampleViewModel />
     </UserControl.DataContext>
 
     <Grid ColumnDefinitions="*,400">
@@ -22,12 +22,16 @@
             Grid.Column="0"
             ItemTemplate="{Binding ItemTemplate, Mode=OneWay}"
             ItemsSource="{Binding Items, Mode=OneWay}"
-            Layout="{Binding SelectedLayout, Mode=OneWay}" />
+            Layout="{Binding SelectedItem, ElementName=LayoutComboBox}" />
         <ScrollViewer Grid.Column="1">
             <StackPanel Margin="16" Spacing="8">
                 <TextBlock Text="Data Source" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <ComboBox ItemsSource="{Binding DataSources}" SelectedItem="{Binding SelectedDataSource}" />
+                    <ComboBox SelectedItem="{Binding SelectedDataSource}">
+                        <x:Static Member="viewModels:DataType.TextItems" />
+                        <x:Static Member="viewModels:DataType.ImageItems" />
+                        <x:Static Member="viewModels:DataType.AsyncImageItems" />
+                    </ComboBox>
                     <Button Command="{Binding OpenFolderCommand}" Content="Open Folder..." />
                 </StackPanel>
 
@@ -51,16 +55,21 @@
                 </StackPanel>
 
                 <TextBlock Margin="0,8,0,0" Text="Layout" />
-                <ComboBox ItemsSource="{Binding Layouts}" SelectedItem="{Binding SelectedLayout}">
+                <ComboBox x:Name="LayoutComboBox" SelectedIndex="0">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}}" />
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
+                    <layouts:StackLayout />
+                    <layouts:FlowLayout />
+                    <layouts:MasonryLayout />
+                    <layouts:UniformGridLayout />
+                    <layouts:WrapLayout />
                 </ComboBox>
                 <TextBlock Margin="0,8,0,0" Text="Layout Properties" />
                 <controls:PropertyGrid
-                    DataContext="{Binding SelectedLayout}"
+                    DataContext="{Binding SelectedItem, ElementName=LayoutComboBox}"
                     IsHeaderVisible="False"
                     IsTitleVisible="False" />
             </StackPanel>

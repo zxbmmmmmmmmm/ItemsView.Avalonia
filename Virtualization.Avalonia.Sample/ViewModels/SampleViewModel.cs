@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Media;
@@ -25,15 +25,8 @@ public partial class SampleViewModel : ObservableObject
     [ObservableProperty]
     public partial IEnumerable? Items { get; set; } = TextItems;
 
-    public static IReadOnlyList<DataType> DataSources { get; } = Enum.GetValues<DataType>();
-
     [ObservableProperty]
     public partial DataType SelectedDataSource { get; set; } = DataType.TextItems;
-
-    public static IReadOnlyList<Layout> Layouts { get; } = [new StackLayout(), new FlowLayout(), new MasonryLayout(), new UniformGridLayout(), new WrapLayout()];
-
-    [ObservableProperty]
-    public partial Layout? SelectedLayout { get; set; } = Layouts.FirstOrDefault();
 
     [ObservableProperty]
     public partial Stretch ImageStretch { get; set; }
@@ -42,8 +35,9 @@ public partial class SampleViewModel : ObservableObject
 
     private static Item[] InitializeDataSources()
     {
-        var textItems = new Item[1000];
-        for (var i = 0; i < 1000; i++)
+        const int all = 100;
+        var textItems = new Item[all];
+        for (var i = 0; i < all - 1; i++)
         {
             textItems[i] = new()
             {
@@ -52,6 +46,12 @@ public partial class SampleViewModel : ObservableObject
                 Description = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
             };
         }
+        textItems[all - 1] = new()
+        {
+            Value = all - 1,
+            Name = $"Item {all - 1}",
+            Description = string.Concat(Enumerable.Repeat("Lorem ipsum dolor sit amet, consectetur adipiscing elit.\n", all))
+        };
         return textItems;
     }
 

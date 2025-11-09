@@ -33,7 +33,8 @@ public sealed partial class FlowLayout : VirtualizingLayout
     /// <inheritdoc />
     protected internal override void InitializeForContextCore(VirtualizingLayoutContext context)
     {
-        context.LayoutState = new FlowLayoutState(context);    }
+        context.LayoutState = new FlowLayoutState(context);
+    }
 
     /// <inheritdoc />
     protected internal override void UninitializeForContextCore(VirtualizingLayoutContext context)
