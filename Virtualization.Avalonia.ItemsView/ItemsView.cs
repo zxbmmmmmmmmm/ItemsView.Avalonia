@@ -4,15 +4,8 @@ using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Selection;
-using Avalonia.Controls.Templates;
-using Avalonia.Data;
 using Avalonia.Input;
-using Avalonia.Styling;
-using System;
-using System.Collections;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using System.Xml.Linq;
 
 namespace Virtualization.Avalonia;
 

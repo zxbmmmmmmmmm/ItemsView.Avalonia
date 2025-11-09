@@ -1,6 +1,4 @@
 ﻿using Avalonia.Controls;
-using Avalonia.Layout;
-using System.Xml.Linq;
 
 namespace Virtualization.Avalonia.Layouts;
 

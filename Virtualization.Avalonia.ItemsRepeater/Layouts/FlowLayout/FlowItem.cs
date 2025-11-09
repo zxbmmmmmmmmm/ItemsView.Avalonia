@@ -1,10 +1,5 @@
-// Copyright (c) Pixeval.Controls.
-// Licensed under the GPL v3 License.
-
-
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Layout;
 
 namespace Virtualization.Avalonia.Layouts;
 
@@ -24,9 +19,11 @@ internal class FlowItem(int index)
 
     public RowInfo RowInfo { get; internal set; } = null!;
 }
+
 internal class RowInfo(int itemCount = 0, double length = 0)
 {
     public int ItemCount { get; set; } = itemCount;
+
     public double Length { get; set; } = length;
 }
 

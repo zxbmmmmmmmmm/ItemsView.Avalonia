@@ -2,12 +2,12 @@
     x:Class="Virtualization.Avalonia.Sample.SampleView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="clr-namespace:Avalonia.PropertyGrid.Controls;assembly=Avalonia.PropertyGrid"
+    xmlns:avalonia="using:Virtualization.Avalonia"
+    xmlns:controls="using:Avalonia.PropertyGrid.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:models="clr-namespace:Virtualization.Avalonia.Sample.Models"
+    xmlns:models="using:Virtualization.Avalonia.Sample.Models"
     xmlns:viewmodels="using:Virtualization.Avalonia.Sample.ViewModels"
-    xmlns:avalonia="clr-namespace:Virtualization.Avalonia;assembly=Virtualization.Avalonia.ItemsView"
     d:DesignHeight="450"
     d:DesignWidth="800"
     x:DataType="viewmodels:SampleViewModel"
@@ -16,7 +16,7 @@
         <viewmodels:SampleViewModel />
     </UserControl.DataContext>
 
-    <Grid ColumnDefinitions="2*,*">
+    <Grid ColumnDefinitions="*,400">
         <avalonia:ItemsView
             x:Name="ItemsView"
             Grid.Column="0"

@@ -1,9 +1,7 @@
 ﻿using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Layout;
 using PropertyGenerator.Avalonia;
 using System.Collections.Specialized;
-using System.Xml.Linq;
 
 namespace Virtualization.Avalonia.Layouts;
 

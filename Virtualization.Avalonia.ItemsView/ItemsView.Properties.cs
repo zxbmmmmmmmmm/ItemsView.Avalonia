@@ -1,8 +1,6 @@
-﻿using Avalonia.Controls;
-using Avalonia.Controls.Templates;
+﻿using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Interactivity;
-using Avalonia.Layout;
 using PropertyGenerator.Avalonia;
 using System.Collections;
 using Virtualization.Avalonia.Layouts;

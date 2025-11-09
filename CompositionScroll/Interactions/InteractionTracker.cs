@@ -4,7 +4,6 @@ using Avalonia.Rendering.Composition.Transport;
 using Avalonia.Threading;
 using CompositionScroll.Interactions.Server;
 using System;
-using System.Collections.Generic;
 using System.Threading;
 
 namespace CompositionScroll.Interactions;

@@ -1,76 +1,81 @@
-<ResourceDictionary xmlns="https://github.com/avaloniaui"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:controls="using:Virtualization.Avalonia">
-  <Design.PreviewWith>
-    <controls:ItemContainer>
-      <controls:ItemContainer>
-          <StackPanel>
-              <controls:ItemContainer IsEnabled="False"><TextBlock Text="Disabled"/></controls:ItemContainer>
-              <controls:ItemContainer IsSelected="True">
-                  <TextBlock Text="Test"/>
-              </controls:ItemContainer>
-              <controls:ItemContainer><TextBlock Text="Test"/></controls:ItemContainer>
-          </StackPanel>
-      </controls:ItemContainer>
-    </controls:ItemContainer>
-  </Design.PreviewWith>
-  <Thickness x:Key="ItemContainerPadding">12,9,12,12</Thickness>
-  <ControlTheme x:Key="{x:Type controls:ItemContainer}" TargetType="controls:ItemContainer">
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Padding" Value="{DynamicResource ItemContainerPadding}" />
-    <Setter Property="Template">
-      <ControlTemplate>
-          <Grid x:Name="PART_ContainerRoot" Background="{TemplateBinding Background}">
-            <!--Placeholder for child -->
-            <Border
-                x:Name="PART_SelectionVisual"
-                BorderBrush="Transparent"
-                BorderThickness="3"
-                Background="Transparent"
-                CornerRadius="{TemplateBinding CornerRadius}"
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Stretch"
-                IsHitTestVisible="False"
-                Opacity="0" />
-          </Grid>
-      </ControlTemplate>
-    </Setter>
+<ResourceDictionary
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Virtualization.Avalonia">
+    <Design.PreviewWith>
+        <controls:ItemContainer>
+            <controls:ItemContainer>
+                <StackPanel>
+                    <controls:ItemContainer IsEnabled="False">
+                        <TextBlock Text="Disabled" />
+                    </controls:ItemContainer>
+                    <controls:ItemContainer IsSelected="True">
+                        <TextBlock Text="Test" />
+                    </controls:ItemContainer>
+                    <controls:ItemContainer>
+                        <TextBlock Text="Test" />
+                    </controls:ItemContainer>
+                </StackPanel>
+            </controls:ItemContainer>
+        </controls:ItemContainer>
+    </Design.PreviewWith>
+    <Thickness x:Key="ItemContainerPadding">12,9,12,12</Thickness>
+    <ControlTheme x:Key="{x:Type controls:ItemContainer}" TargetType="controls:ItemContainer">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Padding" Value="{DynamicResource ItemContainerPadding}" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid x:Name="PART_ContainerRoot" Background="{TemplateBinding Background}">
+                    <!--  Placeholder for child  -->
+                    <Border
+                        x:Name="PART_SelectionVisual"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        Background="Transparent"
+                        BorderBrush="Transparent"
+                        BorderThickness="3"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        IsHitTestVisible="False"
+                        Opacity="0" />
+                </Grid>
+            </ControlTemplate>
+        </Setter>
 
-    <Style Selector="^:disabled /template/ Grid#PART_ContainerRoot">
-      <Setter Property="Opacity" Value="0.5" />
-    </Style>
+        <Style Selector="^:disabled /template/ Grid#PART_ContainerRoot">
+            <Setter Property="Opacity" Value="0.5" />
+        </Style>
 
-    <!--  PointerOver State  -->
-    <Style Selector="^:pointerover /template/ Grid#PART_ContainerRoot">
-      <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
-    </Style>
+        <!--  PointerOver State  -->
+        <Style Selector="^:pointerover /template/ Grid#PART_ContainerRoot">
+            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
+        </Style>
 
-    <!--  Pressed State  -->
-    <Style Selector="^:pressed /template/ Grid#PART_ContainerRoot">
-      <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListMediumBrush}" />
-    </Style>
+        <!--  Pressed State  -->
+        <Style Selector="^:pressed /template/ Grid#PART_ContainerRoot">
+            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListMediumBrush}" />
+        </Style>
 
-    <!--  Selected State  -->
-    <Style Selector="^:selected">
+        <!--  Selected State  -->
+        <Style Selector="^:selected">
 
-      <Style Selector="^ /template/ Grid#PART_ContainerRoot">
-        <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentLowBrush}" />
-      </Style>
+            <Style Selector="^ /template/ Grid#PART_ContainerRoot">
+                <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentLowBrush}" />
+            </Style>
 
-      <!--  Selected Unfocused State  -->
-      <Style Selector="^:not(:focus) /template/ Grid#PART_ContainerRoot">
-        <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentLowBrush}" />
-      </Style>
+            <!--  Selected Unfocused State  -->
+            <Style Selector="^:not(:focus) /template/ Grid#PART_ContainerRoot">
+                <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentLowBrush}" />
+            </Style>
 
-      <!--  Selected PointerOver State  -->
-      <Style Selector="^:pointerover /template/ Grid#PART_ContainerRoot">
-        <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentMediumBrush}" />
-      </Style>
+            <!--  Selected PointerOver State  -->
+            <Style Selector="^:pointerover /template/ Grid#PART_ContainerRoot">
+                <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentMediumBrush}" />
+            </Style>
 
-      <!--  Selected Pressed State  -->
-      <Style Selector="^:pressed /template/ Grid#PART_ContainerRoot">
-        <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentHighBrush}" />
-      </Style>
-    </Style>
-  </ControlTheme>
+            <!--  Selected Pressed State  -->
+            <Style Selector="^:pressed /template/ Grid#PART_ContainerRoot">
+                <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentHighBrush}" />
+            </Style>
+        </Style>
+    </ControlTheme>
 </ResourceDictionary>

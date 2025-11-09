@@ -1,7 +1,4 @@
-﻿using Avalonia.Controls;
-using Avalonia.Controls.Selection;
-
-namespace Virtualization.Avalonia;
+﻿namespace Virtualization.Avalonia;
 
 internal class MultipleSelector : SelectorBase
 {

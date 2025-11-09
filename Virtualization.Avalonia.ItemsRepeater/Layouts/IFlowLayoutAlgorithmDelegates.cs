@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using Avalonia.Controls;
 
 namespace Virtualization.Avalonia.Layouts;
@@ -27,6 +27,4 @@ internal interface IFlowLayoutAlgorithmDelegates
         VirtualizingLayoutContext context);
     void Algorithm_OnLineArranged(int startIndex, int countInLine, double lineSize,
         VirtualizingLayoutContext context);
-
-
 }

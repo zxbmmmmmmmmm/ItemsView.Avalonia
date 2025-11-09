@@ -1,8 +1,4 @@
-// Copyright (c) Pixeval.Controls.
-// Licensed under the GPL v3 License.
-
 using Avalonia;
-using Avalonia.Layout;
 
 namespace Virtualization.Avalonia.Layouts;
 

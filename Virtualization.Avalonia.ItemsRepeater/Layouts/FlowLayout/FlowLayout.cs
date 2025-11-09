@@ -1,9 +1,5 @@
-// Copyright (c) Pixeval.Controls.
-// Licensed under the GPL v3 License.
-
 using System.Collections.Specialized;
 using Avalonia;
-using Avalonia.Layout;
 using PropertyGenerator.Avalonia;
 
 namespace Virtualization.Avalonia.Layouts;
@@ -42,7 +38,8 @@ public sealed partial class FlowLayout : VirtualizingLayout
     /// <inheritdoc />
     protected internal override void UninitializeForContextCore(VirtualizingLayoutContext context)
     {
-        context.LayoutState = null;    }
+        context.LayoutState = null;
+    }
 
     /// <inheritdoc />
     protected internal override void OnItemsChangedCore(VirtualizingLayoutContext context, object source, NotifyCollectionChangedEventArgs args)

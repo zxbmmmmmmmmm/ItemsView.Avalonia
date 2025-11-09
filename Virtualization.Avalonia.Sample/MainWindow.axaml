@@ -1,17 +1,13 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:itemsview="using:ItemsView.Avalonia"
-        xmlns:local="using:Virtualization.Avalonia.Sample"
-        xmlns:masonrylayout="using:Virtualization.Avalonia.Layouts"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:models="using:Virtualization.Avalonia.Sample.Models"
-        xmlns:vm="using:Virtualization.Avalonia.Sample.ViewModels"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-        x:Class="Virtualization.Avalonia.Sample.MainWindow" 
-        x:DataType="vm:MainViewModel"
-        Title="Virtualization.Avalonia.Sample">
-    <Grid>
-        <local:SampleView/>
-    </Grid>
+<Window
+    x:Class="Virtualization.Avalonia.Sample.MainWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:Virtualization.Avalonia.Sample"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Title="Virtualization.Avalonia.Sample"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    mc:Ignorable="d">
+    <local:SampleView />
 </Window>

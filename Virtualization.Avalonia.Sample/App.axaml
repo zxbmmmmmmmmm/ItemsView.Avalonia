@@ -2,12 +2,12 @@
     x:Class="Virtualization.Avalonia.Sample.App"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:compositionScroll="clr-namespace:CompositionScroll;assembly=CompositionScroll"
-    xmlns:converters="clr-namespace:Virtualization.Avalonia.Sample.Converters"
-    xmlns:models="clr-namespace:Virtualization.Avalonia.Sample.Models"
-    xmlns:viewModels="clr-namespace:Virtualization.Avalonia.Sample.ViewModels"
-    xmlns:avalonia="clr-namespace:Virtualization.Avalonia;assembly=Virtualization.Avalonia.ItemsView"
-    xmlns:sample="clr-namespace:Virtualization.Avalonia.Sample"
+    xmlns:avalonia="using:Virtualization.Avalonia"
+    xmlns:compositionScroll="using:CompositionScroll"
+    xmlns:converters="using:Virtualization.Avalonia.Sample.Converters"
+    xmlns:models="using:Virtualization.Avalonia.Sample.Models"
+    xmlns:sample="using:Virtualization.Avalonia.Sample"
+    xmlns:viewModels="using:Virtualization.Avalonia.Sample.ViewModels"
     RequestedThemeVariant="Default">
     <!--  "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options.  -->
     <Application.Resources>

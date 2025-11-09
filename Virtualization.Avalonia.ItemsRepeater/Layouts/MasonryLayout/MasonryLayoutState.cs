@@ -1,6 +1,4 @@
-﻿using Avalonia.Layout;
-
-namespace Virtualization.Avalonia.Layouts;
+﻿namespace Virtualization.Avalonia.Layouts;
 public class MasonryLayoutState
 {
     private List<MasonryItem> _items = new List<MasonryItem>();

@@ -6,7 +6,6 @@ using Avalonia.Data;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace Virtualization.Avalonia;

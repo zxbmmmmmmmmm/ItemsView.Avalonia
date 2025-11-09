@@ -1,9 +1,7 @@
 ﻿using Avalonia;
-using Avalonia.Rendering.Composition.Expressions;
 using Avalonia.Rendering.Composition.Server;
 using Avalonia.Rendering.Composition.Transport;
 using System;
-using System.IO;
 
 namespace CompositionScroll.Interactions.Server;
 
