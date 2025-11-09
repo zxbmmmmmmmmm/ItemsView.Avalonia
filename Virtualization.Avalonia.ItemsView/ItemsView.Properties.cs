@@ -5,13 +5,14 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using PropertyGenerator.Avalonia;
 using System.Collections;
+using Virtualization.Avalonia.Layouts;
 
 namespace Virtualization.Avalonia;
 
 public partial class ItemsView
 {
     [GeneratedStyledProperty]
-    public partial AttachedLayout Layout { get; set; }
+    public partial Layout Layout { get; set; }
 
     [GeneratedStyledProperty]
     public partial IEnumerable? ItemsSource { get; set; }

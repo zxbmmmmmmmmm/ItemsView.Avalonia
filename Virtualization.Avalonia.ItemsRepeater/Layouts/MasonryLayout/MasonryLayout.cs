@@ -28,21 +28,19 @@ public partial class MasonryLayout : VirtualizingLayout
     public partial double RowSpacing { get; set; }
 
     /// <inheritdoc/>
-    protected override void InitializeForContextCore(VirtualizingLayoutContext context)
+    protected internal override void InitializeForContextCore(VirtualizingLayoutContext context)
     {
         context.LayoutState = new MasonryLayoutState(context);
-        base.InitializeForContextCore(context);
     }
 
     /// <inheritdoc/>
-    protected override void UninitializeForContextCore(VirtualizingLayoutContext context)
+    protected internal override void UninitializeForContextCore(VirtualizingLayoutContext context)
     {
         context.LayoutState = null;
-        base.UninitializeForContextCore(context);
     }
 
     /// <inheritdoc/>
-    protected override void OnItemsChangedCore(VirtualizingLayoutContext context, object source, NotifyCollectionChangedEventArgs args)
+    protected internal override void OnItemsChangedCore(VirtualizingLayoutContext context, object source, NotifyCollectionChangedEventArgs args)
     {
         var state = (MasonryLayoutState)context.LayoutState;
 
@@ -74,7 +72,7 @@ public partial class MasonryLayout : VirtualizingLayout
     }
 
     /// <inheritdoc/>
-    protected override Size MeasureOverride(VirtualizingLayoutContext context, Size availableSize)
+    protected internal override Size MeasureOverride(VirtualizingLayoutContext context, Size availableSize)
     {
         if (context.ItemCount == 0)
         {
@@ -223,7 +221,7 @@ public partial class MasonryLayout : VirtualizingLayout
     }
 
     /// <inheritdoc/>
-    protected override Size ArrangeOverride(VirtualizingLayoutContext context, Size finalSize)
+    protected internal override Size ArrangeOverride(VirtualizingLayoutContext context, Size finalSize)
     {
         if ((context.RealizationRect.Width == 0) && (context.RealizationRect.Height == 0))
         {

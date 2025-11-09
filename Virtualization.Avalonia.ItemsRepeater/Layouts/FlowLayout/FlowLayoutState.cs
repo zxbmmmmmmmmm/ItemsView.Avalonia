@@ -1,68 +1,102 @@
-﻿using Avalonia;
+// Copyright (c) Pixeval.Controls.
+// Licensed under the GPL v3 License.
+
+using Avalonia;
+using Avalonia.Layout;
 
 namespace Virtualization.Avalonia.Layouts;
 
-internal class FlowLayoutState
+internal class FlowLayoutState(VirtualizingLayoutContext context)
 {
-    internal FlowLayoutAlgorithm FlowAlgorithm => _flowAlgorithm;
+    private readonly List<FlowItem> _items = [];
 
-    internal Size SpecialElementDesiredSize { get; set; }
+    public Size Spacing { get; internal set; }
 
-    internal double TotalLineSize => _totalLineSize;
+    public double LineHeight { get; internal set; }
 
-    internal int TotalLinesMeasured => _totalLinesMeasured;
+    public double AvailableWidth { get; internal set; }
 
-    internal double TotalItemsPerLine => _totalItemsPerLine;
-
-    public void InitializeForContext(VirtualizingLayoutContext context,
-        IFlowLayoutAlgorithmDelegates callbacks)
+    internal FlowItem GetItemAt(int index)
     {
-        _flowAlgorithm.InitializeForContext(context, callbacks);
-
-        if (_lineSizeEstimationBuffer == null)
+        if (index < 0)
         {
-            _lineSizeEstimationBuffer = new double[BufferSize];
-            _itemsPerLineEstimationBuffer = new double[BufferSize];
+            throw new IndexOutOfRangeException();
         }
 
-        context.LayoutStateCore = this;
-    }
-
-    public void UninitializeForContext(VirtualizingLayoutContext context)
-    {
-        _flowAlgorithm.UninitializeForContext(context);
-    }
-
-    public void OnLineArranged(int startIndex, int countInLine, double lineSize, VirtualizingLayoutContext context)
-    {
-        // If we do not have any estimation information, use the line for estimation. 
-        // If we do have some estimation information, don't account for the last line which is quite likely
-        // different from the rest of the lines and can throw off estimation.
-        if (_totalLinesMeasured == 0 || startIndex + countInLine != context.ItemCount)
+        if (index <= _items.Count - 1)
         {
-            int estimationBufferIndex = startIndex % _lineSizeEstimationBuffer.Length;
-            bool alreadyMeasured = _lineSizeEstimationBuffer[estimationBufferIndex] != 0;
+            return _items[index];
+        }
+        else
+        {
+            var item = new FlowItem(index);
+            _items.Add(item);
+            return item;
+        }
+    }
 
-            if (!alreadyMeasured)
+    internal void Clear()
+    {
+        _items.Clear();
+    }
+
+    internal void ClearMeasureFromIndex(int index)
+    {
+        if (index >= _items.Count)
+        {
+            // Item was added/removed, but we haven't realized that far yet
+            return;
+        }
+
+        foreach (var item in _items.Skip(index))
+        {
+            item.Measure = null;
+            item.Position = null;
+        }
+    }
+
+    internal void ClearMeasure()
+    {
+        foreach (var item in _items)
+        {
+            item.Measure = null;
+            item.Position = null;
+        }
+    }
+
+    internal double GetHeight()
+    {
+        if (_items.Count is 0)
+        {
+            return 0;
+        }
+
+        var lastPosition = null as Point?;
+
+        for (var i = _items.Count - 1; i >= 0; --i)
+        {
+            var item = _items[i];
+
+            if (item.Position is null)
             {
-                ++_totalLinesMeasured;
+                continue;
             }
 
-            _totalLineSize -= _lineSizeEstimationBuffer[estimationBufferIndex];
-            _totalLineSize += lineSize;
-            _lineSizeEstimationBuffer[estimationBufferIndex] = lineSize;
+            if (lastPosition is not null && lastPosition.Value.Y > item.Position.Value.Y)
+            {
+                // This is a row above the last item.
+                break;
+            }
 
-            _totalItemsPerLine -= _itemsPerLineEstimationBuffer[estimationBufferIndex];
-            _totalItemsPerLine += countInLine;
-            _itemsPerLineEstimationBuffer[estimationBufferIndex] = countInLine;
+            lastPosition = item.Position;
         }
+
+        return lastPosition?.Y + LineHeight ?? 0;
     }
 
-    private readonly FlowLayoutAlgorithm _flowAlgorithm = new FlowLayoutAlgorithm();
-    private double[] _lineSizeEstimationBuffer;
-    private double[] _itemsPerLineEstimationBuffer;
-    private double _totalLineSize;
-    private int _totalLinesMeasured;
-    private double _totalItemsPerLine;
-    private const int BufferSize = 100;
+    internal void RecycleElementAt(int index)
+    {
+        var element = context.GetOrCreateElementAt(index);
+        context.RecycleElement(element);
+    }
 }

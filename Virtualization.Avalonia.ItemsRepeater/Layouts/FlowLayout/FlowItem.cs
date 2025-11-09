@@ -3,6 +3,7 @@
 
 
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Layout;
 
 namespace Virtualization.Avalonia.Layouts;
@@ -17,7 +18,7 @@ internal class FlowItem(int index)
 
     public Point? Position { get; internal set; }
 
-    public Layoutable? Element { get; internal set; }
+    public Control? Element { get; internal set; }
 
     public int IndexOfRow { get; internal set; }
 

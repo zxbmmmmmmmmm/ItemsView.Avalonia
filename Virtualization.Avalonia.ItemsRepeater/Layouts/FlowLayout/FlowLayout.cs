@@ -1,363 +1,354 @@
-﻿#pragma warning disable
-// Note this class has no documentation yet from Microsoft - disabling the warnings around
-// public APIs with no documentation
+// Copyright (c) Pixeval.Controls.
+// Licensed under the GPL v3 License.
+
 using System.Collections.Specialized;
-using System.Diagnostics;
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Layout;
+using PropertyGenerator.Avalonia;
 
 namespace Virtualization.Avalonia.Layouts;
 
-// So WinUI has this as a public facing enum, and retains a private one in
-// FlowLayoutAlgorithm...because reasons. Following WinUI for now, even though
-// enums are identical
-public enum FlowLayoutLineAlignment
+public sealed partial class FlowLayout : VirtualizingLayout
 {
-    Start,
-    Center,
-    End,
-    SpaceAround,
-    SpaceBetween,
-    SpaceEvenly
-}
+    [GeneratedStyledProperty(0d)]
+    public partial double LineSpacing { get; set; }
 
-internal class FlowLayout : VirtualizingLayout, IOrientationBasedMeasures, IFlowLayoutAlgorithmDelegates
-{
-    public FlowLayout()
+    [GeneratedStyledProperty(0d)]
+    public partial double MinItemSpacing { get; set; }
+
+    [GeneratedStyledProperty(200d)]
+    public partial double LineHeight { get; set; }
+
+    [GeneratedStyledProperty(FlowLayoutItemsStretch.Stretch)]
+    public partial FlowLayoutItemsStretch ItemsStretch { get; set; }
+
+    partial void OnLineSpacingPropertyChanged(AvaloniaPropertyChangedEventArgs e) => OnLineHeightPropertyChanged(e);
+
+    partial void OnMinItemSpacingPropertyChanged(AvaloniaPropertyChangedEventArgs e) => OnLineHeightPropertyChanged(e);
+
+    partial void OnItemsStretchPropertyChanged(AvaloniaPropertyChangedEventArgs e) => OnLineHeightPropertyChanged(e);
+
+    partial void OnLineHeightPropertyChanged(AvaloniaPropertyChangedEventArgs e)
     {
-
+        InvalidateMeasure();
+        InvalidateArrange();
     }
 
-    public static readonly StyledProperty<FlowLayoutLineAlignment> LineAlignmentProperty = 
-        AvaloniaProperty.Register<FlowLayout, FlowLayoutLineAlignment>(nameof(LineAlignment), 
-            defaultValue: FlowLayoutLineAlignment.Start);
-
-    public static readonly StyledProperty<double> MinColumnSpacingProperty =
-        AvaloniaProperty.Register<FlowLayout, double>(nameof(MinColumnSpacing));
-
-    public static readonly StyledProperty<double> MinRowSpacingProperty = 
-        AvaloniaProperty.Register<FlowLayout, double>(nameof(MinRowSpacing));
-
-    public static readonly StyledProperty<Orientation> OrientationProperty =
-        StackPanel.OrientationProperty.AddOwner<FlowLayout>();
-
-    public FlowLayoutLineAlignment LineAlignment
-    {
-        get => GetValue(LineAlignmentProperty);
-        set => SetValue(LineAlignmentProperty, value);
-    }
-
-    public double MinColumnSpacing
-    {
-        get => GetValue(MinColumnSpacingProperty);
-        set => SetValue(MinColumnSpacingProperty, value);
-    }
-
-    public double MinRowSpacing
-    {
-        get => GetValue(MinRowSpacingProperty);
-        set => SetValue(MinRowSpacingProperty, value);
-    }
-
-    public Orientation Orientation
-    {
-        get => GetValue(OrientationProperty);
-        set => SetValue(OrientationProperty, value);
-    }
-
-    private ScrollOrientation ScrollOrientation { get; set; }
-
-    ScrollOrientation IOrientationBasedMeasures.ScrollOrientation
-    {
-        get => ScrollOrientation;
-        set => ScrollOrientation = value;
-    }
-
-    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs args)
-    {
-        base.OnPropertyChanged(args);
-        var property = args.Property;
-        if (property == OrientationProperty)
-        {
-            var orientation = args.GetNewValue<Orientation>();
-
-            //Note: For FlowLayout Vertical Orientation means we have a Horizontal ScrollOrientation. Horizontal Orientation means we have a Vertical ScrollOrientation.
-            //i.e. the properties are the inverse of each other.
-            var scrollOrientation = (orientation == Orientation.Horizontal) ? 
-                ScrollOrientation.Vertical : ScrollOrientation.Horizontal;
-            ScrollOrientation = scrollOrientation;
-        }
-        else if (property == MinColumnSpacingProperty)
-        {
-            _minColumnSpacing = args.GetNewValue<double>();
-        }
-        else if (property == MinRowSpacingProperty)
-        {
-            _minRowSpacing = args.GetNewValue<double>();
-        }
-        else if (property == LineAlignmentProperty)
-        {
-            _lineAlignment = (FlowLayoutAlgorithm.LineAlignment)args.GetNewValue<FlowLayoutLineAlignment>();
-        }
-    }
-
+    /// <inheritdoc />
     protected internal override void InitializeForContextCore(VirtualizingLayoutContext context)
     {
-        var state = context.LayoutState;
-        FlowLayoutState flowState = null;
-        if (state != null)
-        {
-            flowState = GetAsFlowState(state);
-        }
+        context.LayoutState = new FlowLayoutState(context);    }
 
-        if (flowState == null)
-        {
-            if (state != null)
-                throw new Exception();
-
-            // Custom deriving layouts could potentially be stateful.
-            // If that is the case, we will just create the base state required by FlowLayout ourselves.
-            flowState = new FlowLayoutState();
-        }
-
-        flowState.InitializeForContext(context, this);
-    }
-
+    /// <inheritdoc />
     protected internal override void UninitializeForContextCore(VirtualizingLayoutContext context)
     {
-        var flowState = GetAsFlowState(context.LayoutState);
-        flowState.UninitializeForContext(context);
-    }
+        context.LayoutState = null;    }
 
-    protected internal override Size MeasureOverride(VirtualizingLayoutContext context, Size availableSize)
-    {
-        var desiredSize = GetFlowAlgorithm(context).Measure(
-            availableSize, context, true /*isWrapping*/,
-            MinItemSpacing(), LineSpacing(), int.MaxValue /*maxItemsPerLine*/,
-            ScrollOrientation, false /*disableVirtualization*/, LayoutId);
-        return desiredSize;
-    }
-
-    protected internal override Size ArrangeOverride(VirtualizingLayoutContext context, Size finalSize)
-    {
-        var value = GetFlowAlgorithm(context).Arrange(
-            finalSize, context, true /*isWrapping*/,
-            _lineAlignment, LayoutId);
-        return value;
-    }
-
+    /// <inheritdoc />
     protected internal override void OnItemsChangedCore(VirtualizingLayoutContext context, object source, NotifyCollectionChangedEventArgs args)
     {
-        GetFlowAlgorithm(context).OnItemsSourceChanged(source, args, context);
-        // Always invalidate layout to keep the view accurate.
-        InvalidateLayout();
-    }
-        
-    private FlowLayoutState GetAsFlowState(object state) =>
-        state as FlowLayoutState;
+        var state = (FlowLayoutState)context.LayoutState;
 
-    private void InvalidateLayout() => InvalidateMeasure();
-
-    FlowLayoutAlgorithm GetFlowAlgorithm(VirtualizingLayoutContext context) =>
-        GetAsFlowState(context.LayoutState).FlowAlgorithm;
-
-    private bool DoesRealizationWindowOverlapExtent(Rect realizationWindow, Rect extent) =>
-        this.MajorEnd(realizationWindow) >= this.MajorStart(extent) &&
-        this.MajorStart(realizationWindow) <= this.MajorEnd(extent);
-
-    private double LineSpacing() =>
-        ScrollOrientation == ScrollOrientation.Vertical ? _minRowSpacing : _minColumnSpacing;
-
-    private double MinItemSpacing() =>
-        ScrollOrientation == ScrollOrientation.Vertical ? _minColumnSpacing : _minRowSpacing;
-
-    // WinUI has these as separate methods and then has these call those, lets just skip that step
-
-    Size IFlowLayoutAlgorithmDelegates.Algorithm_GetMeasureSize(int index, Size availableSize, 
-        VirtualizingLayoutContext context)
-    {
-        return availableSize;
-    }
-
-    Size IFlowLayoutAlgorithmDelegates.Algorithm_GetProvisionalArrangeSize(int index, Size measureSize, 
-        Size desiredSize, VirtualizingLayoutContext context)
-    {
-        return desiredSize;
-    }
-
-    bool IFlowLayoutAlgorithmDelegates.Algorithm_ShouldBreakLine(int index, double remainingSpace)
-    {
-        return remainingSpace < 0;
-    }
-
-    FlowLayoutAnchorInfo IFlowLayoutAlgorithmDelegates.Algorithm_GetAnchorForRealizationRect(Size availableSize, 
-        VirtualizingLayoutContext context)
-    {
-        int anchorIndex = -1;
-        double offset = double.NaN;
-
-        int itemsCount = context.ItemCount;
-        if (itemsCount > 0)
+        switch (args.Action)
         {
-            var realizationRect = context.RealizationRect;
-            var state = context.LayoutState;
-            var flowState = GetAsFlowState(state);
-            var lastExtent = flowState.FlowAlgorithm.LastExtent;
-
-            double averageItemsPerLine = 0;
-            double averageLineSize = GetAverageLineInfo(availableSize, context, flowState, ref averageItemsPerLine) + LineSpacing();
-            Debug.Assert(averageItemsPerLine != 0);
-
-            double extentMajorSize = this.MajorSize(lastExtent) == 0 ? (itemsCount / averageItemsPerLine) * averageLineSize : this.MajorSize(lastExtent);
-            if (itemsCount > 0 &&
-                this.MajorSize(realizationRect) >0 &&
-                DoesRealizationWindowOverlapExtent(realizationRect, this.MinorMajorRect(this.MinorStart(lastExtent), this.MajorStart(lastExtent), this.Minor(availableSize), extentMajorSize)))
-            {
-                double realizationWindowStartWithExtent = this.MajorStart(realizationRect) - this.MajorStart(lastExtent);
-                int lineIndex = Math.Max(0, (int)(realizationWindowStartWithExtent / averageLineSize));
-                anchorIndex = (int)(lineIndex * averageItemsPerLine);
-
-                // Clamp it to be within valid range
-                anchorIndex = Math.Clamp(anchorIndex, 0, itemsCount - 1);
-                offset = lineIndex * averageLineSize + this.MajorStart(lastExtent);
-            }
+            case NotifyCollectionChangedAction.Add:
+                state.ClearMeasureFromIndex(args.NewStartingIndex);
+                break;
+            case NotifyCollectionChangedAction.Move:
+                var minIndex = Math.Min(args.NewStartingIndex, args.OldStartingIndex);
+                state.ClearMeasureFromIndex(minIndex);
+                state.RecycleElementAt(args.OldStartingIndex);
+                state.RecycleElementAt(args.NewStartingIndex);
+                break;
+            case NotifyCollectionChangedAction.Remove:
+                state.ClearMeasureFromIndex(args.OldStartingIndex);
+                break;
+            case NotifyCollectionChangedAction.Replace:
+                state.ClearMeasureFromIndex(args.NewStartingIndex);
+                state.RecycleElementAt(args.NewStartingIndex);
+                break;
+            case NotifyCollectionChangedAction.Reset:
+                state.Clear();
+                break;
         }
 
-        return new FlowLayoutAnchorInfo { Index = anchorIndex, Offset = offset };
+        base.OnItemsChangedCore(context, source, args);
     }
 
-    FlowLayoutAnchorInfo IFlowLayoutAlgorithmDelegates.Algorithm_GetAnchorForTargetElement(int targetIndex, 
-        Size availableSize, VirtualizingLayoutContext context)
+    /// <inheritdoc />
+    protected internal override Size MeasureOverride(VirtualizingLayoutContext context, Size parentMeasure)
     {
-        double offset = double.NaN;
-        int index = -1;
-        int itemsCount = context.ItemCount;
+        var spacingMeasure = new Size(MinItemSpacing, LineSpacing);
 
-        if (targetIndex >= 0 && targetIndex < itemsCount)
+        var state = (FlowLayoutState)context.LayoutState;
+
+        // ReSharper disable once CompareOfFloatsByEqualityOperator
+        if (state.AvailableWidth != parentMeasure.Width
+            // ReSharper disable once CompareOfFloatsByEqualityOperator
+            || spacingMeasure != state.Spacing)
         {
-            index = targetIndex;
-            var state = context.LayoutState;
-            var flowState = GetAsFlowState(state);
-            double averageItemsPerLine = 0;
-            double averageLineSize = GetAverageLineInfo(availableSize, context, flowState, ref averageItemsPerLine) + LineSpacing();
-            int lineIndex = (int)(targetIndex / averageItemsPerLine);
-            offset = lineIndex * averageLineSize + this.MajorStart(flowState.FlowAlgorithm.LastExtent);
+            state.ClearMeasure();
+            state.AvailableWidth = parentMeasure.Width;
+            state.Spacing = spacingMeasure;
         }
+        state.LineHeight = LineHeight;
 
-        return new FlowLayoutAnchorInfo { Index = index, Offset = offset };
-    }
-
-    Rect IFlowLayoutAlgorithmDelegates.Algorithm_GetExtent(Size availableSize, VirtualizingLayoutContext context, 
-        Control firstRealized, int firstRealizedItemIndex, Rect firstRealizedLayoutBounds, Control lastRealized, 
-        int lastRealizedItemIndex, Rect lastRealizedLayoutBounds)
-    {
-        Rect extent = default;
-
-        int itemsCount = context.ItemCount;
-        if (itemsCount > 0)
+        var realizationBounds = context.RealizationRect;
+        Point? nextPosition = new Point();
+        var currentRow = new List<FlowItem>();
+        var currentRowInfo = new RowInfo();
+        var itemStretch = ItemsStretch;
+        for (var i = 0; i < context.ItemCount; ++i)
         {
-            double availableSizeMinor = this.Minor(availableSize);
-            var state = context.LayoutState;
-            var flowState = GetAsFlowState(state);
-            double averageItemsPerLine = 0;
-            double averageLineSize = GetAverageLineInfo(availableSize, context, flowState, ref averageItemsPerLine) + LineSpacing();
+            Point currentPosition;
+            var item = state.GetItemAt(i);
 
-            Debug.Assert(averageItemsPerLine != 0);
-            if (firstRealized != null)
+            if (nextPosition is { } nextPos)
             {
-                Debug.Assert(lastRealized != null);
-                int linesBeforeFirst = (int)(firstRealizedItemIndex / averageItemsPerLine);
-                double extentMajorStart = this.MajorStart(firstRealizedLayoutBounds) - linesBeforeFirst * averageLineSize;
-                this.SetMajorStart(ref extent, extentMajorStart);
-                int remainingItems = itemsCount - lastRealizedItemIndex - 1;
-                int remainingLinesAfterLast = (int)(remainingItems / averageItemsPerLine);
-                double extentMajorSize = this.MajorEnd(lastRealizedLayoutBounds) -
-                    this.MajorStart(extent) + remainingLinesAfterLast * averageLineSize;
-                this.SetMajorSize(ref extent, extentMajorSize);
-
-                // If the available size is infinite, we will have realized all the items in one line.
-                // In that case, the extent in the non virtualizing direction should be based on the
-                // right/bottom of the last realized element.
-                this.SetMinorSize(ref extent, !double.IsInfinity(availableSizeMinor) ?
-                    availableSizeMinor : Math.Max(0, this.MinorEnd(lastRealizedLayoutBounds)));
+                item.Position = currentPosition = nextPos;
+                nextPosition = null;
             }
             else
+                currentPosition = item.Position ?? new Point();
+
+            if (currentPosition.Y + LineHeight < realizationBounds.Top)
             {
-                var lineSpacing = LineSpacing();
-                var minItemSpacing = MinItemSpacing();
-                // We dont have anything realized. make an educated guess.
-                int numLines = (int)Math.Ceiling(itemsCount / averageItemsPerLine);
-                extent = !double.IsInfinity(availableSizeMinor) ?
-                    this.MinorMajorRect(0, 0, availableSizeMinor, Math.Max(0, numLines * averageLineSize - lineSpacing)) :
-                    this.MinorMajorRect(0, 0,
-                    Math.Max(0, (this.Minor(flowState.SpecialElementDesiredSize) + minItemSpacing) * itemsCount - minItemSpacing),
-                    Math.Max(0, averageLineSize - lineSpacing));
-                //REPEATER_TRACE_INFO(L"%*s: \tEstimating extent with no realized elements. \n", winrt::get_self<VirtualizingLayoutContext>(context)->Indent(), LayoutId().data());
+                // Item is "above" the bounds
+                if (item.Element is not null)
+                {
+                    context.RecycleElement(item.Element);
+                    item.Element = null;
+                }
+
+                continue;
             }
 
-            //REPEATER_TRACE_INFO(L"%*s: \tExtent is {%.0f,%.0f}. Based on average line size {%.0f} and average items per line {%.0f}. \n",
-            //winrt::get_self<VirtualizingLayoutContext>(context)->Indent(), LayoutId().data(), extent.Width, extent.Height, averageLineSize, averageItemsPerLine);
+            if (currentPosition.Y > realizationBounds.Bottom)
+            {
+                // Item is "below" the bounds.
+                if (item.Element is not null)
+                {
+                    context.RecycleElement(item.Element);
+                    item.Element = null;
+                }
+
+                // We don't need to measure anything below the bounds
+                break;
+            }
+
+            item.Element = context.GetOrCreateElementAt(i);
+            item.Element.Measure(new(double.PositiveInfinity, LineHeight));
+            if (item.DesiredSize is null)
+            {
+                item.DesiredSize = item.Element.DesiredSize;
+            }
+            else if (item.DesiredSize != item.Element!.DesiredSize)
+            {
+                state.ClearMeasureFromIndex(i + 1);
+                item.DesiredSize = item.Element.DesiredSize;
+            }
+
+            if (CalcNextPosition(item.DesiredSize.Value) && currentPosition.Y > realizationBounds.Bottom)
+            {
+                // Item is "below" the bounds.
+                if (item.Element is not null)
+                {
+                    context.RecycleElement(item.Element);
+                    item.Element = null;
+                }
+
+                // We don't need to measure anything below the bounds
+                break;
+            }
+
+            continue;
+
+            bool CalcNextPosition(Size desiredSize)
+            {
+                item.Measure = desiredSize;
+
+                if (desiredSize.Width is 0)
+                {
+                    nextPosition = currentPosition;
+                    return false;
+                }
+
+                var excessLength = currentPosition.X + desiredSize.Width - parentMeasure.Width;
+
+                if (excessLength + spacingMeasure.Width > 0)
+                {
+                    if (itemStretch is not FlowLayoutItemsStretch.Stretch)
+                    {
+                        currentRow.Clear();
+                        currentRowInfo = new RowInfo(1);
+                        item.IndexOfRow = 0;
+                        item.Position = currentPosition = new(0, currentPosition.Y + LineHeight + spacingMeasure.Height);
+                        item.RowInfo = currentRowInfo;
+                        currentRowInfo.Length += desiredSize.Width;
+                        currentRow.Add(item);
+                        nextPosition = currentPosition.WithX(desiredSize.Width + spacingMeasure.Width);
+                        return true;
+                    }
+
+                    var shrinkScale = (parentMeasure.Width - currentRow.Count * spacingMeasure.Width) / (currentRowInfo.Length + desiredSize.Width);
+                    var enlargeScale = (parentMeasure.Width - (currentRow.Count - 1) * spacingMeasure.Width) / currentRowInfo.Length;
+
+                    // shrinkScale < enlargeScale
+                    // find the one that is closer to 1
+                    // length excessed
+                    if (1 / shrinkScale < enlargeScale)
+                    {
+                        item.RowInfo = currentRowInfo;
+                        currentRow.Add(item);
+                        currentRowInfo.ItemCount = currentRow.Count;
+                        item.IndexOfRow = currentRowInfo.ItemCount - 1;
+                        // is not used before next assignment
+                        // currentRowLength += currentMeasure.Width;
+                        Resize(shrinkScale);
+                        currentRow.Clear();
+                        currentRowInfo = new RowInfo(1);
+                        // New Row
+                        nextPosition = currentPosition = new(0, currentPosition.Y + LineHeight + spacingMeasure.Height);
+                    }
+                    // length exceeded after adding space
+                    else
+                    {
+                        Resize(enlargeScale);
+                        currentRowInfo.ItemCount = currentRow.Count;
+                        currentRow.Clear();
+                        currentRowInfo = new RowInfo(1);
+                        // New Row
+                        item.Position = currentPosition = new(0, currentPosition.Y + LineHeight + spacingMeasure.Height);
+                        item.RowInfo = currentRowInfo;
+                        item.IndexOfRow = 0;
+
+                        currentRow.Add(item);
+                        currentRowInfo.Length += desiredSize.Width;
+
+                        nextPosition = currentPosition.WithX(desiredSize.Width + spacingMeasure.Width);
+
+                        return true;
+                    }
+
+                    void Resize(double scale)
+                    {
+                        var nextPositionX = .0;
+                        var tempPositionX = currentPosition.X;
+                        var tempPositionY = currentPosition.Y;
+
+                        foreach (var justifiedItem in currentRow)
+                        {
+                            tempPositionX = nextPositionX;
+                            justifiedItem.Position = new Point(tempPositionX, tempPositionY);
+                            var tempMeasure = new Size(justifiedItem.Measure!.Value.Width * scale, justifiedItem.Measure!.Value.Height);
+                            justifiedItem.Measure = tempMeasure;
+                            justifiedItem.Element?.Measure(tempMeasure);
+                            nextPositionX = tempPositionX + tempMeasure.Width + spacingMeasure.Width;
+                        }
+                    }
+                }
+                else
+                {
+                    currentRow.Add(item);
+                    item.RowInfo = currentRowInfo;
+                    currentRowInfo.ItemCount = currentRow.Count;
+                    item.IndexOfRow = currentRowInfo.ItemCount - 1;
+                    currentRowInfo.Length += desiredSize.Width;
+                    currentPosition = new Point(currentPosition.X + desiredSize.Width + spacingMeasure.Width, currentPosition.Y);
+                    nextPosition = currentPosition;
+                }
+
+                return false;
+            }
         }
-        else
+        // update value with the last line
+        // if the last loop is (parentMeasure.Width > currentMeasure.Width + lineMeasure.Width) the total isn't calculated then calculate it
+        // if the last loop is (parentMeasure.Width > currentMeasure.Width) the currentMeasure isn't added to the total so add it here
+        // for the last condition it is zeros so adding it will make no difference
+        // this way is faster than an if condition in every loop for checking the last item
+        // Propagating an infinite size causes a crash. This can happen if the parent is scrollable and infinite in the opposite
+        // axis to the panel. Clearing to zero prevents the crash.
+        // This is likely an incorrect use of the control by the developer, however we need stability here so setting a default that won't crash.
+        var totalMeasure = new Size(double.IsInfinity(parentMeasure.Width) ? 0 : Math.Ceiling(parentMeasure.Width), state.GetHeight());
+
+        return totalMeasure;
+    }
+
+    /// <inheritdoc />
+    protected internal override Size ArrangeOverride(VirtualizingLayoutContext context, Size parentMeasure)
+    {
+        if (context.ItemCount > 0)
         {
-            Debug.Assert(firstRealizedItemIndex == -1);
-            Debug.Assert(lastRealizedItemIndex == -1);
-            //        REPEATER_TRACE_INFO(L"%*s: \tExtent is {%.0f,%.0f}. ItemCount is 0 \n",
-            //winrt::get_self<VirtualizingLayoutContext>(context)->Indent(), LayoutId().data(), extent.Width, extent.Height);
+            var realizationBounds = context.RealizationRect;
+            var itemStretch = ItemsStretch;
+            var minItemSpacing = MinItemSpacing;
+            //  var viewHeight = realizationBounds.Height /= 3;
+            //  realizationBounds.Y += viewHeight;
+
+            var state = (FlowLayoutState)context.LayoutState;
+            bool ArrangeItem(FlowItem item)
+            {
+                if (item is { Measure: null } or { Position: null })
+                {
+                    return false;
+                }
+
+                var desiredMeasure = item.Measure.Value;
+                var desiredSize = item.DesiredSize.Value;
+
+                var position = item.Position.Value;
+
+                if (position.Y + desiredMeasure.Height >= realizationBounds.Top && position.Y <= realizationBounds.Bottom)
+                {
+                    var child = context.GetOrCreateElementAt(item.Index);
+
+                    switch (itemStretch)
+                    {
+                        // place the item
+                        case FlowLayoutItemsStretch.Stretch:
+                            child.Arrange(new(position, desiredMeasure));
+                            break;
+                        case FlowLayoutItemsStretch.Start:
+                            child.Arrange(new(position, desiredSize));
+                            break;
+                        case FlowLayoutItemsStretch.End:
+                            {
+                                var spacing = parentMeasure.Width - item.RowInfo.Length;
+                                position = position.WithX(position.X + spacing - minItemSpacing * (item.RowInfo.ItemCount - 1));
+                                child.Arrange(new(position, desiredSize));
+                                break;
+                            }
+                        case FlowLayoutItemsStretch.Center:
+                            {
+                                var spacing = (parentMeasure.Width - item.RowInfo.Length) / 2;
+                                position = position.WithX(position.X + spacing);
+                                child.Arrange(new(position, desiredSize));
+                                break;
+                            }
+                        case FlowLayoutItemsStretch.Justify:
+                            {
+                                var spacing = (parentMeasure.Width - item.RowInfo.Length) / (item.RowInfo.ItemCount - 1);
+                                if (item.RowInfo.ItemCount is not 1)
+                                    position = position.WithX(position.X + spacing * item.IndexOfRow);
+                                child.Arrange(new(position, desiredSize));
+                                break;
+                            }
+                    }
+                }
+                else if (position.Y > realizationBounds.Bottom)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+
+            for (var i = 0; i < context.ItemCount; ++i)
+            {
+                _ = ArrangeItem(state.GetItemAt(i));
+            }
         }
 
-        return extent;
+        return parentMeasure;
     }
-
-    void IFlowLayoutAlgorithmDelegates.Algorithm_OnElementMeasured(Control element, int index, Size availableSize,
-        Size measureSize, Size desiredSize, Size provisionalArrangeSize, VirtualizingLayoutContext context)
-    {
-    }
-
-    void IFlowLayoutAlgorithmDelegates.Algorithm_OnLineArranged(int startIndex, int countInLine, double lineSize,
-        VirtualizingLayoutContext context)
-    {
-        //REPEATER_TRACE_INFO(L"%*s: \tOnLineArranged startIndex:%d Count:%d LineHeight:%d \n",
-        //winrt::get_self<VirtualizingLayoutContext>(context)->Indent(), LayoutId().data(), startIndex, countInLine, lineSize);
-
-        var flowState = GetAsFlowState(context.LayoutState);
-        flowState.OnLineArranged(startIndex, countInLine, lineSize, context);
-    }
-
-    private double GetAverageLineInfo(Size availableSize, VirtualizingLayoutContext context,
-        FlowLayoutState flowState, ref double avgCountInLine)
-    {
-        // default to 1 item per line with 0 size
-        double avgLineSize = 0;
-        avgCountInLine = 1;
-
-        Debug.Assert(context.ItemCountCore() > 0);
-        if (flowState.TotalLinesMeasured == 0)
-        {
-            var tmpElement = context.GetOrCreateElementAt(0, ElementRealizationOptions.ForceCreate | ElementRealizationOptions.SuppressAutoRecycle);
-            var desiredSize = flowState.FlowAlgorithm.MeasureElement(tmpElement, 0, availableSize, context);
-            context.RecycleElement(tmpElement);
-
-            int estimatedCountInLine = Math.Max(1, (int)(this.Major(availableSize) / this.Minor(desiredSize)));
-            flowState.OnLineArranged(0, estimatedCountInLine, this.Major(desiredSize), context);
-            flowState.SpecialElementDesiredSize = desiredSize;
-        }
-
-        avgCountInLine = Math.Max(1, (int)(flowState.TotalItemsPerLine / flowState.TotalLinesMeasured));
-        avgLineSize = Math.Round(flowState.TotalLineSize / flowState.TotalLinesMeasured);
-
-        return avgLineSize;
-    }
-
-    //internal void UpdateIndexBasedLayoutOrientation(Orientation orientation)
-    //{
-    //    SetIndexBasedLayoutOrientation(orientation == Orientation.Horizontal ?
-    //        IndexBasedLayoutOrientation.LeftToRight : IndexBasedLayoutOrientation.TopToBottom);
-    //}
-
-    private FlowLayoutAlgorithm.LineAlignment _lineAlignment = FlowLayoutAlgorithm.LineAlignment.Start;
-    private double _minColumnSpacing = 0.0;
-    private double _minRowSpacing = 0.0;
-    private Orientation _orientation = Orientation.Horizontal;
 }

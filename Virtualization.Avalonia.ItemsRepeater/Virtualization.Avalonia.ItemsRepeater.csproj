@@ -4,9 +4,13 @@
     <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+	<LangVersion>preview</LangVersion>
   </PropertyGroup>
   <ItemGroup>
   	<PackageReference Include="Avalonia" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Virtualization.Avalonia.Layouts\Virtualization.Avalonia.Layouts.csproj" />
   </ItemGroup>
 
 </Project>

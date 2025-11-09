@@ -14,8 +14,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Virtualization.Avalonia.Layouts;
-using StackLayout = Avalonia.Layout.StackLayout;
-using UniformGridLayout = Avalonia.Layout.UniformGridLayout;
 
 namespace Virtualization.Avalonia.Sample.ViewModels;
 
@@ -32,10 +30,10 @@ public partial class SampleViewModel : ObservableObject
     [ObservableProperty]
     public partial DataType SelectedDataSource { get; set; } = DataType.TextItems;
 
-    public static IReadOnlyList<AttachedLayout> Layouts { get; } = [new StackLayout(), new FlowLayout(), new MasonryLayout(), new WrapLayout(), new UniformGridLayout()];
+    public static IReadOnlyList<Layout> Layouts { get; } = [new StackLayout(), new FlowLayout(), new MasonryLayout(), new UniformGridLayout()];
 
     [ObservableProperty]
-    public partial AttachedLayout? SelectedLayout { get; set; } = Layouts.FirstOrDefault();
+    public partial Layout? SelectedLayout { get; set; } = Layouts.FirstOrDefault();
 
     private static IReadOnlyList<Item>? TextItems => field ??= InitializeDataSources();
 
@@ -74,11 +72,6 @@ public partial class SampleViewModel : ObservableObject
             DataType.ImageItems => items.Select(t => Bitmap.DecodeToWidth(File.OpenRead(t), 300)).ToArray(),
             _ => Items
         };
-
-        // TODO: 先改folder source再换itemstemplate才能显示
-        var t = ItemTemplate;
-        ItemTemplate = null;
-        ItemTemplate = t;
     }
 
     [RelayCommand]
