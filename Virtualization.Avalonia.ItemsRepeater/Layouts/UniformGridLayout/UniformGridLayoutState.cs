@@ -1,34 +1,58 @@
-﻿using Avalonia;
+// This source file is adapted from the WinUI project.
+// (https://github.com/microsoft/microsoft-ui-xaml)
+//
+// Licensed to The Avalonia Project under MIT License, courtesy of The .NET Foundation.
+
+using System;
+using System.Collections.Specialized;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 
 namespace Virtualization.Avalonia.Layouts;
 
-internal class UniformGridLayoutState
+/// <summary>
+/// Represents the state of a <see cref="UniformGridLayout"/>.
+/// </summary>
+public class UniformGridLayoutState
 {
-    public FlowLayoutAlgorithm FlowAlgorithm => _flowAlgorithm;
+    // We need to measure the element at index 0 to know what size to measure all other items. 
+    // If FlowlayoutAlgorithm has already realized element 0 then we can use that. 
+    // If it does not, then we need to do context.GetElement(0) at which point we have requested an element and are on point to clear it.
+    // If we are responsible for clearing element 0 we keep m_cachedFirstElement valid. 
+    // If we are not (because FlowLayoutAlgorithm is holding it for us) then we just null out this field and use the one from FlowLayoutAlgorithm.
+    private Control? _cachedFirstElement;
 
-    public double EffectiveItemWidth => _effectiveItemWidth;
+    internal FlowLayoutAlgorithm FlowAlgorithm { get; } = new FlowLayoutAlgorithm();
+    internal double EffectiveItemWidth { get; private set; }
+    internal double EffectiveItemHeight { get; private set; }
 
-    public double EffectiveItemHeight => _effectiveItemHeight;
-
-    public void InitializeForContext(VirtualizingLayoutContext context,
-        IFlowLayoutAlgorithmDelegates callbacks)
+    internal void InitializeForContext(VirtualizingLayoutContext context, IFlowLayoutAlgorithmDelegates callbacks)
     {
-        _flowAlgorithm ??= new FlowLayoutAlgorithm();
-        _flowAlgorithm.InitializeForContext(context, callbacks);
-        context.LayoutStateCore = this;
+        FlowAlgorithm.InitializeForContext(context, callbacks);
+        context.LayoutState = this;
     }
 
-    public void UninitializeForContext(VirtualizingLayoutContext context)
+    internal void UninitializeForContext(VirtualizingLayoutContext context)
     {
-        _flowAlgorithm.UninitializeForContext(context);
+        FlowAlgorithm.UninitializeForContext(context);
+
+        if (_cachedFirstElement != null)
+        {
+            context.RecycleElement(_cachedFirstElement);
+        }
     }
 
-    public void EnsureElementSize(Size availableSize, VirtualizingLayoutContext context,
-        double layoutItemWidth, double layoutItemHeight,
-        UniformGridLayoutItemsStretch stretch, Orientation orientation,
-        double minRowSpacing, double minColumnSpacing, int maxItemsPerLine)
+    internal void EnsureElementSize(
+        Size availableSize,
+        VirtualizingLayoutContext context,
+        double layoutItemWidth,
+        double layoutItemHeight,
+        UniformGridLayoutItemsStretch stretch,
+        Orientation orientation,
+        double minRowSpacing,
+        double minColumnSpacing,
+        int maxItemsPerLine)
     {
         if (maxItemsPerLine == 0)
         {
@@ -37,174 +61,146 @@ internal class UniformGridLayoutState
 
         if (context.ItemCount > 0)
         {
-            // If the first element is realized we don't need to get it from the context
-            if (_flowAlgorithm.GetElementIfRealized(0) is { } realizedElement)
+            // If the first element is realized we don't need to cache it or to get it from the context
+            var realizedElement = FlowAlgorithm.GetElementIfRealized(0);
+            if (realizedElement != null)
             {
-                // This is relatively cheap, when item 0 is realized, always use it to find the size. 
-                realizedElement.Measure(CalculateAvailableSize(
-                    availableSize, orientation, stretch, maxItemsPerLine,
-                    layoutItemWidth, layoutItemHeight, minRowSpacing, minColumnSpacing));
-                SetSize(realizedElement.DesiredSize, layoutItemWidth, layoutItemHeight,
-                    availableSize, stretch, orientation, minRowSpacing, minColumnSpacing, maxItemsPerLine);
+                realizedElement.Measure(availableSize);
+                SetSize(realizedElement, layoutItemWidth, layoutItemHeight, availableSize, stretch, orientation, minRowSpacing, minColumnSpacing, maxItemsPerLine);
+                _cachedFirstElement = null;
             }
             else
             {
-                // Not realized by flowlayout, so do this now but just once per layout pass since this is expensive and
-                // has the potential to repeatedly invalidate layout due to recycling causing layout cycles.
-                if (!_isEffectiveSizeValid)
+                if (_cachedFirstElement == null)
                 {
-                    if (context.GetOrCreateElementAt(0, ElementRealizationOptions.ForceCreate) is { } firstElement)
-                    {
-                        firstElement.Measure(CalculateAvailableSize(availableSize, orientation,
-                            stretch, maxItemsPerLine, layoutItemWidth, layoutItemHeight,
-                            minRowSpacing, minColumnSpacing));
-                        SetSize(firstElement.DesiredSize, layoutItemWidth, layoutItemHeight,
-                            availableSize, stretch, orientation, minRowSpacing, minColumnSpacing,
-                            maxItemsPerLine);
-                        context.RecycleElement(firstElement);
+                    // we only cache if we aren't realizing it
+                    _cachedFirstElement = context.GetOrCreateElementAt(
+                        0,
+                        ElementRealizationOptions.ForceCreate | ElementRealizationOptions.SuppressAutoRecycle); // expensive
+                }
 
-                        // BUG: WinUI recycles the element here, but that is causing a hang when the Repeater is loaded
-                        // What seems to be happening is recycle element is called which unrealizes the first item in the
-                        // viewport that is used here to estimate size
-                        // For some reason, MeasureOverride gets called infinitely, and EffectiveViewportChanged is never
-                        // fired from the ScrollViewer so we always have an invalid viewport, and because the item was
-                        // unrealized here, this path is always called and we never progress past the first item
-                        // Take out the recycling here and all seems to work ok
-                        //context.RecycleElement(firstElement);
+                _cachedFirstElement.Measure(availableSize);
 
-                        // HACK: Add SuppressAutoRecycle above in GetOrCreateElementAt, and force add the item which
-                        // moves ownership to the ElementManager, and this works. This path still gets called twice
-                        // as the first time an invalid anchor index (-1) is found which clears the realized range
-                        // and thus we get another call on this path, which then succeeds. The downside there is 
-                        // that we get an extra element realized that is never removed from the Panel, but at least
-                        // this works again, and that extra element is treated like an unrealized element arranged
-                        // offscreen so its not that big of a deal. Hopefully, MS will have an actual fix for this...
-                        // | ElementRealizationOptions.SuppressAutoRecycle
-                        //_flowAlgorithm.TryAddElement0(firstElement);
-                    }
+                SetSize(_cachedFirstElement, layoutItemWidth, layoutItemHeight, availableSize, stretch, orientation, minRowSpacing, minColumnSpacing, maxItemsPerLine);
+
+                // See if we can move ownership to the flow algorithm. If we can, we do not need a local cache.
+                bool added = FlowAlgorithm.TryAddElement0(_cachedFirstElement);
+                if (added)
+                {
+                    _cachedFirstElement = null;
                 }
             }
-
-            _isEffectiveSizeValid = true;
         }
     }
 
-    public Size CalculateAvailableSize(Size availableSize, Orientation orientation,
-        UniformGridLayoutItemsStretch stretch, int maxItemsPerLine,
-        double itemWidth, double itemHeight, double minRowSpacing, double minColumnSpacing)
+    private void SetSize(
+        Layoutable element,
+        double layoutItemWidth,
+        double layoutItemHeight,
+        Size availableSize,
+        UniformGridLayoutItemsStretch stretch,
+        Orientation orientation,
+        double minRowSpacing,
+        double minColumnSpacing,
+        int maxItemsPerLine)
     {
-        // Since some controls might have certain requirements when rendering (e.g. maintaining an aspect ratio),
-        // we will let elements know the actual size they will get within our layout and let them measure based on that assumption.
-        // That way we ensure that no gaps will be created within our layout because of a control deciding it doesn't need as much height (or width)
-        // for the column width (or row height) being provided.
-        if (orientation == Orientation.Horizontal)
+        if (maxItemsPerLine == 0)
         {
-            if (!double.IsNaN(itemWidth))
-            {
-                double allowedColumnWidth = itemWidth;
-                if (stretch != UniformGridLayoutItemsStretch.None)
-                {
-                    allowedColumnWidth += CalculateExtraPixelsInLine(maxItemsPerLine,
-                        availableSize.Width, itemWidth, minColumnSpacing);
-                }
-
-                return new Size(allowedColumnWidth, availableSize.Height);
-            }
-        }
-        else
-        {
-            if (!double.IsNaN(itemHeight))
-            {
-                double allowedRowHeight = itemHeight;
-                if (stretch != UniformGridLayoutItemsStretch.None)
-                {
-                    allowedRowHeight += CalculateExtraPixelsInLine(maxItemsPerLine,
-                        availableSize.Height, itemHeight, minRowSpacing);
-                }
-
-                // Fixed typo in WinUI - Size.height is itemHeight in WinUI, corrected to allowedRowHeight
-                return new Size(availableSize.Width, allowedRowHeight);
-            }
+            maxItemsPerLine = 1;
         }
 
-        return availableSize;
-    }
-
-    private double CalculateExtraPixelsInLine(int maxItemsPerLine, double availableSizeMinor,
-        double itemSizeMinor, double minorItemSpacing)
-    {
-        int numItemsPerColumn;
-        int numItemsBasedOnSize = (int)Math.Max(1, availableSizeMinor / (itemSizeMinor + minorItemSpacing));
-        if (numItemsBasedOnSize == 0)
-        {
-            numItemsPerColumn = maxItemsPerLine;
-        }
-        else
-        {
-            numItemsPerColumn = Math.Min(maxItemsPerLine, numItemsBasedOnSize);
-        }
-
-        var usedSpace = (numItemsPerColumn * (itemSizeMinor + minorItemSpacing)) - minorItemSpacing;
-        var remainingSpace = (int)(availableSizeMinor - usedSpace);
-        return remainingSpace / numItemsPerColumn;
-    }
-
-    private void SetSize(Size desiredItemSize, double layoutItemWidth, double layoutItemHeight,
-        Size availableSize, UniformGridLayoutItemsStretch stretch, Orientation orientation,
-        double minRowSpacing, double minColumnSpacing, int maxItemsPerLine)
-    {
-        maxItemsPerLine = maxItemsPerLine == 0 ? 1 : maxItemsPerLine;
-
-        _effectiveItemWidth = double.IsNaN(layoutItemWidth) ? desiredItemSize.Width : layoutItemWidth;
-        _effectiveItemHeight = double.IsNaN(layoutItemHeight) ? desiredItemSize.Height : layoutItemHeight;
+        EffectiveItemWidth = (double.IsNaN(layoutItemWidth) ? element.DesiredSize.Width : layoutItemWidth);
+        EffectiveItemHeight = (double.IsNaN(layoutItemHeight) ? element.DesiredSize.Height : layoutItemHeight);
 
         var availableSizeMinor = orientation == Orientation.Horizontal ? availableSize.Width : availableSize.Height;
         var minorItemSpacing = orientation == Orientation.Vertical ? minRowSpacing : minColumnSpacing;
 
-        var itemSizeMinor = orientation == Orientation.Horizontal ? _effectiveItemWidth : _effectiveItemHeight;
+        var itemSizeMinor = orientation == Orientation.Horizontal ? EffectiveItemWidth : EffectiveItemHeight;
 
-        double extraMinorPixelsForEachItem = 0;
+        double extraMinorPixelsForEachItem = 0.0;
         if (!double.IsInfinity(availableSizeMinor))
         {
-            extraMinorPixelsForEachItem = CalculateExtraPixelsInLine(maxItemsPerLine,
-                availableSizeMinor, itemSizeMinor, minorItemSpacing);
+            var numItemsPerColumn = (int)Math.Min(
+                maxItemsPerLine,
+                Math.Max(1.0, availableSizeMinor / (itemSizeMinor + minorItemSpacing)));
+            var usedSpace = (numItemsPerColumn * (itemSizeMinor + minorItemSpacing)) - minorItemSpacing;
+            var remainingSpace = availableSizeMinor - usedSpace;
+            extraMinorPixelsForEachItem = (int)(remainingSpace / numItemsPerColumn);
         }
 
         if (stretch == UniformGridLayoutItemsStretch.Fill)
         {
             if (orientation == Orientation.Horizontal)
             {
-                _effectiveItemWidth += extraMinorPixelsForEachItem;
+                EffectiveItemWidth += extraMinorPixelsForEachItem;
             }
             else
             {
-                _effectiveItemHeight += extraMinorPixelsForEachItem;
+                EffectiveItemHeight += extraMinorPixelsForEachItem;
             }
         }
         else if (stretch == UniformGridLayoutItemsStretch.Uniform)
         {
-            var itemSizeMajor = orientation == Orientation.Horizontal ? _effectiveItemHeight : _effectiveItemWidth;
+            var itemSizeMajor = orientation == Orientation.Horizontal ? EffectiveItemHeight : EffectiveItemWidth;
             var extraMajorPixelsForEachItem = itemSizeMajor * (extraMinorPixelsForEachItem / itemSizeMinor);
             if (orientation == Orientation.Horizontal)
             {
-                _effectiveItemWidth += extraMinorPixelsForEachItem;
-                _effectiveItemHeight += extraMajorPixelsForEachItem;
+                EffectiveItemWidth += extraMinorPixelsForEachItem;
+                EffectiveItemHeight += extraMajorPixelsForEachItem;
             }
             else
             {
-                _effectiveItemHeight += extraMinorPixelsForEachItem;
-                _effectiveItemWidth += extraMajorPixelsForEachItem;
+                EffectiveItemHeight += extraMinorPixelsForEachItem;
+                EffectiveItemWidth += extraMajorPixelsForEachItem;
             }
         }
     }
 
-    internal void InvalidateElementSize()
+    internal void EnsureFirstElementOwnership(VirtualizingLayoutContext context)
     {
-        _isEffectiveSizeValid = false;
+        if (_cachedFirstElement != null && FlowAlgorithm.GetElementIfRealized(0) != null)
+        {
+            // We created the element, but then flowlayout algorithm took ownership, so we can clear it and
+            // let flowlayout algorithm do its thing.
+            context.RecycleElement(_cachedFirstElement);
+            _cachedFirstElement = null;
+        }
     }
 
-    private FlowLayoutAlgorithm _flowAlgorithm;
-    private double _effectiveItemWidth;
-    private double _effectiveItemHeight;
-    private bool _isEffectiveSizeValid;
+    internal void ClearElementOnDataSourceChange(
+        VirtualizingLayoutContext context,
+        NotifyCollectionChangedEventArgs args)
+    {
+        if (_cachedFirstElement != null)
+        {
+            bool shouldClear = false;
+            switch (args.Action)
+            {
+                case NotifyCollectionChangedAction.Add:
+                    shouldClear = args.NewStartingIndex == 0;
+                    break;
+
+                case NotifyCollectionChangedAction.Replace:
+                    shouldClear = args.NewStartingIndex == 0 || args.OldStartingIndex == 0;
+                    break;
+
+                case NotifyCollectionChangedAction.Remove:
+                    shouldClear = args.OldStartingIndex == 0;
+                    break;
+
+                case NotifyCollectionChangedAction.Reset:
+                    shouldClear = true;
+                    break;
+
+                case NotifyCollectionChangedAction.Move:
+                    throw new NotImplementedException();
+            }
+
+            if (shouldClear)
+            {
+                context.RecycleElement(_cachedFirstElement);
+                _cachedFirstElement = null;
+            }
+        }
+    }
 }
