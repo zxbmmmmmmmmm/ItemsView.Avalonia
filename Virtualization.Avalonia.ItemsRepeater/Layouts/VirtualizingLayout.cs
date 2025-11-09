@@ -30,7 +30,5 @@ public abstract class VirtualizingLayout : Layout
     protected internal abstract Size ArrangeOverride(VirtualizingLayoutContext context, Size finalSize);
 
     protected internal virtual void OnItemsChangedCore(VirtualizingLayoutContext context, object? source, NotifyCollectionChangedEventArgs args)
-    {
-        InvalidateMeasure();
-    }
+        => InvalidateMeasure();
 }

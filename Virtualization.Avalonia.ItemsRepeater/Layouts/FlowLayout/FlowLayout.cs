@@ -43,7 +43,7 @@ public sealed partial class FlowLayout : VirtualizingLayout
     }
 
     /// <inheritdoc />
-    protected internal override void OnItemsChangedCore(VirtualizingLayoutContext context, object source, NotifyCollectionChangedEventArgs args)
+    protected internal override void OnItemsChangedCore(VirtualizingLayoutContext context, object? source, NotifyCollectionChangedEventArgs args)
     {
         var state = (FlowLayoutState)context.LayoutState;
 

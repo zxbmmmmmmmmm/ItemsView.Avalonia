@@ -5,18 +5,13 @@ using Avalonia.Layout;
 
 namespace Virtualization.Avalonia;
 
-internal class Phaser
+internal class Phaser(ItemsRepeater owner)
 {
-    public Phaser(ItemsRepeater owner)
-    {
-        _owner = owner;
-        // ItemsRepeater is not fully constructed yet. Don't interact with it.
-    }
+    // ItemsRepeater is not fully constructed yet (during ctor). Don't interact with it.
 
     public void PhaseElement(Control element, VirtualizationInfo virtInfo, ContainerContentChangingEventArgs cArgs)
     {
-        _pendingElements ??= new List<ElementInfo>();
-
+        _pendingElements ??= [];
         // Insert at the top since we remove from bottom during DoPhasedWorkCallback. This keeps the ordering of items
         // the same as the order in which items are realized.
         _pendingElements.Insert(0, new ElementInfo(element, cArgs.Phase, cArgs.callback, virtInfo));
@@ -50,9 +45,11 @@ internal class Phaser
     {
         MarkCallbackReceived();
 
-        if (_pendingElements != null && _pendingElements.Count > 0 && !BuildTreeScheduler.ShouldYield())
+        if (_pendingElements is not { Count: > 0 })
+            return;
+        if (!BuildTreeScheduler.ShouldYield())
         {
-            var visibleWindow = _owner.VisibleWindow;
+            var visibleWindow = owner.VisibleWindow;
             SortElements(visibleWindow);
             int currentIndex = _pendingElements.Count - 1;
             do
@@ -69,7 +66,7 @@ internal class Phaser
                     var args = new ContainerContentChangingEventArgs(dataIndex,
                         virtInfo.Data, element, virtInfo, currentPhase, this);
 
-                    info.Callback.Invoke(_owner, args);
+                    info.Callback.Invoke(owner, args);
 
                     int nextPhase = VirtualizationInfo.PhaseReachedEnd;
                     
@@ -129,20 +126,18 @@ internal class Phaser
 
         //Debug.Assert(!_registeredForCallbacks);
 
-        if (_pendingElements.Count > 0)
-            RegisterForCallback();        
+        RegisterForCallback();        
     }
 
     private void RegisterForCallback()
     {
-        if (!_registeredForCallbacks)
-        {
-            Debug.Assert(_pendingElements.Count > 0);
-            _registeredForCallbacks = true;
-            BuildTreeScheduler.RegisterWork(
-                _pendingElements[_pendingElements.Count - 1].Phase,// Use the phase of the last one in the sorted list
-                DoPhasedWorkCallback);
-        }
+        if (_registeredForCallbacks || _pendingElements is null)
+            return;
+        Debug.Assert(_pendingElements.Count > 0);
+        _registeredForCallbacks = true;
+        BuildTreeScheduler.RegisterWork(
+            _pendingElements[^1].Phase,// Use the phase of the last one in the sorted list
+            DoPhasedWorkCallback);
     }
 
     private void MarkCallbackReceived()
@@ -162,7 +157,7 @@ internal class Phaser
     private void SortElements(Rect visibleWindow)
     {
         // TODO: std::sort returns true/false, C# wants -1,0,1; not sure if this is 100% correct
-        _pendingElements.Sort((lhs, rhs) =>
+        _pendingElements?.Sort((lhs, rhs) =>
         {
             var lhsBounds = lhs.LastArrangeBounds;
             var lhsIntersects = visibleWindow.Intersects(lhsBounds);
@@ -187,30 +182,23 @@ internal class Phaser
         });
     }
 
-    private readonly ItemsRepeater _owner;
-    private List<ElementInfo> _pendingElements;
+    private List<ElementInfo>? _pendingElements;
     private bool _registeredForCallbacks;
 
-    private readonly struct ElementInfo
+    private readonly struct ElementInfo(
+        Control element,
+        int phase,
+        EventHandler<ItemsRepeater, ContainerContentChangingEventArgs> callback,
+        VirtualizationInfo virtInfo)
     {
-        public ElementInfo(Control element, int phase, EventHandler<ItemsRepeater, ContainerContentChangingEventArgs> callback, 
-            VirtualizationInfo virtInfo)
-        {
-            Element = element;
-            VirtInfo = virtInfo;
-            Phase = phase;
-            LastArrangeBounds = virtInfo.ArrangeBounds;
-            Callback = callback;
-        }
+        public Control Element { get; } = element;
 
-        public Control Element { get; }
+        public int Phase { get; } = phase;
 
-        public int Phase { get; }
+        public Rect LastArrangeBounds { get; } = virtInfo.ArrangeBounds;
 
-        public Rect LastArrangeBounds { get; }
+        public EventHandler<ItemsRepeater, ContainerContentChangingEventArgs> Callback { get; } = callback;
 
-        public EventHandler<ItemsRepeater, ContainerContentChangingEventArgs> Callback { get; }
-
-        public VirtualizationInfo VirtInfo { get; }
+        public VirtualizationInfo VirtInfo { get; } = virtInfo;
     }
 }

@@ -15,8 +15,7 @@ internal class StackLayoutState
         FlowAlgorithm ??= new FlowLayoutAlgorithm();
         FlowAlgorithm.InitializeForContext(context, callbacks);
 
-        if (_estimationBuffer == null)
-            _estimationBuffer = new double[BufferSize];
+        _estimationBuffer ??= new double[BufferSize];
 
         context.LayoutState = this;
     }
@@ -26,6 +25,8 @@ internal class StackLayoutState
 
     public void OnElementMeasured(int elementIndex, double majorSize, double minorSize)
     {
+        if (_estimationBuffer is null)
+            throw new NullReferenceException();
         int estimationBufferIndex = elementIndex < BufferSize ? elementIndex :
             elementIndex % BufferSize;
         bool alreadyMeasured = _estimationBuffer[estimationBufferIndex] != 0;
@@ -46,6 +47,6 @@ internal class StackLayoutState
         MaxArrangeBounds = 0;
     }
 
-    private double[] _estimationBuffer;
+    private double[]? _estimationBuffer;
     private const int BufferSize = 100;
 }

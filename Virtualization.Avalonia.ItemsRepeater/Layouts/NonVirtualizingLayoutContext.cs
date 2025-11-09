@@ -11,13 +11,5 @@ public abstract class NonVirtualizingLayoutContext : LayoutContext
     /// <summary>
     /// Gets the collection of child UIElements from the container that provides the context.
     /// </summary>
-    public IReadOnlyList<Control> Children => ChildrenCore();
-
-    /// <summary>
-    /// Implements the behavior for getting the return value of Children in a derived or custom NonVirtualizingLayoutContext.
-    /// </summary>
-    protected abstract IReadOnlyList<Control> ChildrenCore();
-
-    [field: AllowNull, MaybeNull]
-    internal VirtualizingLayoutContext VirtualizingContextAdapter => field ??= new LayoutContextAdapter(this);
+    public abstract IReadOnlyList<Control> Children { get; }
 }

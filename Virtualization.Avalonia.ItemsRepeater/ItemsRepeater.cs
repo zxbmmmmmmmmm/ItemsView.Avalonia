@@ -75,7 +75,7 @@ public partial class ItemsRepeater : Panel
 
             if (layout != null)
             {
-                var layoutContext = GetLayoutContext();
+                var layoutContext = LayoutContext;
 
                 // Expensive operation, do it only in debug builds.
 #if DEBUG
@@ -140,7 +140,7 @@ public partial class ItemsRepeater : Panel
 
             if (GetEffectiveLayout() is { } layout)
             {
-                arrangeSize = layout.Arrange(GetLayoutContext(), finalSize);
+                arrangeSize = layout.Arrange(LayoutContext, finalSize);
             }
 
             // The view manager might clear elements during this call.
@@ -346,7 +346,7 @@ public partial class ItemsRepeater : Panel
 
         if (isAnchorOutsideRealizedRange)
         {
-            element = GetLayoutContext().GetOrCreateElementAt(index);
+            element = LayoutContext.GetOrCreateElementAt(index);
             element.Measure(Size.Infinity);
         }
 
@@ -425,7 +425,7 @@ public partial class ItemsRepeater : Panel
             _processingItemsSourceChange = args;
             if (l is VirtualizingLayout vl)
             {
-                vl.OnItemsChangedCore(GetLayoutContext(), newValue, args);
+                vl.OnItemsChangedCore(LayoutContext, newValue, args);
             }
             else if (Layout is NonVirtualizingLayout nvl)
             {
@@ -470,7 +470,7 @@ public partial class ItemsRepeater : Panel
                 switch (layout)
                 {
                     case VirtualizingLayout vl:
-                        vl.OnItemsChangedCore(GetLayoutContext(), newValue, args);
+                        vl.OnItemsChangedCore(LayoutContext, newValue, args);
                         break;
                     case NonVirtualizingLayout nvl:
                     {
@@ -523,7 +523,7 @@ public partial class ItemsRepeater : Panel
 
         if (oldValue != null)
         {
-            oldValue.UninitializeForContext(GetLayoutContext());
+            oldValue.UninitializeForContext(LayoutContext);
             newValue.MeasureInvalidated -= InvalidateMeasureForLayout;
             newValue.ArrangeInvalidated -= InvalidateArrangeForLayout;
             _stackLayoutMeasureCounter = 0;
@@ -536,7 +536,7 @@ public partial class ItemsRepeater : Panel
             LayoutState = null;
         }
 
-        newValue.InitializeForContext(GetLayoutContext());
+        newValue.InitializeForContext(LayoutContext);
         newValue.MeasureInvalidated += InvalidateMeasureForLayout;
         newValue.ArrangeInvalidated += InvalidateArrangeForLayout;
 
@@ -572,7 +572,7 @@ public partial class ItemsRepeater : Panel
             if (GetEffectiveLayout() is not { } layout)
                 return;
             if (layout is VirtualizingLayout vl)
-                vl.OnItemsChangedCore(GetLayoutContext(), sender, args);
+                vl.OnItemsChangedCore(LayoutContext, sender, args);
             else
                 InvalidateMeasure();
         }
@@ -595,11 +595,6 @@ public partial class ItemsRepeater : Panel
         // This is the first call for the default VirtualizingLayout layout after the control's creation.
         var layout = GetEffectiveLayout() as VirtualizingLayout;
         OnLayoutChanged(null, layout);
-    }
-
-    private VirtualizingLayoutContext GetLayoutContext()
-    {
-        return _layoutContext ??= new RepeaterLayoutContext(this);
     }
 
     private IEnumerable<Control>? CreateChildrenInTabFocusOrderIterable()
@@ -625,11 +620,11 @@ public partial class ItemsRepeater : Panel
 
     private readonly ViewportManager _viewportManager;
 
-    private VirtualizingLayoutContext _layoutContext;
+    private VirtualizingLayoutContext LayoutContext => field ??= new RepeaterLayoutContext(this);
     private NotifyCollectionChangedEventArgs? _processingItemsSourceChange;
     
     private Size _lastAvailableSize;
-    private bool _isLayoutInProgress = false;
+    private bool _isLayoutInProgress;
     // The value of _layoutOrigin is expected to be set by the layout
     // when it gets measured. It should not be used outside of measure.
     private Point _layoutOrigin;

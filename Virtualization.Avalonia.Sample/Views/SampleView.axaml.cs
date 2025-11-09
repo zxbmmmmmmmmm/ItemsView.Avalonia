@@ -13,7 +13,7 @@ public partial class SampleView : UserControl
 
     private void Button_OnClick(object? sender, RoutedEventArgs e)
     {
-        var scrollViewer = ItemsView.FindDescendantOfType<ScrollViewer>();
-        scrollViewer.Offset = scrollViewer.Offset.WithY(scrollViewer.Offset.Y + 10000);
+        var scrollViewer = ItemsView.FindDescendantOfType<ItemsRepeater>();
+        var scrollViewerChildren = scrollViewer.Children;
     }
 }

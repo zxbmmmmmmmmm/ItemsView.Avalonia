@@ -43,79 +43,47 @@ public abstract class Layout : AvaloniaObject
     /// </summary>
     public event EventHandler<Layout, EventArgs>? ArrangeInvalidated;
 
-    private static VirtualizingLayoutContext GetVirtualizingLayoutContext(LayoutContext context)
-    {
-        switch (context)
-        {
-            case VirtualizingLayoutContext vlc:
-                return vlc;
-            case NonVirtualizingLayoutContext nvlc:
-            {
-                return nvlc.VirtualizingContextAdapter;
-            }
-            default:
-                throw new NotImplementedException();
-        }
-    }
-
-    private static NonVirtualizingLayoutContext GetNonVirtualizingLayoutContext(LayoutContext context)
-    {
-        switch (context)
-        {
-            case NonVirtualizingLayoutContext nvlc:
-                return nvlc;
-            case VirtualizingLayoutContext vlc:
-                return vlc.NonVirtualizingContextAdapter;
-            default:
-                throw new NotImplementedException();
-        }
-    }
-
     /// <summary>
     /// Initializes any per-container state the layout requires when it is attached to a UIElement container.
     /// </summary>
-    public void InitializeForContext(LayoutContext context)
+    public void InitializeForContext(VirtualizingLayoutContext context)
     {
         switch (this)
         {
             case VirtualizingLayout vl:
             {
-                var vc = GetVirtualizingLayoutContext(context);
-                vl.InitializeForContextCore(vc);
+                vl.InitializeForContextCore(context);
                 break;
             }
             case NonVirtualizingLayout nvl:
             {
-                var nvc = GetNonVirtualizingLayoutContext(context);
-                nvl.InitializeForContextCore(nvc);
+                nvl.InitializeForContextCore(context.NonVirtualizingContextAdapter);
                 break;
             }
             default:
-                throw new NotImplementedException();
+                throw new ArgumentOutOfRangeException();
         }
     }
 
     /// <summary>
     /// Removes any state the layout previously stored on the UIElement container.
     /// </summary>
-    public void UninitializeForContext(LayoutContext context)
+    public void UninitializeForContext(VirtualizingLayoutContext context)
     {
         switch (this)
         {
             case VirtualizingLayout vl:
             {
-                var vc = GetVirtualizingLayoutContext(context);
-                vl.UninitializeForContextCore(vc);
+                vl.UninitializeForContextCore(context);
                 break;
             }
             case NonVirtualizingLayout nvl:
             {
-                var nvc = GetNonVirtualizingLayoutContext(context);
-                nvl.UninitializeForContextCore(nvc);
+                nvl.UninitializeForContextCore(context.NonVirtualizingContextAdapter);
                 break;
             }
             default:
-                throw new NotImplementedException();
+                throw new ArgumentOutOfRangeException();
         }
     }
 
@@ -124,23 +92,14 @@ public abstract class Layout : AvaloniaObject
     /// should call this method from their own MeasureOverride implementations to form a recursive layout update. 
     /// The attached layout is expected to call the Measure for each of the container’s UIElement children.
     /// </summary>
-    public Size Measure(LayoutContext context, Size availableSize)
+    public Size Measure(VirtualizingLayoutContext context, Size availableSize)
     {
-        switch (this)
+        return this switch
         {
-            case VirtualizingLayout vl:
-            {
-                var vc = GetVirtualizingLayoutContext(context);
-                return vl.MeasureOverride(vc, availableSize);
-            }
-            case NonVirtualizingLayout nvl:
-            {
-                var nvc = GetNonVirtualizingLayoutContext(context);
-                return nvl.MeasureOverride(nvc, availableSize);
-            }
-            default:
-                throw new NotImplementedException();
-        }
+            VirtualizingLayout vl => vl.MeasureOverride(context, availableSize),
+            NonVirtualizingLayout nvl => nvl.MeasureOverride(context.NonVirtualizingContextAdapter, availableSize),
+            _ => throw new ArgumentOutOfRangeException()
+        };
     }
 
     /// <summary>
@@ -148,23 +107,14 @@ public abstract class Layout : AvaloniaObject
     /// support attached layouts should call this method from their layout override implementations to 
     /// form a recursive layout update.
     /// </summary>
-    public Size Arrange(LayoutContext context, Size finalSize)
+    public Size Arrange(VirtualizingLayoutContext context, Size finalSize)
     {
-        switch (this)
+        return this switch
         {
-            case VirtualizingLayout vl:
-            {
-                var vc = GetVirtualizingLayoutContext(context);
-                return vl.ArrangeOverride(vc, finalSize);
-            }
-            case NonVirtualizingLayout nvl:
-            {
-                var nvc = GetNonVirtualizingLayoutContext(context);
-                return nvl.ArrangeOverride(nvc, finalSize);
-            }
-            default:
-                throw new NotImplementedException();
-        }
+            VirtualizingLayout vl => vl.ArrangeOverride(context, finalSize),
+            NonVirtualizingLayout nvl => nvl.ArrangeOverride(context.NonVirtualizingContextAdapter, finalSize),
+            _ => throw new ArgumentOutOfRangeException()
+        };
     }
 
     /// <summary>

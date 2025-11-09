@@ -5,12 +5,15 @@ namespace Virtualization.Avalonia.Layouts;
 
 internal class VirtualLayoutContextAdapter(VirtualizingLayoutContext context) : NonVirtualizingLayoutContext
 {
-    protected override IReadOnlyList<Control> ChildrenCore()
+    public override IReadOnlyList<Control> Children 
     {
-        if (GetContext() is not { } context)
-            throw new NullReferenceException();
-        _children ??= new(context);
-        return _children;
+        get
+        {
+            if (GetContext() is not { } ctx)
+                throw new NullReferenceException();
+            _children ??= new(ctx);
+            return _children;
+        }
     }
 
     public override object? LayoutState
@@ -22,6 +25,8 @@ internal class VirtualLayoutContextAdapter(VirtualizingLayoutContext context) : 
                 vlc.LayoutState = value;
         } 
     }
+
+    protected internal override WeakReference<ItemsRepeater> Owner => context.Owner;
 
     private VirtualizingLayoutContext? GetContext() => _virtualizingContext.TryGetTarget(out var target) ? target : null;
 

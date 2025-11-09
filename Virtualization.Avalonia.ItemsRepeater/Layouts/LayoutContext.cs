@@ -11,4 +11,8 @@ public abstract class LayoutContext : AvaloniaObject
     /// Gets or sets an object that represents the state of a layout.
     /// </summary>
     public virtual object? LayoutState { get; set; }
+    
+    protected internal abstract WeakReference<ItemsRepeater> Owner { get; }
+
+    protected ItemsRepeater? GetOwner() => Owner.TryGetTarget(out var target) ? target : null;
 }

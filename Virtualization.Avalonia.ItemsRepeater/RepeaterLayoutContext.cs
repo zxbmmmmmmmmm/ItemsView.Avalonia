@@ -7,8 +7,41 @@ namespace Virtualization.Avalonia;
 internal class RepeaterLayoutContext(ItemsRepeater owner) : VirtualizingLayoutContext
 {
     public override object? GetItemAt(int index) => GetOwner()?.ItemsSourceView?[index];
+    
+    public override Control? GetElementAt(int index)
+    {
+        var owner = GetOwner() ?? throw new NullReferenceException();
+        return owner.TryGetElement(index);
+    }
 
-    public override Control GetOrCreateElementAt(int index, ElementRealizationOptions options)
+    public override Control? GetElementAt(Point point)
+    {
+        var owner = GetOwner() ?? throw new NullReferenceException();
+        foreach (var child in owner.Children)
+        {
+            if (!child.IsVisible)
+                continue;
+            var p = child.TranslatePoint(default, owner);
+            if (!p.HasValue)
+                continue;
+            var bounds = new Rect(p.Value, child.Bounds.Size);
+            if (bounds.Contains(point))
+                return child;
+        }
+        return null;
+    }
+
+    public override int GetElementIndexAt(Point point) => GetElementAt(point) is { } element ? IndexOf(element) : -1;
+
+    public override int IndexOf(Control? element)
+    {
+        if (element is null)
+            return -1;
+        var owner = GetOwner();
+        return owner?.GetElementIndex(element) ?? -1;
+    }
+
+    public override Control GetOrCreateElementAt(int index, ElementRealizationOptions options = ElementRealizationOptions.None)
     {
         var owner = GetOwner() ?? throw new NullReferenceException();
         return owner.GetElementImpl(index,
@@ -16,8 +49,10 @@ internal class RepeaterLayoutContext(ItemsRepeater owner) : VirtualizingLayoutCo
             (options & ElementRealizationOptions.SuppressAutoRecycle) == ElementRealizationOptions.SuppressAutoRecycle);
     }
 
-    public override void RecycleElement(Control element)
+    public override void RecycleElement(Control? element)
     {
+        if (element is null)
+            return;
         var owner = GetOwner();
 #if DEBUG && REPEATER_TRACE
         var x = Log.Logger;
@@ -63,9 +98,5 @@ internal class RepeaterLayoutContext(ItemsRepeater owner) : VirtualizingLayoutCo
         }
     }
 
-    private ItemsRepeater? GetOwner() => _owner.TryGetTarget(out var target) 
-        ? target 
-        : null;
-
-    private readonly WeakReference<ItemsRepeater> _owner = new(owner);
+    protected internal override WeakReference<ItemsRepeater> Owner { get; } = new(owner);
 }

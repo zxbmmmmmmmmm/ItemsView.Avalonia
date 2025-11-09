@@ -523,8 +523,7 @@ internal class ViewManager(ItemsRepeater ir)
                       _lastRealizedElementIndexHeldByLayout != LastRealizedElementIndexDefault));
 
         Control? element = null;
-        var children = ir.Children;
-        foreach (var child in children)
+        foreach (var child in ir.Children)
         {
             if (ItemsRepeater.TryGetVirtualizationInfo(child) is not { IsHeldByLayout: true } virtInfo)
                 continue;
