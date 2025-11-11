@@ -27,9 +27,12 @@
                     <Image Source="{Binding BitmapAsync^}" Stretch="{Binding $parent[sample:SampleView].((viewModels:SampleViewModel)DataContext).ImageStretch}" />
                 </avalonia:ItemContainer>
             </DataTemplate>
-            <DataTemplate x:Key="ImageItemsTemplate" x:DataType="Bitmap">
+            <DataTemplate x:Key="ImageItemsTemplate" x:DataType="models:ImageItem">
                 <avalonia:ItemContainer>
-                    <Image Source="{Binding}" Stretch="{Binding $parent[sample:SampleView].((viewModels:SampleViewModel)DataContext).ImageStretch}" />
+                    <Grid>
+                        <TextBlock Text="{Binding Index}" Foreground="Red" ZIndex="2"/>
+                        <Image Source="{Binding Image}" Opacity="0.5" Stretch="{Binding $parent[sample:SampleView].((viewModels:SampleViewModel)DataContext).ImageStretch}" />
+                    </Grid>
                 </avalonia:ItemContainer>
             </DataTemplate>
             <ControlTheme x:Key="{x:Type avalonia:ItemContainer}" TargetType="avalonia:ItemContainer">

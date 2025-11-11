@@ -31,8 +31,4 @@
     <ProjectReference Include="..\Virtualization.Avalonia.ItemsRepeater\Virtualization.Avalonia.ItemsRepeater.csproj" />
     <ProjectReference Include="..\Virtualization.Avalonia.ItemsView\Virtualization.Avalonia.ItemsView.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Models\" />
-  </ItemGroup>
 </Project>

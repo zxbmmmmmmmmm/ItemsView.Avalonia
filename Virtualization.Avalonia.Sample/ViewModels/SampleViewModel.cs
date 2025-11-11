@@ -71,7 +71,18 @@ public partial class SampleViewModel : ObservableObject
         Items = SelectedDataSource switch
         {
             DataType.AsyncImageItems => items.Select(t => new ImageUri(t)).ToArray(),
-            DataType.ImageItems => items.Select(t => Bitmap.DecodeToWidth(File.OpenRead(t), 300)).ToArray(),
+            DataType.ImageItems => items
+                .Select((t, i) =>
+                {
+                    using var s = File.OpenRead(t);
+                    var bmp = Bitmap.DecodeToWidth(s, 300);
+                    return new ImageItem
+                    {
+                        Index = i,
+                        Image = bmp
+                    };
+                })
+                .ToArray(),
             _ => Items
         };
     }
