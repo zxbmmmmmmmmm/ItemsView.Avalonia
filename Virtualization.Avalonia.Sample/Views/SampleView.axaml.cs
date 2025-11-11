@@ -10,10 +10,4 @@ public partial class SampleView : UserControl
     {
         InitializeComponent();
     }
-
-    private void Button_OnClick(object? sender, RoutedEventArgs e)
-    {
-        var scrollViewer = ItemsView.FindDescendantOfType<ItemsRepeater>();
-        var scrollViewerChildren = scrollViewer.Children;
-    }
 }

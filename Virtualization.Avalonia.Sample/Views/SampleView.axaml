@@ -33,7 +33,6 @@
                         <x:Static Member="viewModels:DataType.AsyncImageItems" />
                     </ComboBox>
                     <Button Command="{Binding OpenFolderCommand}" Content="Open Folder..." />
-                    <Button Click="Button_OnClick" Content="scroll" />
                 </StackPanel>
 
                 <TextBlock Margin="0,8,0,0" Text="Image Stretch" />
