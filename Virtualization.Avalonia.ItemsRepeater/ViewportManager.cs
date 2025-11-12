@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
@@ -531,6 +532,7 @@ internal class ViewportManager(ItemsRepeater owner)
             owner.InvalidateMeasure();
         }
     }
+    string GetLayoutId() => owner?.Layout?.LayoutId ?? string.Empty;
 
     private bool _ensuredScroller;
     private IScrollAnchorProvider? _scroller;

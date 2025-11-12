@@ -1,4 +1,4 @@
-﻿using System.Collections.Specialized;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;

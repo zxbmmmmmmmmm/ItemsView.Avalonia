@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 
 namespace Virtualization.Avalonia.Layouts;
 
@@ -116,6 +116,8 @@ public abstract class Layout : AvaloniaObject
             _ => throw new ArgumentOutOfRangeException()
         };
     }
+
+    internal virtual string? LayoutId { get; }
 
     /// <summary>
     /// Invalidates the measurement state (layout) for all UIElement containers that reference this layout.
