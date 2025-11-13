@@ -1,7 +1,8 @@
-﻿using System.Collections.Specialized;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Logging;
 using Virtualization.Avalonia.Layouts;
 
 namespace Virtualization.Avalonia;
@@ -67,7 +68,7 @@ internal class ElementManager(bool useLayoutBounds = true)
                 // Sentinel. Create the element now since we need it.
                 var dataIndex = GetDataIndexFromRealizedRangeIndex(realizedIndex);
 #if DEBUG && REPEATER_TRACE
-                Log.Debug("Creating element for sentinal with data index {Index}", dataIndex);
+                Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"Creating element for sentinal with data index {Index}", dataIndex);
 #endif
                 element = _context.GetOrCreateElementAt(dataIndex,
                     ElementRealizationOptions.ForceCreate | ElementRealizationOptions.SuppressAutoRecycle);
@@ -238,7 +239,7 @@ internal class ElementManager(bool useLayoutBounds = true)
 
         Debug.Assert(IsDataIndexRealized(dataIndex));
 #if DEBUG && REPEATER_TRACE
-            Log.Debug("Created element for index {Index}", dataIndex);
+            Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"Created element for index {Index}", dataIndex);
 #endif
     }
 

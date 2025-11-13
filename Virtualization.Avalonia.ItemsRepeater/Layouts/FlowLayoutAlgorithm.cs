@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using Avalonia.Logging;
 
 namespace Virtualization.Avalonia.Layouts;
 
@@ -41,7 +42,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
         _scrollOrientationSameAsFlow = double.IsInfinity(this.Minor(availableSize));
         var realizationRect = RealizationRect();
 #if DEBUG && REPEATER_TRACE
-        Log.Debug("MeasureLayout realization {Rect}", realizationRect);
+        Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"MeasureLayout realization {Rect}", realizationRect);
 #endif
         var suggestedAnchorIndex = _context.RecommendedAnchorIndex;
         if (_elementManager.IsIndexValidInData(suggestedAnchorIndex))
@@ -68,7 +69,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
         if (isWrapping && IsReflowRequired())
         {
 #if DEBUG && REPEATER_TRACE
-            Log.Debug("Reflow Pass");
+            Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"Reflow Pass");
 #endif
             var firstElementBounds = _elementManager.GetLayoutBoundsForRealizedIndex(0);
             this.SetMinorStart(ref firstElementBounds, 0);
@@ -171,7 +172,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             if (isAnchorSuggestionValid)
             {
 #if DEBUG && REPEATER_TRACE
-                Log.Debug("Using suggested anchor {index}", suggestedAnchorIndex);
+                Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"Using suggested anchor {index}", suggestedAnchorIndex);
 #endif
                 anchorIndex = _algorithmCallbacks.Algorithm_GetAnchorForTargetElement(
                     suggestedAnchorIndex, availableSize, context).Index;
@@ -212,9 +213,9 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             {
 #if DEBUG && REPEATER_TRACE
                 if (needAnchorColumnRevaluation)
-                    Log.Debug("NeedAnchorColumnRevaluation");
+                    Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"NeedAnchorColumnRevaluation");
                 if (!isRealizationWindowConnected)
-                    Log.Debug("Disconnected Window");
+                    Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"Disconnected Window");
 #endif
 
                 // The anchor is based on the realization window because a connected ItemsRepeater might intersect the realization window
@@ -227,7 +228,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             else
             {
 #if DEBUG && REPEATER_TRACE
-                Log.Debug("Connected window - picking first realized element as anchor");
+                Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"Connected window - picking first realized element as anchor");
 #endif
                 // No suggestion - just pick first in realized range
                 anchorIndex = _elementManager.GetDataIndexFromRealizedRangeIndex(0);
@@ -237,7 +238,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
         }
 
 #if DEBUG && REPEATER_TRACE
-        Log.Debug("Picked anchor {index}", anchorIndex);
+        Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"Picked anchor {index}", anchorIndex);
 #endif
         Debug.Assert(anchorIndex == -1 || _elementManager.IsIndexValidInData(anchorIndex));
         _firstRealizedDataIndexInsideRealizationWindow = _lastRealizedDataIndexInsideRealizationWindow = anchorIndex;
@@ -247,7 +248,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             if (!_elementManager.IsDataIndexRealized(anchorIndex))
             {
 #if DEBUG && REPEATER_TRACE
-                Log.Debug("Disconnected Window - throwing away all realized elements");
+                Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"Disconnected Window - throwing away all realized elements");
 #endif
                 // Disconnected, throw everything and create new anchor
                 _elementManager.ClearRealizedRange();
@@ -262,13 +263,13 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             _elementManager.SetLayoutBoundsForDataIndex(anchorIndex, layoutBounds);
 
 #if DEBUG && REPEATER_TRACE
-            Log.Debug("Layout bounds of anchor {Index} are {Bounds}", anchorIndex, layoutBounds);
+            Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"Layout bounds of anchor {Index} are {Bounds}", anchorIndex, layoutBounds);
 #endif
         }
         else
         {
 #if DEBUG && REPEATER_TRACE
-            Log.Debug("Anchor index is not valid - throwing away all realized elements");
+            Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"Anchor index is not valid - throwing away all realized elements");
 #endif
             // Throw everything away
             _elementManager.ClearRealizedRange();
@@ -290,7 +291,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
 
         int step = direction == GenerateDirection.Forward ? 1 : -1;
 #if DEBUG && REPEATER_TRACE
-        Log.Debug("{Generating {Direction} from anchor {Index}", direction, anchorIndex);
+        Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"{Generating {Direction} from anchor {Index}", direction, anchorIndex);
 #endif
         int previousIndex = anchorIndex;
         int currentIndex = anchorIndex + step;
@@ -388,7 +389,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
                                 this.SetMajorSize(ref bounds, lineMajorSize);
                                 _elementManager.SetLayoutBoundsForDataIndex(dataIndex, bounds);
 #if DEBUG && REPEATER_TRACE
-                                Log.Debug("Corrected Layout bounds of element {Index} are {X} {Y} {Width} {Height}",
+                                Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"Corrected Layout bounds of element {Index} are {X} {Y} {Width} {Height}",
                                     dataIndex,
                                     bounds.X, bounds.Y, bounds.Width, bounds.Height);
 #endif
@@ -416,7 +417,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
 
             _elementManager.SetLayoutBoundsForDataIndex(currentIndex, currentBounds);
 #if DEBUG && REPEATER_TRACE
-            Log.Debug("Layout bounds of element {Index} are {X} {Y} {Width} {Height}",
+            Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"Layout bounds of element {Index} are {X} {Y} {Width} {Height}",
                 currentIndex, 
                 currentBounds.X, currentBounds.Y, currentBounds.Width, currentBounds.Height);
 #endif
@@ -510,7 +511,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             availableSize, _context, firstRealizedElement, firstDataIndex, firstBounds,
             lastRealizedElement, lastDataIndex, lastBounds);
 #if DEBUG && REPEATER_TRACE
-        Log.Debug("Extent: {Rect}", extent);
+        Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"Extent: {Rect}", extent);
 #endif
         return extent;
     }
@@ -677,7 +678,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             var element = _elementManager.GetAt(rangeIndex);
 
 #if DEBUG && REPEATER_TRACE
-            Log.Debug("Arranging element {Index} at {Bounds}",
+            Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"Arranging element {Index} at {Bounds}",
                 _elementManager.GetDataIndexFromRealizedRangeIndex(rangeIndex),
                 bounds);
 #endif

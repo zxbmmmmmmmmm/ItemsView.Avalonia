@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Logging;
 using Virtualization.Avalonia.Layouts;
 
 namespace Virtualization.Avalonia;
@@ -55,7 +56,7 @@ internal class RepeaterLayoutContext(ItemsRepeater owner) : VirtualizingLayoutCo
             return;
         var owner = GetOwner();
 #if DEBUG && REPEATER_TRACE
-        Log.Debug("RepeaterLayout - RecycleElement {Index}", owner?.GetElementIndex(element));
+        Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"RepeaterLayout - RecycleElement {Index}", owner?.GetElementIndex(element));
 #endif
         owner?.ClearElementImpl(element);
     }

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Avalonia.Logging;
 
 namespace Virtualization.Avalonia;
 
@@ -13,6 +14,7 @@ public class Log
     public static void Debug(string format, params object[] args)
     {
         Debugger.Log(0, "ItemRepeater", string.Format(format, args));
+        
     }
 #endif
 }

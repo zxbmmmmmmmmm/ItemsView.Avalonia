@@ -1,8 +1,9 @@
-﻿using System.Collections.Specialized;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Avalonia.Logging;
 
 namespace Virtualization.Avalonia.Layouts;
 
@@ -181,7 +182,7 @@ public class StackLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IO
             else
             {
 #if DEBUG && REPEATER_TRACE
-                Log.Debug("{Layout} Estimating extent with no realized elements", LayoutId);
+                Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"{Layout} Estimating extent with no realized elements", LayoutId);
 #endif
             }
         }
@@ -192,7 +193,7 @@ public class StackLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IO
         }
 
 #if DEBUG && REPEATER_TRACE
-        Log.Debug("{Layout}: Extent is {Extent} based on average {Avg}",
+        Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"{Layout}: Extent is {Extent} based on average {Avg}",
             LayoutId, extent, averageElementSize);
 #endif
         return extent;

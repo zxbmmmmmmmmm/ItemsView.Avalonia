@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using Avalonia;
+using Avalonia.Logging;
 
 namespace Virtualization.Avalonia.Sample;
 
@@ -17,5 +18,5 @@ internal class Program
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
-            .LogToTrace();
+            .LogToTrace(LogEventLevel.Verbose, "Repeater");
 }

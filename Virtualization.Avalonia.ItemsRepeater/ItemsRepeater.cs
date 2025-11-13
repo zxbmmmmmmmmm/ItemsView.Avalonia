@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Specialized;
 using Avalonia;
 using Avalonia.Automation;
@@ -54,7 +54,7 @@ public partial class ItemsRepeater : Panel
         if (layout is StackLayout stackLayout && ++_stackLayoutMeasureCounter >= MaxStackLayoutIterations)
         {
 #if DEBUG && REPEATER_TRACE
-                //Log.Debug("MeasureOverride shortcut - {Counter}", _stackLayoutMeasureCounter);
+                //Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"MeasureOverride shortcut - {Counter}", _stackLayoutMeasureCounter);
 #endif
             // Shortcut the apparent layout cycle by returning the previous desired size.
             // This can occur when children have variable sizes that prevent the ItemsPresenter's desired size from settling.
@@ -107,7 +107,7 @@ public partial class ItemsRepeater : Panel
                         !virtInfo.KeepAlive)
                     {
 #if DEBUG && REPEATER_TRACE
-                        //Log.Debug("AutoClear - {Index}", virtInfo.Index);
+                        //Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"AutoClear - {Index}", virtInfo.Index);
 #endif
                         ClearElementImpl(element);
                     }

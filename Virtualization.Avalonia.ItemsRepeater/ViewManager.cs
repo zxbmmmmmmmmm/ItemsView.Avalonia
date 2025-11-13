@@ -3,6 +3,7 @@ using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Interactivity;
+using Avalonia.Logging;
 using Avalonia.VisualTree;
 
 namespace Virtualization.Avalonia;
@@ -57,7 +58,7 @@ internal class ViewManager(ItemsRepeater ir)
         {
             vi.AutoRecycleCandidate = false;
 #if DEBUG && REPEATER_TRACE
-            Log.Debug("GetElement: {Index} Not AutoRecycleCandidate", vi.Index);            
+            Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"GetElement: {Index} Not AutoRecycleCandidate", vi.Index);            
 #endif
         }
         else
@@ -65,7 +66,7 @@ internal class ViewManager(ItemsRepeater ir)
             vi.AutoRecycleCandidate = true;
             vi.KeepAlive = true;
 #if DEBUG && REPEATER_TRACE
-            Log.Debug("GetElement: {Index} AutoRecycleCandidate", vi.Index);
+            Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"GetElement: {Index} AutoRecycleCandidate", vi.Index);
 #endif
         }
 
@@ -163,7 +164,7 @@ internal class ViewManager(ItemsRepeater ir)
         MoveFocusFromClearedIndex(clearedIndex);
 
 #if DEBUG && REPEATER_TRACE
-        Log.Debug("Element Cleared");
+        Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"Element Cleared");
 #endif
     }
 
@@ -648,7 +649,7 @@ internal class ViewManager(ItemsRepeater ir)
             // View obtained from ElementFactory already has a VirtualizationInfo attached to it
             // which means that the element has been recycled and not created from scratch.
 #if DEBUG && REPEATER_TRACE
-            Log.Debug("Element Recycled");
+            Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"Element Recycled");
 #endif
         }
         // Clear flag

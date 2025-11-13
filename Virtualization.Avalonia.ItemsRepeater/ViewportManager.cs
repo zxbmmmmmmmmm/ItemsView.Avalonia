@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Avalonia.Logging;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 
@@ -142,7 +143,7 @@ internal class ViewportManager(ItemsRepeater owner)
         if (Math.Abs(_expectedViewportShift.X) > 1 || Math.Abs(_expectedViewportShift.Y) > 1)
         {
 #if DEBUG && REPEATER_TRACE
-            Log.Debug("{Layout}: Expecting viewport shift of {shift}",
+            Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"{Layout}: Expecting viewport shift of {shift}",
                 GetLayoutId(), _expectedViewportShift);
 #endif
 
@@ -268,7 +269,7 @@ internal class ViewportManager(ItemsRepeater owner)
         if (_pendingViewportShift.X == 0 || _pendingViewportShift.Y == 0)
             return;
 #if DEBUG && REPEATER_TRACE
-            Log.Debug("{Layout}: Layout updated with pending shift {Shift} - invalidating measure",
+            Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"{Layout}: Layout updated with pending shift {Shift} - invalidating measure",
                 GetLayoutId(), _pendingViewportShift);
 #endif
 
@@ -402,7 +403,7 @@ internal class ViewportManager(ItemsRepeater owner)
     {
 #if DEBUG && REPEATER_TRACE
         Debug.Assert(!_managingViewportDisabled);
-        Log.Debug("{Layout}: EffectiveViewportChanged event callback", GetLayoutId());
+        Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"{Layout}: EffectiveViewportChanged event callback", GetLayoutId());
 #endif 
 
         UpdateViewport(args.EffectiveViewport);
@@ -456,7 +457,7 @@ internal class ViewportManager(ItemsRepeater owner)
 #if DEBUG && REPEATER_TRACE
         Debug.Assert(!_managingViewportDisabled);
         var previousVisibleWindow = _visibleWindow;
-        Log.Debug("{Layout}: Effective Viewport: {Old}->{New}",
+        Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"{Layout}: Effective Viewport: {Old}->{New}",
             GetLayoutId(),
             previousVisibleWindow, viewport);
 #endif
@@ -467,7 +468,7 @@ internal class ViewportManager(ItemsRepeater owner)
             -currentVisibleWindow.Y <= ItemsRepeater.ClearedElementsArrangePosition.Y)
         {
 #if DEBUG && REPEATER_TRACE
-            Log.Debug("{Layout}: Viewport is invalid. visible window cleared", GetLayoutId());
+            Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"{Layout}: Viewport is invalid. visible window cleared", GetLayoutId());
 #endif
             // We got cleared.
             _visibleWindow = default;
@@ -475,7 +476,7 @@ internal class ViewportManager(ItemsRepeater owner)
         else
         {
 #if DEBUG && REPEATER_TRACE
-            Log.Debug("{Layout}: Used viewport {Old} -> {New}",
+            Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"{Layout}: Used viewport {Old} -> {New}",
                 GetLayoutId(), previousVisibleWindow, currentVisibleWindow);
 #endif
             _visibleWindow = currentVisibleWindow;
@@ -527,7 +528,7 @@ internal class ViewportManager(ItemsRepeater owner)
             // we don't invalidate measure in UpdateViewport if the view is changing to
             // avoid layout cycles.
 #if DEBUG && REPEATER_TRACE
-            Log.Debug("{Layout}: Invalidating measure due to viewport change", GetLayoutId());
+            Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"{Layout}: Invalidating measure due to viewport change", GetLayoutId());
 #endif
             owner.InvalidateMeasure();
         }
