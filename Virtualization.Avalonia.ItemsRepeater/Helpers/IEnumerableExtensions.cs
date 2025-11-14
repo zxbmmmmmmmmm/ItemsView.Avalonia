@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 
 namespace Virtualization.Avalonia;
 
@@ -7,95 +7,98 @@ namespace Virtualization.Avalonia;
 /// </summary>
 internal static class IEnumerableExtensions
 {
-    /// <summary>
-    /// Gets the item count of the IEnumerable
-    /// </summary>
-    public static int Count(this IEnumerable items)
+    extension(IEnumerable items)
     {
-        if (items == null)
-            return 0;
-
-        if (items is ICollection collec)
+        /// <summary>
+        /// Gets the item count of the IEnumerable
+        /// </summary>
+        public int Count()
         {
-            return collec.Count;
-        }
-        else
-        {
-            return Enumerable.Count(items.Cast<object>());
-        }
-    }
+            if (items == null)
+                return 0;
 
-    /// <summary>
-    /// Gets the index of an item from an IEnumerable
-    /// </summary>
-    public static int IndexOf(this IEnumerable items, object item)
-    {
-        var list = items as IList;
-
-        if (list != null)
-        {
-            return list.IndexOf(item);
-        }
-        else
-        {
-            int index = 0;
-
-            foreach (var i in items)
+            if (items is ICollection collec)
             {
-                if (ReferenceEquals(i, item))
+                return collec.Count;
+            }
+            else
+            {
+                return Enumerable.Count(items.Cast<object>());
+            }
+        }
+
+        /// <summary>
+        /// Gets the index of an item from an IEnumerable
+        /// </summary>
+        public int IndexOf(object item)
+        {
+            var list = items as IList;
+
+            if (list != null)
+            {
+                return list.IndexOf(item);
+            }
+            else
+            {
+                int index = 0;
+
+                foreach (var i in items)
                 {
-                    return index;
+                    if (ReferenceEquals(i, item))
+                    {
+                        return index;
+                    }
+
+                    ++index;
                 }
 
-                ++index;
+                return -1;
             }
-
-            return -1;
-        }
-    }
-
-    /// <summary>
-    /// Retreives the element at the specified index from the IEnumerable
-    /// </summary>
-    /// <param name="items"></param>
-    /// <param name="reqIndex"></param>
-    /// <returns></returns>
-    public static object ElementAt(this IEnumerable items, int reqIndex)
-    {
-        if (items.Count() == 0)
-            return null;
-
-        if (items is IList list)
-        {
-            return list[reqIndex];
-        }
-        else
-        {
-            return Enumerable.ElementAt(items.Cast<object>(), reqIndex);
         }
 
-    }
+        /// <summary>
+        /// Retreives the element at the specified index from the IEnumerable
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="reqIndex"></param>
+        /// <returns></returns>
+        public object ElementAt(int reqIndex)
+        {
+            if (items.Count() == 0)
+                return null;
 
-    /// <summary>
-    /// Checks of the IEnumerable contains the given item
-    /// </summary>
-    public static bool Contains(this IEnumerable items, object item)
-    {
-        if (items is IList list)
-        {
-            return list.Contains(item);
-        }
-        else
-        {
-            foreach (var i in items)
+            if (items is IList list)
             {
-                if (ReferenceEquals(i, item))
-                {
-                    return true;
-                }
+                return list[reqIndex];
+            }
+            else
+            {
+                return Enumerable.ElementAt(items.Cast<object>(), reqIndex);
             }
 
-            return false;
+        }
+
+        /// <summary>
+        /// Checks of the IEnumerable contains the given item
+        /// </summary>
+        public bool Contains(object item)
+        {
+            if (items is IList list)
+            {
+                return list.Contains(item);
+            }
+            else
+            {
+                foreach (var i in items)
+                {
+                    if (ReferenceEquals(i, item))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
     }
 }
