@@ -1,4 +1,6 @@
-﻿using Avalonia;
+using System;
+using System.Collections.Generic;
+using Avalonia;
 using Avalonia.Layout;
 using PropertyGenerator.Avalonia;
 using System.Collections.Specialized;

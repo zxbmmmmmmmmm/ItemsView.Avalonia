@@ -1,4 +1,6 @@
-﻿namespace Virtualization.Avalonia;
+using System;
+
+namespace Virtualization.Avalonia;
 
 internal class SimpleObserver<T> : IObserver<T>
 {

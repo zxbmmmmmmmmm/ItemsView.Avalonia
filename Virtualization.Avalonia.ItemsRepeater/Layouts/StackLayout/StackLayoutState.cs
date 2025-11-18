@@ -1,4 +1,6 @@
-﻿namespace Virtualization.Avalonia.Layouts;
+using System;
+
+namespace Virtualization.Avalonia.Layouts;
 
 internal class StackLayoutState
 {

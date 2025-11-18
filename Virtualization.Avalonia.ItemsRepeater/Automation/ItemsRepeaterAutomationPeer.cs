@@ -1,4 +1,6 @@
-﻿using Avalonia.Automation.Peers;
+using System.Collections.Generic;
+using System.Linq;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
 

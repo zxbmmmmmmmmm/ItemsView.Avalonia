@@ -1,4 +1,6 @@
-﻿namespace Virtualization.Avalonia;
+using System;
+
+namespace Virtualization.Avalonia;
 
 /// <summary>
 /// Defines constants that specify whether to suppress automatic recycling of the retrieved element or force creation of a new element.

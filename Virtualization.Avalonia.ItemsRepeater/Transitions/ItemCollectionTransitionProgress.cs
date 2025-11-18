@@ -1,4 +1,5 @@
-﻿#pragma warning disable
+#pragma warning disable
+using System;
 using Avalonia.Controls;
 
 namespace Virtualization.Avalonia;

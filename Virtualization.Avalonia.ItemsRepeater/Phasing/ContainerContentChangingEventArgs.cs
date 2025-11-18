@@ -1,4 +1,5 @@
-﻿using Avalonia.Controls;
+using System;
+using Avalonia.Controls;
 
 namespace Virtualization.Avalonia;
 

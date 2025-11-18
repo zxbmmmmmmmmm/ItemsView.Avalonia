@@ -1,4 +1,5 @@
-﻿#pragma warning disable
+#pragma warning disable
+using System;
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;

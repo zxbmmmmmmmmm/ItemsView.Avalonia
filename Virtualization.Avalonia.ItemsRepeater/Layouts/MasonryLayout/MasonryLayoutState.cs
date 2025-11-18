@@ -1,4 +1,8 @@
-﻿namespace Virtualization.Avalonia.Layouts;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Virtualization.Avalonia.Layouts;
 public class MasonryLayoutState
 {
     private List<MasonryItem> _items = new List<MasonryItem>();
