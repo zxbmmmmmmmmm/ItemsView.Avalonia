@@ -10,8 +10,8 @@
   	<PackageReference Include="Avalonia" />
     <PackageReference Include="PropertyGenerator.Avalonia" />
   </ItemGroup>
-  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
-  <DefineConstants>$(DefineConstants);REPEATER_TRACE</DefineConstants>
-</PropertyGroup>
+  <!--<PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <DefineConstants>$(DefineConstants);REPEATER_TRACE</DefineConstants>
+  </PropertyGroup>-->
 
 </Project>
