@@ -1,4 +1,5 @@
-﻿using Avalonia.Controls.Selection;
+using System;
+using Avalonia.Controls.Selection;
 
 namespace Virtualization.Avalonia;
 

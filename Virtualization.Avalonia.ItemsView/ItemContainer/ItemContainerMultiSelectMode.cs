@@ -1,4 +1,6 @@
-﻿namespace Virtualization.Avalonia;
+using System;
+
+namespace Virtualization.Avalonia;
 
 [Flags]
 internal enum ItemContainerMultiSelectMode
