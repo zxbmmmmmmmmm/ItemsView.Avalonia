@@ -35,9 +35,16 @@ public sealed partial class FlowLayout : VirtualizingLayout, IFlowLayoutAlgorith
     }
 
     /// <inheritdoc />
-    protected internal override Size ArrangeOverride(VirtualizingLayoutContext context, Size parentMeasure)
+    protected internal override Size ArrangeOverride(VirtualizingLayoutContext context, Size finalSize)
     {
-        throw new NotImplementedException();
+        if (context.LayoutState == null)
+            return default;
+        
+        var value = GetFlowAlgorithm(context).Arrange(
+            finalSize, context, false /*isWrapping*/,
+            FlowLayoutAlgorithm.LineAlignment.Start);
+
+        return value;
     }
 
     Size IFlowLayoutAlgorithmDelegates.Algorithm_GetMeasureSize(int index, Size availableSize, VirtualizingLayoutContext context)
@@ -52,12 +59,11 @@ public sealed partial class FlowLayout : VirtualizingLayout, IFlowLayoutAlgorith
 
     bool IFlowLayoutAlgorithmDelegates.Algorithm_ShouldBreakLine(int index, double remainingSpace)
     {
-        throw new NotImplementedException();
+        return true;
     }
 
     FlowLayoutAnchorInfo IFlowLayoutAlgorithmDelegates.Algorithm_GetAnchorForRealizationRect(Size availableSize, VirtualizingLayoutContext context)
     {
-        throw new NotImplementedException();
     }
 
     FlowLayoutAnchorInfo IFlowLayoutAlgorithmDelegates.Algorithm_GetAnchorForTargetElement(int targetIndex, Size availableSize, VirtualizingLayoutContext ccontext)
@@ -79,4 +85,9 @@ public sealed partial class FlowLayout : VirtualizingLayout, IFlowLayoutAlgorith
     {
         throw new NotImplementedException();
     }
+
+    private FlowLayoutAlgorithm GetFlowAlgorithm(VirtualizingLayoutContext context) =>
+        GetAsFlowState(context.LayoutState!)!.FlowAlgorithm;
+    private FlowLayoutState? GetAsFlowState(object state) =>
+        state as FlowLayoutState;
 }

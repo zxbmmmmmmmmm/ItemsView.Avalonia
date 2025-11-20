@@ -9,5 +9,5 @@ internal class FlowLayoutState(VirtualizingLayoutContext context)
 {
     private readonly List<FlowItem> _items = [];
 
-    public FlowLayoutAlgorithm FlowLayoutAlgorithm { get; set; } = new();
+    public FlowLayoutAlgorithm FlowAlgorithm { get; set; } = new();
 }
