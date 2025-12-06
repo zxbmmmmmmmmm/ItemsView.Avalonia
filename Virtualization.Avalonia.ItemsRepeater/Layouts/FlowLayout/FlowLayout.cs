@@ -108,7 +108,7 @@ public sealed partial class FlowLayout : VirtualizingLayout, IFlowLayoutAlgorith
             Rect lastExtent = flowState.FlowAlgorithm.LastExtent;
 
             double averageItemsPerLine = 0;
-            double averageLineSize = GetAverageLineInfo(availableSize, context, flowState, ref averageItemsPerLine) + LineSpacing;
+            double averageLineSize = GetAverageLineInfo(availableSize, context, flowState, ref averageItemsPerLine);
             Debug.Assert(averageItemsPerLine != 0);
 
             double extentMajorSize = lastExtent.Height == 0
