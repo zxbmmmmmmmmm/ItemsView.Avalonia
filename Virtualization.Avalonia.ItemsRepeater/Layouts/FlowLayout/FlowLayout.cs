@@ -59,7 +59,7 @@ public sealed partial class FlowLayout : VirtualizingLayout, IFlowLayoutAlgorith
 
 
         var desiredSize = GetFlowAlgorithm(context).Measure(
-            availableSize, context, false /*isWrapping*/, 0/*minItemsSpacing*/,
+            availableSize, context, false /*isWrapping*/, MinItemSpacing/*minItemsSpacing*/,
             MinItemSpacing, int.MaxValue /*maxItemsPerLine*/,
             ScrollOrientation.Vertical, false);
 
@@ -91,12 +91,52 @@ public sealed partial class FlowLayout : VirtualizingLayout, IFlowLayoutAlgorith
 
     bool IFlowLayoutAlgorithmDelegates.Algorithm_ShouldBreakLine(int index, double remainingSpace)
     {
-        return remainingSpace < 0;
+        return remainingSpace <= 0;
     }
 
     FlowLayoutAnchorInfo IFlowLayoutAlgorithmDelegates.Algorithm_GetAnchorForRealizationRect(Size availableSize, VirtualizingLayoutContext context)
     {
-        return new();
+        int anchorIndex = -1;
+        double offset = double.NaN;
+
+        int itemsCount = context.ItemCount;
+        if (itemsCount > 0)
+        {
+            Rect realizationRect = context.RealizationRect;
+            var state = context.LayoutState;
+            var flowState = GetAsFlowState(state);
+            Rect lastExtent = flowState.FlowAlgorithm.LastExtent;
+
+            double averageItemsPerLine = 0;
+            double averageLineSize = GetAverageLineInfo(availableSize, context, flowState, ref averageItemsPerLine) + LineSpacing;
+            Debug.Assert(averageItemsPerLine != 0);
+
+            double extentMajorSize = lastExtent.Height == 0
+                ? (itemsCount / averageItemsPerLine) * averageLineSize
+                : lastExtent.Height;
+
+            if (itemsCount > 0 && realizationRect.Height > 0)
+            {
+                Rect extentRect = new(lastExtent.X, lastExtent.Y, availableSize.Width, extentMajorSize);
+
+                bool overlaps =
+                    (realizationRect.Y + realizationRect.Height) >= extentRect.Y &&
+                    realizationRect.Y <= (extentRect.Y + extentRect.Height);
+
+                if (overlaps)
+                {
+                    double realizationWindowStartWithExtent = realizationRect.Y - lastExtent.Y;
+                    int lineIndex = Math.Max(0, (int) (realizationWindowStartWithExtent / averageLineSize));
+                    anchorIndex = (int) (lineIndex * averageItemsPerLine);
+
+                    // Clamp it to be within valid range
+                    anchorIndex = Math.Clamp(anchorIndex, 0, itemsCount - 1);
+                    offset = lineIndex * averageLineSize + lastExtent.Y;
+                }
+            }
+        }
+
+        return new FlowLayoutAnchorInfo { Index = anchorIndex, Offset = offset };
     }
 
     FlowLayoutAnchorInfo IFlowLayoutAlgorithmDelegates.Algorithm_GetAnchorForTargetElement(int targetIndex, Size availableSize, VirtualizingLayoutContext context)
@@ -149,7 +189,7 @@ public sealed partial class FlowLayout : VirtualizingLayout, IFlowLayoutAlgorith
                 // In that case, the extent in the non virtualizing direction should be based on the
                 // right/bottom of the last realized element.
                 extent = extent.WithWidth(!double.IsInfinity(availableSizeMinor) ?
-                    availableSizeMinor : Math.Max(0, lastRealizedLayoutBounds.Y + lastRealizedLayoutBounds.Height));
+                    availableSizeMinor : Math.Max(0, lastRealizedLayoutBounds.X + lastRealizedLayoutBounds.Width));
             }
             else
             {
@@ -198,7 +238,7 @@ public sealed partial class FlowLayout : VirtualizingLayout, IFlowLayoutAlgorith
 
         avgCountInLine = Math.Max(1, availableSize.Width / desiredSize.Width);
 
-        return LineHeight + LineSpacing;
+        return desiredSize.Height + LineSpacing;
     }
 
     void IFlowLayoutAlgorithmDelegates.Algorithm_OnElementMeasured(Control element, int index, Size availableSize, Size measureSize, Size desiredSize, Size provisionalArrangeSize, VirtualizingLayoutContext context)
