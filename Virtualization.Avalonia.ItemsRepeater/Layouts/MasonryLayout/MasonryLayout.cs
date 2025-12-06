@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Layout;
 using PropertyGenerator.Avalonia;
@@ -74,7 +72,7 @@ public partial class MasonryLayout : VirtualizingLayout
     /// <inheritdoc/>
     protected internal override Size MeasureOverride(VirtualizingLayoutContext context, Size availableSize)
     {
-        if (context.ItemCount == 0)
+        if (context.ItemsCount == 0)
         {
             return new Size(availableSize.Width, 0);
         }
@@ -153,7 +151,7 @@ public partial class MasonryLayout : VirtualizingLayout
         var itemsPerColumn = new int[numColumns];
         var deadColumns = new HashSet<int>();
 
-        for (int i = 0; i < context.ItemCount; i++)
+        for (int i = 0; i < context.ItemsCount; i++)
         {
             var columnIndex = GetColumnIndex(columnHeights);
 

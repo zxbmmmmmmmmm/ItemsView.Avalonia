@@ -1,11 +1,12 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Logging;
 using Virtualization.Avalonia.Layouts;
+#if DEBUG && REPEATER_TRACE
+using Avalonia.Logging;
+#endif
 
 namespace Virtualization.Avalonia;
 
@@ -19,8 +20,7 @@ internal class ElementManager(bool useLayoutBounds = true)
 {
     public int FirstRealizedIndex => _firstRealizedDataIndex;
 
-    public int LastRealizedIndex =>
-        _firstRealizedDataIndex + _realizedElements.Count - 1;
+    public int LastRealizedIndex => _firstRealizedDataIndex + _realizedElements.Count - 1;
 
     public void SetContext(VirtualizingLayoutContext virtualContext)
     {
@@ -29,7 +29,7 @@ internal class ElementManager(bool useLayoutBounds = true)
 
     public void OnBeginMeasure(ScrollOrientation orientation)
     {
-        if (_context == null)
+        if (!ContextNotNull)
             return;
 
         if (IsVirtualizingContext())
@@ -46,7 +46,7 @@ internal class ElementManager(bool useLayoutBounds = true)
         {
             // If we are initialized with a non-virtualizing context, make sure that
             // we have enough space to hold the bounds for all the elements.
-            var count = _context.ItemCount;
+            var count = _context.ItemsCount;
             if (_realizedElementLayoutBounds.Count != count)
             {
                 // Make sure there is enough space for the bounds.
@@ -58,14 +58,14 @@ internal class ElementManager(bool useLayoutBounds = true)
     }
 
     public int GetRealizedElementCount() =>
-        IsVirtualizingContext() ? _realizedElements.Count : _context.ItemCount;
+        IsVirtualizingContext() ? _realizedElements.Count : _context.ItemsCount;
 
     public Control GetAt(int realizedIndex)
     {
-        Control? element = null;
         if (IsVirtualizingContext())
         {
-            if (_realizedElements[realizedIndex] == null)
+            var element = _realizedElements[realizedIndex];
+            if (element is null)
             {
                 // Sentinel. Create the element now since we need it.
                 var dataIndex = GetDataIndexFromRealizedRangeIndex(realizedIndex);
@@ -76,22 +76,16 @@ internal class ElementManager(bool useLayoutBounds = true)
                     ElementRealizationOptions.ForceCreate | ElementRealizationOptions.SuppressAutoRecycle);
                 _realizedElements[realizedIndex] = element;
             }
-            else
-            {
-                element = _realizedElements[realizedIndex];
-            }
-        }
-        else
-        {
-            element = _context.GetOrCreateElementAt(realizedIndex,
-                ElementRealizationOptions.ForceCreate | ElementRealizationOptions.SuppressAutoRecycle);
+            return element;
         }
 
-        return element;
+        return _context.GetOrCreateElementAt(realizedIndex,
+            ElementRealizationOptions.ForceCreate | ElementRealizationOptions.SuppressAutoRecycle);
     }
 
     public void Add(Control element, int dataIndex)
     {
+        Debug.Assert(element is not null);
         Debug.Assert(IsVirtualizingContext());
 
         if (_realizedElements.Count == 0)
@@ -105,7 +99,7 @@ internal class ElementManager(bool useLayoutBounds = true)
         }
     }
 
-    public void Insert(int realizedIndex, int dataIndex, Control element)
+    public void Insert(int realizedIndex, int dataIndex, Control? element)
     {
         Debug.Assert(IsVirtualizingContext());
         if (realizedIndex == 0)
@@ -195,6 +189,7 @@ internal class ElementManager(bool useLayoutBounds = true)
     public void SetLayoutBoundsForRealizedIndex(int realizedIndex, Rect bounds) =>
         _realizedElementLayoutBounds[realizedIndex] = bounds;
 
+    [MemberNotNull(nameof(_context))]
     public bool IsDataIndexRealized(int index)
     {
         if (IsVirtualizingContext())
@@ -207,12 +202,15 @@ internal class ElementManager(bool useLayoutBounds = true)
         else
         {
             // Non virtualized - everything is realized
-            return index >= 0 && index < _context.ItemCount;
+            return index >= 0 && index < _context.ItemsCount;
         }
     }
 
-    public bool IsIndexValidInData(int currentIndex) =>
-        currentIndex >= 0 && currentIndex < _context.ItemCount;
+    public bool IsIndexValidInData(int currentIndex)
+    {
+        Debug.Assert(ContextNotNull);
+        return currentIndex >= 0 && currentIndex < _context.ItemsCount;
+    }
 
     public Control GetRealizedElement(int dataIndex)
     {
@@ -278,7 +276,7 @@ internal class ElementManager(bool useLayoutBounds = true)
         return intersects;
     }
 
-    public void DataSourceChanged(object source, NotifyCollectionChangedEventArgs args)
+    public void DataSourceChanged(object? source, NotifyCollectionChangedEventArgs args)
     {
         Debug.Assert(IsVirtualizingContext());
         if (_realizedElements.Count == 0)
@@ -287,13 +285,13 @@ internal class ElementManager(bool useLayoutBounds = true)
         switch (args.Action)
         {
             case NotifyCollectionChangedAction.Add:
-                OnItemsAdded(args.NewStartingIndex, args.NewItems.Count);
+                OnItemsAdded(args.NewStartingIndex, args.NewItems!.Count);
                 break;
 
             case NotifyCollectionChangedAction.Replace:
                 {
-                    var oldSize = args.OldItems.Count;
-                    var newSize = args.NewItems.Count;
+                    var oldSize = args.OldItems!.Count;
+                    var newSize = args.NewItems!.Count;
                     var oldStartIndex = args.OldStartingIndex;
                     var newStartIndex = args.NewStartingIndex;
 
@@ -325,7 +323,7 @@ internal class ElementManager(bool useLayoutBounds = true)
                 break;
 
             case NotifyCollectionChangedAction.Remove:
-                OnItemsRemoved(args.OldStartingIndex, args.OldItems.Count);
+                OnItemsRemoved(args.OldStartingIndex, args.OldItems!.Count);
                 break;
 
             case NotifyCollectionChangedAction.Reset:
@@ -476,18 +474,20 @@ internal class ElementManager(bool useLayoutBounds = true)
         }
     }
 
+    [MemberNotNullWhen(true, nameof(_context))]
+    private bool ContextNotNull => _context is not null;
+
+    [MemberNotNull(nameof(_context))]
     private bool IsVirtualizingContext()
     {
-        if (_context is null)
-            return false;
+        Debug.Assert(ContextNotNull);
         var rect = _context.RealizationRect;
         var hasInfiniteSize = double.IsInfinity(rect.Height) || double.IsInfinity(rect.Width);
         return !hasInfiniteSize;
-
     }
 
-    private List<Control> _realizedElements = [];
-    private List<Rect> _realizedElementLayoutBounds = [];
+    private readonly List<Control?> _realizedElements = [];
+    private readonly List<Rect> _realizedElementLayoutBounds = [];
     private int _firstRealizedDataIndex = -1;
     private VirtualizingLayoutContext? _context;
 }

@@ -96,7 +96,7 @@ public class MasonryLayoutState
         double desiredHeight = _columnLayout.Values.Max(c => c.Height);
 
         var itemCount = _columnLayout.Values.Sum(c => c.Count);
-        if (itemCount == _context.ItemCount)
+        if (itemCount == _context.ItemsCount)
         {
             return desiredHeight;
         }
@@ -108,7 +108,7 @@ public class MasonryLayoutState
         }
 
         averageHeight /= _columnLayout.Count;
-        double estimatedHeight = (averageHeight * _context.ItemCount) / _columnLayout.Count;
+        double estimatedHeight = (averageHeight * _context.ItemsCount) / _columnLayout.Count;
         if (estimatedHeight > desiredHeight)
         {
             desiredHeight = estimatedHeight;

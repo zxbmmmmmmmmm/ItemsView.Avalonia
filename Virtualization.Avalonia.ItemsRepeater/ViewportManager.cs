@@ -534,7 +534,6 @@ internal class ViewportManager(ItemsRepeater owner)
             owner.InvalidateMeasure();
         }
     }
-    string GetLayoutId() => owner?.Layout?.LayoutId ?? string.Empty;
 
     private bool _ensuredScroller;
     private IScrollAnchorProvider? _scroller;

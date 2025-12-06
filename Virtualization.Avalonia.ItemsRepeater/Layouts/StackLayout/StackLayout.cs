@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using Avalonia;
@@ -54,25 +53,22 @@ public class StackLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IO
 
     public bool DisableVirtualization { get; set; }
 
-    private ScrollOrientation ScrollOrientation { get; set; } = ScrollOrientation.Vertical;
+    private ScrollOrientation _scrollOrientation = ScrollOrientation.Vertical;
 
-    ScrollOrientation IOrientationBasedMeasures.ScrollOrientation 
+    ScrollOrientation IOrientationBasedMeasures.ScrollOrientation
     {
-        get => this.ScrollOrientation;
-        set => this.ScrollOrientation = value;
+        get => _scrollOrientation;
+        set => _scrollOrientation = value;
     }
 
     protected internal override void InitializeForContextCore(VirtualizingLayoutContext context)
     {
         var state = context.LayoutState;
-        StackLayoutState stackState = null;
-        if (state != null)
-            stackState = GetAsStackState(state);
 
-        if (stackState == null)
+        if (state is not StackLayoutState stackState)
         {
-            if (state != null)
-                throw new InvalidOperationException("LayoutState must derive from StackLayoutState.");
+            if (state is not null)
+                throw new InvalidOperationException($"{nameof(context.LayoutState)} must derive from {nameof(StackLayoutState)}.");
 
             // Custom deriving layouts could potentially be stateful.
             // If that is the case, we will just create the base state required by UniformGridLayout ourselves.
@@ -84,30 +80,30 @@ public class StackLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IO
 
     protected internal override void UninitializeForContextCore(VirtualizingLayoutContext context)
     {
-        var stackState = GetAsStackState(context.LayoutState);
-        stackState?.UninitializeForContext(context);
+        var stackState = (StackLayoutState)context.LayoutState!;
+        stackState.UninitializeForContext(context);
     }
 
     protected internal override Size MeasureOverride(VirtualizingLayoutContext context, Size availableSize)
     {
-        if (context.LayoutState == null)
-            return default;
-
-        GetAsStackState(context.LayoutState).OnMeasureStart();
+        var stackState = (StackLayoutState) context.LayoutState!;
+        stackState.OnMeasureStart();
 
         var desiredSize = GetFlowAlgorithm(context).Measure(
-            availableSize, context, false /*isWrapping*/, 0/*minItemsSpacing*/,
-            _itemSpacing, int.MaxValue /*maxItemsPerLine*/,
-            ScrollOrientation, DisableVirtualization);
+            availableSize,
+            context,
+            false /*isWrapping*/,
+            0/*minItemsSpacing*/,
+            _itemSpacing,
+            int.MaxValue /*maxItemsPerLine*/,
+            _scrollOrientation,
+            DisableVirtualization);
 
         return desiredSize;
     }
 
     protected internal override Size ArrangeOverride(VirtualizingLayoutContext context, Size finalSize)
     {
-        if (context.LayoutState == null)
-            return default;
-
         var value = GetFlowAlgorithm(context).Arrange(
             finalSize, context, false /*isWrapping*/,
             FlowLayoutAlgorithm.LineAlignment.Start);
@@ -117,11 +113,7 @@ public class StackLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IO
 
     protected internal override void OnItemsChangedCore(VirtualizingLayoutContext context, object source, NotifyCollectionChangedEventArgs args)
     {
-        if (context.LayoutState != null)
-        {
-            var flow = GetAsStackState(context.LayoutState).FlowAlgorithm;
-            flow.OnItemsSourceChanged(source, args, context);
-        }
+        GetFlowAlgorithm(context).OnItemsSourceChanged(source, args, context);
 
         InvalidateLayout();
     }
@@ -131,18 +123,18 @@ public class StackLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IO
         int anchorIndex = -1;
         double offset = double.NaN;
 
-        var itemsCount = context.ItemCount;
+        var itemsCount = context.ItemsCount;
         if (itemsCount > 0)
         {
             var realizationRect = context.RealizationRect;
-            var state = GetAsStackState(context.LayoutState);
-            var lastExtent = state.FlowAlgorithm.LastExtent;
+            var stackState = (StackLayoutState) context.LayoutState!;
+            var lastExtent = stackState.FlowAlgorithm.LastExtent;
 
-            double averageElementSize = GetAverageElementSize(availableSize, context, state) + _itemSpacing;
+            double averageElementSize = GetAverageElementSize(availableSize, context, stackState) + _itemSpacing;
             double realizationWindowOffsetInExtent = this.MajorStart(realizationRect) - this.MajorStart(lastExtent);
             double majorSize = this.MajorSize(lastExtent) == 0 ?
-                Math.Max(0, averageElementSize * itemsCount - _itemSpacing) : this.MajorSize(lastExtent);
-            if (itemsCount > 0 && this.MajorSize(realizationRect) >= 0 &&
+                Math.Max(0, (averageElementSize * itemsCount) - _itemSpacing) : this.MajorSize(lastExtent);
+            if (this.MajorSize(realizationRect) >= 0 &&
                 // MajorSize = 0 will account for when a nested repeater is outside the realization rect but still being measured. Also,
                 // note that if we are measuring this repeater, then we are already realizing an element to figure out the size, so we could
                 // just keep that element alive. It also helps in XYFocus scenarios to have an element realized for XYFocus to find a candidate
@@ -151,7 +143,7 @@ public class StackLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IO
                 realizationWindowOffsetInExtent <= majorSize)
             {
                 anchorIndex = (int)(realizationWindowOffsetInExtent / averageElementSize);
-                offset = anchorIndex * averageElementSize + this.MajorStart(lastExtent);
+                offset = (anchorIndex * averageElementSize) + this.MajorStart(lastExtent);
                 anchorIndex = Math.Max(0, Math.Min(itemsCount - 1, anchorIndex));
             }
         }
@@ -165,18 +157,18 @@ public class StackLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IO
     {
         var extent = new Rect();
 
-        int itemsCount = context.ItemCount;
-        var stackState = GetAsStackState(context.LayoutState);
+        int itemsCount = context.ItemsCount;
+        var stackState = (StackLayoutState) context.LayoutState!;
         double averageElementSize = GetAverageElementSize(availableSize, context, stackState) + _itemSpacing;
 
         this.SetMinorSize(ref extent, stackState.MaxArrangeBounds);
-        this.SetMajorSize(ref extent, Math.Max(0, itemsCount * averageElementSize - _itemSpacing));
+        this.SetMajorSize(ref extent, Math.Max(0, (itemsCount * averageElementSize) - _itemSpacing));
         if (itemsCount > 0)
         {
             if (firstRealized != null)
             {
                 Debug.Assert(lastRealized != null);
-                this.SetMajorStart(ref extent, this.MajorStart(firstRealizedLayoutBounds) - firstRealizedItemIndex * averageElementSize);
+                this.SetMajorStart(ref extent, this.MajorStart(firstRealizedLayoutBounds) - (firstRealizedItemIndex * averageElementSize));
                 var remainingItems = itemsCount - lastRealizedItemIndex - 1;
                 this.SetMajorSize(ref extent, this.MajorEnd(lastRealizedLayoutBounds) - this.MajorStart(extent) + (remainingItems * averageElementSize));
             }
@@ -204,23 +196,16 @@ public class StackLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IO
         Size measureSize, Size desiredSize, Size provisionalArrangeSize,
         VirtualizingLayoutContext context)
     {
-        if (context is { } ctx)
-        {
-            var stackState = GetAsStackState(ctx.LayoutState);
-            stackState.OnElementMeasured(index,
-                this.Major(provisionalArrangeSize),
-                this.Minor(provisionalArrangeSize));
-        }
+        var stackState = (StackLayoutState) context.LayoutState!;
+        stackState.OnElementMeasured(
+            index,
+            this.Major(provisionalArrangeSize),
+            this.Minor(provisionalArrangeSize));
     }
 
-    Size IFlowLayoutAlgorithmDelegates.Algorithm_GetMeasureSize(int index, Size availableSize, 
-        VirtualizingLayoutContext context)
-    {
-        return availableSize;
-    }
+    Size IFlowLayoutAlgorithmDelegates.Algorithm_GetMeasureSize(int index, Size availableSize, VirtualizingLayoutContext context) => availableSize;
 
-    Size IFlowLayoutAlgorithmDelegates.Algorithm_GetProvisionalArrangeSize(int index, Size measureSize, 
-        Size desiredSize, VirtualizingLayoutContext context)
+    Size IFlowLayoutAlgorithmDelegates.Algorithm_GetProvisionalArrangeSize(int index, Size measureSize, Size desiredSize, VirtualizingLayoutContext context)
     {
         var measureSizeMinor = this.Minor(measureSize);
         return this.MinorMajorSize(
@@ -230,11 +215,9 @@ public class StackLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IO
             this.Major(desiredSize));
     }
 
-    bool IFlowLayoutAlgorithmDelegates.Algorithm_ShouldBreakLine(int index, double remainingSpace) =>
-        true;
+    bool IFlowLayoutAlgorithmDelegates.Algorithm_ShouldBreakLine(int index, double remainingSpace) => true;
 
-    FlowLayoutAnchorInfo IFlowLayoutAlgorithmDelegates.Algorithm_GetAnchorForRealizationRect(Size availableSize, 
-        VirtualizingLayoutContext context) =>
+    FlowLayoutAnchorInfo IFlowLayoutAlgorithmDelegates.Algorithm_GetAnchorForRealizationRect(Size availableSize, VirtualizingLayoutContext context) =>
         GetAnchorForRealizationRect(availableSize, context);
 
     FlowLayoutAnchorInfo IFlowLayoutAlgorithmDelegates.Algorithm_GetAnchorForTargetElement(int targetIndex, 
@@ -242,14 +225,14 @@ public class StackLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IO
     {
         double offset = double.NaN;
         int index = -1;
-        int itemsCount = context.ItemCount;
+        int itemsCount = context.ItemsCount;
 
         if (targetIndex >= 0 && targetIndex < itemsCount)
         {
             index = targetIndex;
-            var state = GetAsStackState(context.LayoutState);
-            double averageElementSize = GetAverageElementSize(availableSize, context, state) + _itemSpacing;
-            offset = index * averageElementSize + this.MajorStart(state.FlowAlgorithm.LastExtent);
+            var stackState = (StackLayoutState) context.LayoutState!;
+            double averageElementSize = GetAverageElementSize(availableSize, context, stackState) + _itemSpacing;
+            offset = (index * averageElementSize) + this.MajorStart(stackState.FlowAlgorithm.LastExtent);
         }
 
         return new FlowLayoutAnchorInfo { Index = index, Offset = offset };
@@ -281,7 +264,7 @@ public class StackLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IO
         if (change.Property == OrientationProperty)
         {
             var orientation = change.GetNewValue<Orientation>();
-            ScrollOrientation = orientation == Orientation.Horizontal ? ScrollOrientation.Horizontal :
+            _scrollOrientation = orientation == Orientation.Horizontal ? ScrollOrientation.Horizontal :
                 ScrollOrientation.Vertical;
 
             UpdateIndexBasedLayoutOrientation(orientation);
@@ -294,11 +277,10 @@ public class StackLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IO
         InvalidateLayout();
     }
 
-    private double GetAverageElementSize(Size availableSize, VirtualizingLayoutContext context,
-        StackLayoutState state)
+    private double GetAverageElementSize(Size availableSize, VirtualizingLayoutContext context, StackLayoutState state)
     {
         double averageElementSize = 0;
-        if (context.ItemCount > 0)
+        if (context.ItemsCount > 0)
         {
             if (state.TotalElementsMeasured == 0)
             {
@@ -317,17 +299,13 @@ public class StackLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IO
 
     private void UpdateIndexBasedLayoutOrientation(Orientation orientation)
     {
-        IndexBasedLayoutOrientation = orientation == Orientation.Horizontal ?
+        IndexBasedLayoutOrientation = orientation is Orientation.Horizontal ?
             IndexBasedLayoutOrientation.LeftToRight : IndexBasedLayoutOrientation.TopToBottom;
     }
 
     private void InvalidateLayout() => InvalidateMeasure();
 
-    private FlowLayoutAlgorithm GetFlowAlgorithm(VirtualizingLayoutContext context) =>
-        GetAsStackState(context.LayoutState).FlowAlgorithm;
-
-    private StackLayoutState GetAsStackState(object state) =>
-        state as StackLayoutState;
+    private static FlowLayoutAlgorithm GetFlowAlgorithm(VirtualizingLayoutContext context) => ((StackLayoutState) context.LayoutState!).FlowAlgorithm;
 
     private double _itemSpacing;
 

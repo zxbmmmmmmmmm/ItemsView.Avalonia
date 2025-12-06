@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls;
@@ -164,12 +164,7 @@ public partial class ItemsRepeater : Panel
         AvaloniaProperty.RegisterAttached<ItemsRepeater, Control, VirtualizationInfo?>(nameof(VirtualizationInfo));
 
     internal static VirtualizationInfo GetVirtualizationInfo(Control c)
-    {
-        return c.GetValue(VirtualizationInfoProperty) ?? CreateAndInitializeVirtualizationInfo(c);
-    }
-
-    internal static VirtualizationInfo TryGetVirtualizationInfo(Control c) =>
-        GetVirtualizationInfo(c);
+        => c.GetValue(VirtualizationInfoProperty) ?? CreateAndInitializeVirtualizationInfo(c);
 
     internal static VirtualizationInfo CreateAndInitializeVirtualizationInfo(Control element)
     {

@@ -28,7 +28,7 @@ internal class ViewManager(ItemsRepeater ir)
             // for a bring into view.
             if (ir.MadeAnchor is { } c)
             {
-                var virtInfo = ItemsRepeater.TryGetVirtualizationInfo(c);
+                var virtInfo = ItemsRepeater.GetVirtualizationInfo(c);
                 if (virtInfo.Index == index)
                 {
                     element = c;
@@ -55,7 +55,7 @@ internal class ViewManager(ItemsRepeater ir)
 
         element ??= GetElementFromElementFactory(index);
 
-        var vi = ItemsRepeater.TryGetVirtualizationInfo(element);
+        var vi = ItemsRepeater.GetVirtualizationInfo(element);
         if (suppressAutoRecycle)
         {
             vi.AutoRecycleCandidate = false;
@@ -206,7 +206,7 @@ internal class ViewManager(ItemsRepeater ir)
         var children = ir.Children;
         foreach (var child in children)
         {
-            var virtInfo = ItemsRepeater.TryGetVirtualizationInfo(child);
+            var virtInfo = ItemsRepeater.GetVirtualizationInfo(child);
             if (virtInfo is not { IsHeldByLayout: true })
                 continue;
             int currentIndex = virtInfo.Index;
@@ -528,7 +528,7 @@ internal class ViewManager(ItemsRepeater ir)
         Control? element = null;
         foreach (var child in ir.Children)
         {
-            if (ItemsRepeater.TryGetVirtualizationInfo(child) is not { IsHeldByLayout: true } virtInfo)
+            if (ItemsRepeater.GetVirtualizationInfo(child) is not { IsHeldByLayout: true } virtInfo)
                 continue;
             // Only give back elements held by layout. If someone else is holding it, they will be served by other methods.
             var childIndex = virtInfo.Index;
@@ -646,7 +646,7 @@ internal class ViewManager(ItemsRepeater ir)
             }
         }
 
-        var virtInfo = ItemsRepeater.TryGetVirtualizationInfo(element);
+        var virtInfo = ItemsRepeater.GetVirtualizationInfo(element);
         {
             // View obtained from ElementFactory already has a VirtualizationInfo attached to it
             // which means that the element has been recycled and not created from scratch.

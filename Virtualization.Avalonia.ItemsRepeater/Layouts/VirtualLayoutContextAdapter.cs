@@ -40,7 +40,7 @@ internal class VirtualLayoutContextAdapter(VirtualizingLayoutContext context) : 
     // with returning a generic type
     private class ChildrenCollection(VirtualizingLayoutContext context) : IReadOnlyList<Control>
     {
-        public int Count => context.ItemCount;
+        public int Count => context.ItemsCount;
 
         public Control this[int index] => context.GetOrCreateElementAt(index, ElementRealizationOptions.None);
 

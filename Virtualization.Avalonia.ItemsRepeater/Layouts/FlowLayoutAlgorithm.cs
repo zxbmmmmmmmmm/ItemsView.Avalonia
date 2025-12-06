@@ -1,9 +1,10 @@
-using System;
 using Avalonia;
 using Avalonia.Controls;
 using System.Collections.Specialized;
 using System.Diagnostics;
+#if DEBUG && REPEATER_TRACE
 using Avalonia.Logging;
+#endif
 
 namespace Virtualization.Avalonia.Layouts;
 
@@ -32,40 +33,37 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
         context.LayoutState = null;
     }
 
-    public Size Measure(Size availableSize, VirtualizingLayoutContext context,
-        bool isWrapping, double minItemSpacing, double lineSpacing,
-        int maxItemsPerLine, ScrollOrientation orientation,
+    public Size Measure(
+        Size availableSize,
+        VirtualizingLayoutContext context,
+        bool isWrapping,
+        double minItemSpacing,
+        double lineSpacing,
+        int maxItemsPerLine,
+        ScrollOrientation orientation,
         bool disableVirtualization)
     {
         ScrollOrientation = orientation;
 
         // If minor size is infinity, there is only one line and no need to align that line.
         _scrollOrientationSameAsFlow = double.IsInfinity(this.Minor(availableSize));
-        var realizationRect = RealizationRect();
 #if DEBUG && REPEATER_TRACE
+        var realizationRect = RealizationRect();
         Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"MeasureLayout realization {Rect}", realizationRect);
 #endif
         var suggestedAnchorIndex = _context.RecommendedAnchorIndex;
-        if (_elementManager.IsIndexValidInData(suggestedAnchorIndex))
-        {
-            var anchorRealized = _elementManager.IsDataIndexRealized(suggestedAnchorIndex);
-            if (!anchorRealized)
-            {
-                MakeAnchor(_context, suggestedAnchorIndex, availableSize);
-            }
-        }
+        if (_elementManager.IsIndexValidInData(suggestedAnchorIndex)
+            && !_elementManager.IsDataIndexRealized(suggestedAnchorIndex))
+            MakeAnchor(_context, suggestedAnchorIndex, availableSize);
 
         if (!disableVirtualization)
         {
             _elementManager.OnBeginMeasure(orientation);
         }
 
-        int anchorIndex = GetAnchorIndex(availableSize, isWrapping,
-            minItemSpacing, disableVirtualization);
-        Generate(GenerateDirection.Forward, anchorIndex, availableSize,
-            minItemSpacing, lineSpacing, maxItemsPerLine, disableVirtualization);
-        Generate(GenerateDirection.Backward, anchorIndex, availableSize,
-            minItemSpacing, lineSpacing, maxItemsPerLine, disableVirtualization);
+        int anchorIndex = GetAnchorIndex(availableSize, isWrapping, minItemSpacing, disableVirtualization);
+        Generate(true, anchorIndex, availableSize, minItemSpacing, lineSpacing, maxItemsPerLine, disableVirtualization);
+        Generate(false, anchorIndex, availableSize, minItemSpacing, lineSpacing, maxItemsPerLine, disableVirtualization);
 
         if (isWrapping && IsReflowRequired())
         {
@@ -75,7 +73,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             var firstElementBounds = _elementManager.GetLayoutBoundsForRealizedIndex(0);
             this.SetMinorStart(ref firstElementBounds, 0);
             _elementManager.SetLayoutBoundsForRealizedIndex(0, firstElementBounds);
-            Generate(GenerateDirection.Forward, 0 /*anchorIndex*/,
+            Generate(true, 0 /*anchorIndex*/,
                 availableSize, minItemSpacing, lineSpacing, maxItemsPerLine,
                 disableVirtualization);
         }
@@ -119,7 +117,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
         }
     }
 
-    public void OnItemsSourceChanged(object source, NotifyCollectionChangedEventArgs args,
+    public void OnItemsSourceChanged(object? source, NotifyCollectionChangedEventArgs args,
         VirtualizingLayoutContext context)
     {
         _elementManager.DataSourceChanged(source, args);
@@ -140,8 +138,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
         return provisionalArrangeSize;
     }
 
-    private int GetAnchorIndex(Size availableSize, bool isWrapping,
-        double minItemSpacing, bool disableVirtualization)
+    private int GetAnchorIndex(Size availableSize, bool isWrapping, double minItemSpacing, bool disableVirtualization)
     {
         int anchorIndex = -1;
         Point anchorPosition = default;
@@ -150,7 +147,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
         if (!IsVirtualizingContext() || disableVirtualization)
         {
             // Non virtualizing host, start generating from the element 0
-            anchorIndex = context.ItemCount > 0 ? 0 : -1;
+            anchorIndex = context.ItemsCount > 0 ? 0 : -1;
         }
         else
         {
@@ -161,8 +158,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             // and get a new column position. In that case we need the anchor to be positioned in the
             // correct column.
             bool needAnchorColumnRevaluation = isWrapping &&
-                (this.Minor(_lastAvailableSize) != this.Minor(availableSize) ||
-                _lastItemSpacing != minItemSpacing ||
+                (this.Minor(_lastAvailableSize) != this.Minor(availableSize) || _lastItemSpacing != minItemSpacing ||
                 _collectionChangePending);
 
             var suggestedAnchorIndex = _context.RecommendedAnchorIndex;
@@ -283,14 +279,14 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
         return anchorIndex;
     }
 
-    private void Generate(GenerateDirection direction, int anchorIndex, Size availableSize,
+    private void Generate(bool forward, int anchorIndex, Size availableSize,
         double minItemSpacing, double lineSpacing, int maxItemsPerLine,
         bool disableVirtualization)
     {
         if (anchorIndex == -1)
             return;
 
-        int step = direction == GenerateDirection.Forward ? 1 : -1;
+        int step = forward ? 1 : -1;
 #if DEBUG && REPEATER_TRACE
         Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"{Generating {Direction} from anchor {Index}", direction, anchorIndex);
 #endif
@@ -303,10 +299,10 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
         bool lineNeedsReposition = false;
 
         while (_elementManager.IsIndexValidInData(currentIndex) &&
-            (disableVirtualization || ShouldContinueFillingUpSpace(previousIndex, direction)))
+            (disableVirtualization || ShouldContinueFillingUpSpace(previousIndex, forward)))
         {
             // Ensure layout element.
-            _elementManager.EnsureElementRealized(direction == GenerateDirection.Forward, currentIndex);
+            _elementManager.EnsureElementRealized(forward, currentIndex);
             var currentElement = _elementManager.GetRealizedElement(currentIndex);
             var desiredSize = MeasureElement(currentElement, currentIndex, availableSize, _context);
 
@@ -315,7 +311,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             Rect currentBounds = new Rect(0, 0, desiredSize.Width, desiredSize.Height);
             var previousElementBounds = _elementManager.GetLayoutBoundsForDataIndex(previousIndex);
 
-            if (direction == GenerateDirection.Forward)
+            if (forward)
             {
                 double remainingSpace = this.Minor(availableSize) -
                     (this.MinorStart(previousElementBounds) + this.MinorSize(previousElementBounds) + minItemSpacing + this.Minor(desiredSize));
@@ -359,8 +355,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             else
             {
                 // Backward
-                double remainingSpace = this.MinorStart(previousElementBounds) -
-                    (this.Minor(desiredSize) + minItemSpacing);
+                double remainingSpace = this.MinorStart(previousElementBounds) - (this.Minor(desiredSize) + minItemSpacing);
 
                 if (countInLine >= maxItemsPerLine || _algorithmCallbacks.Algorithm_ShouldBreakLine(currentIndex, remainingSpace))
                 {
@@ -429,20 +424,20 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
         // If we did not reach the top or bottom of the extent, we realized one
         // extra item before we knew we were outside the realization window. Do not
         // account for that element in the indicies inside the realization window.
-        if (direction == GenerateDirection.Forward)
+        if (forward)
         {
-            var dataCount = _context.ItemCount;
+            var dataCount = _context.ItemsCount;
             _lastRealizedDataIndexInsideRealizationWindow = previousIndex == dataCount - 1 ? dataCount - 1 : previousIndex - 1;
             _lastRealizedDataIndexInsideRealizationWindow = Math.Max(0, _lastRealizedDataIndexInsideRealizationWindow);
         }
         else
         {
-            var dataCount = _context.ItemCount;
+            var dataCount = _context.ItemsCount;
             _firstRealizedDataIndexInsideRealizationWindow = previousIndex == 0 ? 0 : previousIndex + 1;
             _firstRealizedDataIndexInsideRealizationWindow = Math.Min(dataCount - 1, _firstRealizedDataIndexInsideRealizationWindow);
         }
 
-        _elementManager.DiscardElementsOutsideWindow(direction == GenerateDirection.Forward, currentIndex);
+        _elementManager.DiscardElementsOutsideWindow(forward, currentIndex);
     }
 
     private bool IsReflowRequired()
@@ -455,7 +450,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             _elementManager.GetLayoutBoundsForRealizedIndex(0).Y != 0);
     }
 
-    private bool ShouldContinueFillingUpSpace(int index, GenerateDirection direction)
+    private bool ShouldContinueFillingUpSpace(int index, bool forward)
     {
         bool shouldContinue = false;
         if (!IsVirtualizingContext())
@@ -479,7 +474,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
 
             // Ensure that both minor and major directions are taken into consideration so that if the scrolling direction
             // is the same as the flow direction we still stop at the end of the viewport rectangle.
-            shouldContinue = direction == GenerateDirection.Forward ?
+            shouldContinue = forward ?
                 elementMajorStart < rectMajorEnd && elementMinorStart < rectMinorEnd :
                 elementMajorEnd > rectMajorStart && elementMinorEnd > rectMinorStart;
         }
@@ -757,9 +752,4 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
         SpaceBetween,
         SpaceEvenly
     }
-}
-internal enum GenerateDirection
-{
-    Forward,
-    Backward
 }

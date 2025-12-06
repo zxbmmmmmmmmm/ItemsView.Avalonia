@@ -318,14 +318,14 @@ public partial class ItemsRepeater : Panel
         var parent = element.GetVisualParent();
         if (parent != this)
             return -1;
-        var virtInfo = TryGetVirtualizationInfo(element);
+        var virtInfo = GetVirtualizationInfo(element);
         return ViewManager.GetElementIndex(virtInfo);
     }
 
     private Control? GetElementFromIndexImpl(int index)
     {
         foreach (var element in Children)
-            if (TryGetVirtualizationInfo(element) is { IsRealized: true } virtInfo && virtInfo.Index == index)
+            if (GetVirtualizationInfo(element) is { IsRealized: true } virtInfo && virtInfo.Index == index)
                 return element;
 
         return null;

@@ -3,7 +3,6 @@
 //
 // Licensed to The Avalonia Project under MIT License, courtesy of The .NET Foundation.
 
-using System;
 using System.Collections.Specialized;
 using Avalonia;
 using Avalonia.Controls;
@@ -59,7 +58,7 @@ public class UniformGridLayoutState
             maxItemsPerLine = 1;
         }
 
-        if (context.ItemCount > 0)
+        if (context.ItemsCount > 0)
         {
             // If the first element is realized we don't need to cache it or to get it from the context
             var realizedElement = FlowAlgorithm.GetElementIfRealized(0);
@@ -71,13 +70,10 @@ public class UniformGridLayoutState
             }
             else
             {
-                if (_cachedFirstElement == null)
-                {
-                    // we only cache if we aren't realizing it
-                    _cachedFirstElement = context.GetOrCreateElementAt(
-                        0,
-                        ElementRealizationOptions.ForceCreate | ElementRealizationOptions.SuppressAutoRecycle); // expensive
-                }
+                // we only cache if we aren't realizing it
+                _cachedFirstElement ??= context.GetOrCreateElementAt(
+                    0,
+                    ElementRealizationOptions.ForceCreate | ElementRealizationOptions.SuppressAutoRecycle); // expensive
 
                 _cachedFirstElement.Measure(availableSize);
 
@@ -171,36 +167,22 @@ public class UniformGridLayoutState
         VirtualizingLayoutContext context,
         NotifyCollectionChangedEventArgs args)
     {
-        if (_cachedFirstElement != null)
+        if (_cachedFirstElement is null)
+            return;
+        var shouldClear = args.Action switch
         {
-            bool shouldClear = false;
-            switch (args.Action)
-            {
-                case NotifyCollectionChangedAction.Add:
-                    shouldClear = args.NewStartingIndex == 0;
-                    break;
+            NotifyCollectionChangedAction.Add => args.NewStartingIndex == 0,
+            NotifyCollectionChangedAction.Replace => args.NewStartingIndex == 0 || args.OldStartingIndex == 0,
+            NotifyCollectionChangedAction.Remove => args.OldStartingIndex == 0,
+            NotifyCollectionChangedAction.Reset => true,
+            NotifyCollectionChangedAction.Move => throw new NotImplementedException(),
+            _ => false
+        };
 
-                case NotifyCollectionChangedAction.Replace:
-                    shouldClear = args.NewStartingIndex == 0 || args.OldStartingIndex == 0;
-                    break;
-
-                case NotifyCollectionChangedAction.Remove:
-                    shouldClear = args.OldStartingIndex == 0;
-                    break;
-
-                case NotifyCollectionChangedAction.Reset:
-                    shouldClear = true;
-                    break;
-
-                case NotifyCollectionChangedAction.Move:
-                    throw new NotImplementedException();
-            }
-
-            if (shouldClear)
-            {
-                context.RecycleElement(_cachedFirstElement);
-                _cachedFirstElement = null;
-            }
+        if (shouldClear)
+        {
+            context.RecycleElement(_cachedFirstElement);
+            _cachedFirstElement = null;
         }
     }
 }

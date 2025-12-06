@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 
 namespace Virtualization.Avalonia.Layouts;
 
@@ -38,7 +38,7 @@ internal class WrapLayoutState
         // If we do not have any estimation information, use the line for estimation. 
         // If we do have some estimation information, don't account for the last line which is quite likely
         // different from the rest of the lines and can throw off estimation.
-        if (_totalLinesMeasured == 0 || startIndex + countInLine != context.ItemCount)
+        if (_totalLinesMeasured == 0 || startIndex + countInLine != context.ItemsCount)
         {
             int estimationBufferIndex = startIndex % _lineSizeEstimationBuffer.Length;
             bool alreadyMeasured = _lineSizeEstimationBuffer[estimationBufferIndex] != 0;

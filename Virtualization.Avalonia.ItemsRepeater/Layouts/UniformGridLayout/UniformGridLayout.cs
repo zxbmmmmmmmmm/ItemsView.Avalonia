@@ -3,11 +3,9 @@
 //
 // Licensed to The Avalonia Project under MIT License, courtesy of The .NET Foundation.
 
-using System;
 using System.Collections.Specialized;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Data;
 using Avalonia.Layout;
 using Avalonia.Logging;
 
@@ -77,7 +75,7 @@ public enum UniformGridLayoutItemsStretch
 /// <summary>
 /// Positions elements sequentially from left to right or top to bottom in a wrapping layout.
 /// </summary>
-public class UniformGridLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates
+public class UniformGridLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IOrientationBasedMeasures
 {
     /// <summary>
     /// Defines the <see cref="ItemsJustification"/> property.
@@ -127,7 +125,6 @@ public class UniformGridLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegat
     public static readonly StyledProperty<Orientation> OrientationProperty =
         StackLayout.OrientationProperty.AddOwner<UniformGridLayout>();
 
-    private readonly OrientationBasedMeasures _orientation = new OrientationBasedMeasures();
     private double _minItemWidth = double.NaN;
     private double _minItemHeight = double.NaN;
     private double _minRowSpacing;
@@ -256,6 +253,14 @@ public class UniformGridLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegat
     internal double LineSpacing => Orientation == Orientation.Horizontal ? _minRowSpacing : _minColumnSpacing;
     internal double MinItemSpacing => Orientation == Orientation.Horizontal ? _minColumnSpacing : _minRowSpacing;
 
+    private ScrollOrientation _scrollOrientation = ScrollOrientation.Vertical;
+
+    ScrollOrientation IOrientationBasedMeasures.ScrollOrientation
+    {
+        get => _scrollOrientation;
+        set => _scrollOrientation = value;
+    }
+
     Size IFlowLayoutAlgorithmDelegates.Algorithm_GetMeasureSize(
         int index,
         Size availableSize,
@@ -284,31 +289,29 @@ public class UniformGridLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegat
         Rect bounds = new Rect(double.NaN, double.NaN, double.NaN, double.NaN);
         int anchorIndex = -1;
 
-        int itemsCount = context.ItemCount;
+        int itemsCount = context.ItemsCount;
         var realizationRect = context.RealizationRect;
-        if (itemsCount > 0 && _orientation.MajorSize(realizationRect) > 0)
+        if (itemsCount > 0 && this.MajorSize(realizationRect) > 0)
         {
             var gridState = (UniformGridLayoutState)context.LayoutState!;
             var lastExtent = gridState.FlowAlgorithm.LastExtent;
-            var itemsPerLine = Math.Min( // note use of unsigned ints
-                Math.Max(1u, (uint)(_orientation.Minor(availableSize) / GetMinorSizeWithSpacing(context))),
-                Math.Max(1u, (uint)_maximumRowsOrColumns));
-            var majorSize = (itemsCount / itemsPerLine) * GetMajorSizeWithSpacing(context);
-            var realizationWindowStartWithinExtent = _orientation.MajorStart(realizationRect) - _orientation.MajorStart(lastExtent);
-            if ((realizationWindowStartWithinExtent + _orientation.MajorSize(realizationRect)) >= 0 && realizationWindowStartWithinExtent <= majorSize)
+            var itemsPerLine = GetItemsCountPerLine(context, availableSize);
+            var overlaps = this.MajorEnd(realizationRect) >= this.MajorStart(lastExtent)
+                           && this.MajorStart(realizationRect) <= this.MajorEnd(lastExtent);
+            if (overlaps)
             {
-                double offset = Math.Max(0.0, _orientation.MajorStart(realizationRect) - _orientation.MajorStart(lastExtent));
-                int anchorRowIndex = (int)(offset / GetMajorSizeWithSpacing(context));
-
-                anchorIndex = (int)Math.Max(0, Math.Min(itemsCount - 1, anchorRowIndex * itemsPerLine));
-                bounds = GetLayoutRectForDataIndex(availableSize, anchorIndex, lastExtent, context);
+                var realizationWindowStartWithinExtent = this.MajorStart(realizationRect) - this.MajorStart(lastExtent);
+                var o = Math.Max(0.0, realizationWindowStartWithinExtent + LineSpacing);
+                var anchorLineIndex = (int)(o / GetMajorItemSizeWithSpacing(context));
+                anchorIndex = Math.Clamp(anchorLineIndex * itemsPerLine, 0, itemsCount - 1);
+                bounds = GetLayoutRectForDataIndex(anchorIndex, itemsPerLine, lastExtent, context);
             }
         }
 
         return new FlowLayoutAnchorInfo
         {
             Index = anchorIndex,
-            Offset = _orientation.MajorStart(bounds)
+            Offset = this.MajorStart(bounds)
         };
     }
 
@@ -317,18 +320,16 @@ public class UniformGridLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegat
         Size availableSize,
         VirtualizingLayoutContext context)
     {
-        int index = -1;
-        double offset = double.NaN;
-        int count = context.ItemCount;
+        var index = -1;
+        var offset = double.NaN;
+        var count = context.ItemsCount;
         if (targetIndex >= 0 && targetIndex < count)
         {
-            int itemsPerLine = (int)Math.Min( // note use of unsigned ints
-                Math.Max(1u, (uint)(_orientation.Minor(availableSize) / GetMinorSizeWithSpacing(context))),
-                Math.Max(1u, _maximumRowsOrColumns));
-            int indexOfFirstInLine = (targetIndex / itemsPerLine) * itemsPerLine;
+            var itemsPerLine = GetItemsCountPerLine(context, availableSize);
+            var indexOfFirstInLine = targetIndex / itemsPerLine * itemsPerLine;
             index = indexOfFirstInLine;
             var state = (UniformGridLayoutState)context.LayoutState!;
-            offset = _orientation.MajorStart(GetLayoutRectForDataIndex(availableSize, indexOfFirstInLine, state.FlowAlgorithm.LastExtent, context));
+            offset = this.MajorStart(GetLayoutRectForDataIndex(indexOfFirstInLine, itemsPerLine, state.FlowAlgorithm.LastExtent, context));
         }
 
         return new FlowLayoutAnchorInfo
@@ -350,47 +351,40 @@ public class UniformGridLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegat
     {
         var extent = new Rect();
 
-
         // Constants
-        int itemsCount = context.ItemCount;
-        double availableSizeMinor = _orientation.Minor(availableSize);
-        int itemsPerLine =
-            (int)Math.Min( // note use of unsigned ints
-                Math.Max(1u, !double.IsInfinity(availableSizeMinor)
-                    ? (uint)(availableSizeMinor / GetMinorSizeWithSpacing(context))
-                    : (uint)itemsCount),
-                Math.Max(1u, _maximumRowsOrColumns));
-        double lineSize = GetMajorSizeWithSpacing(context);
+        int itemsCount = context.ItemsCount;
+        double availableSizeMinor = this.Minor(availableSize);
+        int itemsPerLine = GetItemsCountPerLine(context, availableSize);
+        double lineSize = GetMajorItemSizeWithSpacing(context);
 
         if (itemsCount > 0)
         {
-            _orientation.SetMinorSize(
+            this.SetMinorSize(
                 ref extent,
-                !double.IsInfinity(availableSizeMinor) && _itemsStretch == UniformGridLayoutItemsStretch.Fill ?
-                    availableSizeMinor :
-                    Math.Max(0.0, itemsPerLine * GetMinorSizeWithSpacing(context) - (double)MinItemSpacing));
-            _orientation.SetMajorSize(
+                !double.IsInfinity(availableSizeMinor) && _itemsStretch == UniformGridLayoutItemsStretch.Fill
+                    ? availableSizeMinor
+                    : Math.Max(0d, (itemsPerLine * GetMinorItemSizeWithSpacing(context)) - MinItemSpacing));
+            this.SetMajorSize(
                 ref extent,
-                Math.Max(0.0, (itemsCount / itemsPerLine) * lineSize - (double)LineSpacing));
+                GetMajorSize(context, (itemsCount / itemsPerLine) + 1));
 
             if (firstRealized != null)
             {
-                _orientation.SetMajorStart(
+                this.SetMajorStart(
                     ref extent,
-                    _orientation.MajorStart(firstRealizedLayoutBounds) - (firstRealizedItemIndex / itemsPerLine) * lineSize);
-                int remainingItems = itemsCount - lastRealizedItemIndex - 1;
-                _orientation.SetMajorSize(
+                    this.MajorStart(firstRealizedLayoutBounds) - GetMajorSize(context, firstRealizedItemIndex / itemsPerLine));
+                int remainingLines = (itemsCount / itemsPerLine) - (lastRealizedItemIndex / itemsPerLine) - 1;
+                this.SetMajorSize(
                     ref extent,
-                    _orientation.MajorEnd(lastRealizedLayoutBounds) - _orientation.MajorStart(extent) + (remainingItems / itemsPerLine) * lineSize);
+                    this.MajorEnd(lastRealizedLayoutBounds) - this.MajorStart(extent) + GetMajorSize(context, remainingLines));
             }
             else
             {
-                Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this, "{LayoutId}: Estimating extent with no realized elements", "UniformGrid");
+                Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this, $"{nameof(UniformGridLayout)}: Estimating extent with no realized elements");
             }
         }
 
-        Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this, "{LayoutId}: Extent is ({Size}). Based on lineSize {LineSize} and items per line {ItemsPerLine}",
-            "UniformGrid", extent.Size, lineSize, itemsPerLine);
+        Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this, $"{nameof(UniformGridLayout)}: Extent is ({extent.Size}). Based on lineSize {lineSize} and items per line {itemsPerLine}");
         return extent;
     }
 
@@ -405,14 +399,11 @@ public class UniformGridLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegat
     protected internal override void InitializeForContextCore(VirtualizingLayoutContext context)
     {
         var state = context.LayoutState;
-        var gridState = state as UniformGridLayoutState;
-            
-        if (gridState == null)
+
+        if (state is not UniformGridLayoutState gridState)
         {
-            if (state != null)
-            {
-                throw new InvalidOperationException("LayoutState must derive from UniformGridLayoutState.");
-            }
+            if (state is not null)
+                throw new InvalidOperationException($"{nameof(context.LayoutState)} must derive from {nameof(UniformGridLayoutState)}.");
 
             // Custom deriving layouts could potentially be stateful.
             // If that is the case, we will just create the base state required by UniformGridLayout ourselves.
@@ -442,7 +433,7 @@ public class UniformGridLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegat
             MinItemSpacing,
             LineSpacing,
             _maximumRowsOrColumns,
-            _orientation.ScrollOrientation,
+            _scrollOrientation,
             false);
 
         // If after Measure the first item is in the realization rect, then we revoke grid state's ownership,
@@ -459,7 +450,8 @@ public class UniformGridLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegat
             context,
             true,
             (FlowLayoutAlgorithm.LineAlignment)_itemsJustification);
-        return new Size(value.Width, value.Height);
+
+        return value;
     }
 
     protected internal override void OnItemsChangedCore(VirtualizingLayoutContext context, object? source, NotifyCollectionChangedEventArgs args)
@@ -481,8 +473,7 @@ public class UniformGridLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegat
 
             //Note: For UniformGridLayout Vertical Orientation means we have a Horizontal ScrollOrientation. Horizontal Orientation means we have a Vertical ScrollOrientation.
             //i.e. the properties are the inverse of each other.
-            var scrollOrientation = (orientation == Orientation.Horizontal) ? ScrollOrientation.Vertical : ScrollOrientation.Horizontal;
-            _orientation.ScrollOrientation = scrollOrientation;
+            _scrollOrientation = orientation == Orientation.Horizontal ? ScrollOrientation.Vertical : ScrollOrientation.Horizontal;
         }
         else if (change.Property == MinColumnSpacingProperty)
         {
@@ -516,42 +507,54 @@ public class UniformGridLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegat
         InvalidateLayout();
     }
 
-    private double GetMinorSizeWithSpacing(VirtualizingLayoutContext context)
+    private int GetItemsCountPerLine(VirtualizingLayoutContext context, Size availableSize)
     {
-        var minItemSpacing = MinItemSpacing;
-        var gridState = (UniformGridLayoutState)context.LayoutState!;
-        return _orientation.ScrollOrientation == ScrollOrientation.Vertical?
-            gridState.EffectiveItemWidth + minItemSpacing :
-            gridState.EffectiveItemHeight + minItemSpacing;
+        return Math.Max(1,
+            (int) Math.Min(_maximumRowsOrColumns,
+                (this.Minor(availableSize) + MinItemSpacing) / GetMinorItemSizeWithSpacing(context)));
     }
 
-    private double GetMajorSizeWithSpacing(VirtualizingLayoutContext context)
+    private double GetMinorItemSizeWithSpacing(VirtualizingLayoutContext context)
     {
+        var gridState = (UniformGridLayoutState)context.LayoutState!;
+        return (_scrollOrientation == ScrollOrientation.Vertical
+            ? gridState.EffectiveItemWidth
+            : gridState.EffectiveItemHeight) + MinItemSpacing;
+    }
+
+    private double GetMajorSize(VirtualizingLayoutContext context, int lineCount)
+    {
+        var gridState = (UniformGridLayoutState) context.LayoutState!;
+        var majorItemSize = _scrollOrientation == ScrollOrientation.Vertical
+            ? gridState.EffectiveItemHeight
+            : gridState.EffectiveItemWidth;
         var lineSpacing = LineSpacing;
-        var gridState = (UniformGridLayoutState)context.LayoutState!;
-        return _orientation.ScrollOrientation == ScrollOrientation.Vertical ?
-            gridState.EffectiveItemHeight + lineSpacing :
-            gridState.EffectiveItemWidth + lineSpacing;
+        return Math.Max(0, ((majorItemSize + lineSpacing) * lineCount) - lineSpacing);
     }
 
-    Rect GetLayoutRectForDataIndex(
-        Size availableSize,
+    private double GetMajorItemSizeWithSpacing(VirtualizingLayoutContext context)
+    {
+        var gridState = (UniformGridLayoutState) context.LayoutState!;
+        return (_scrollOrientation == ScrollOrientation.Vertical
+            ? gridState.EffectiveItemHeight
+            : gridState.EffectiveItemWidth) + LineSpacing;
+    }
+
+    private Rect GetLayoutRectForDataIndex(
         int index,
+        int itemsPerLine,
         Rect lastExtent,
         VirtualizingLayoutContext context)
     {
-        int itemsPerLine = (int)Math.Min( //note use of unsigned ints
-            Math.Max(1u, (uint)(_orientation.Minor(availableSize) / GetMinorSizeWithSpacing(context))),
-            Math.Max(1u, _maximumRowsOrColumns));
-        int rowIndex = (int)(index / itemsPerLine);
-        int indexInRow = index - (rowIndex * itemsPerLine);
+        int lineIndex = index / itemsPerLine;
+        int indexInLine = index % itemsPerLine;
 
         var gridState = (UniformGridLayoutState)context.LayoutState!;
-        Rect bounds = _orientation.MinorMajorRect(
-            indexInRow * GetMinorSizeWithSpacing(context) + _orientation.MinorStart(lastExtent),
-            rowIndex * GetMajorSizeWithSpacing(context) + _orientation.MajorStart(lastExtent),
-            _orientation.ScrollOrientation == ScrollOrientation.Vertical ? gridState.EffectiveItemWidth : gridState.EffectiveItemHeight,
-            _orientation.ScrollOrientation == ScrollOrientation.Vertical ? gridState.EffectiveItemHeight : gridState.EffectiveItemWidth);
+        Rect bounds = this.MinorMajorRect(
+            (indexInLine * GetMinorItemSizeWithSpacing(context)) + this.MinorStart(lastExtent),
+            (lineIndex * GetMajorItemSizeWithSpacing(context)) + this.MajorStart(lastExtent),
+            _scrollOrientation == ScrollOrientation.Vertical ? gridState.EffectiveItemWidth : gridState.EffectiveItemHeight,
+            _scrollOrientation == ScrollOrientation.Vertical ? gridState.EffectiveItemHeight : gridState.EffectiveItemWidth);
 
         return bounds;
     }

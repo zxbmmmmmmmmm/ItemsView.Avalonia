@@ -4,7 +4,7 @@ namespace Virtualization.Avalonia.Layouts;
 
 internal class StackLayoutState
 {
-    public FlowLayoutAlgorithm FlowAlgorithm { get; private set; }
+    public FlowLayoutAlgorithm FlowAlgorithm { get; private set; } = null!;
 
     public double TotalElementSize { get; private set; }
 
@@ -14,10 +14,10 @@ internal class StackLayoutState
 
     public void InitializeForContext(VirtualizingLayoutContext context, IFlowLayoutAlgorithmDelegates callbacks)
     {
-        FlowAlgorithm ??= new FlowLayoutAlgorithm();
+        FlowAlgorithm = new();
         FlowAlgorithm.InitializeForContext(context, callbacks);
 
-        _estimationBuffer ??= new double[BufferSize];
+        _estimationBuffer = new double[BufferSize];
 
         context.LayoutState = this;
     }
@@ -27,15 +27,10 @@ internal class StackLayoutState
 
     public void OnElementMeasured(int elementIndex, double majorSize, double minorSize)
     {
-        if (_estimationBuffer is null)
-            throw new NullReferenceException();
-        int estimationBufferIndex = elementIndex < BufferSize ? elementIndex :
-            elementIndex % BufferSize;
-        bool alreadyMeasured = _estimationBuffer[estimationBufferIndex] != 0;
-        if (!alreadyMeasured)
-        {
+        var estimationBufferIndex = elementIndex % BufferSize;
+        var alreadyMeasured = _estimationBuffer[estimationBufferIndex] != 0;
+        if (!alreadyMeasured) 
             TotalElementsMeasured++;
-        }
 
         TotalElementSize -= _estimationBuffer[estimationBufferIndex];
         TotalElementSize += majorSize;
@@ -44,11 +39,8 @@ internal class StackLayoutState
         MaxArrangeBounds = Math.Max(MaxArrangeBounds, minorSize);
     }
 
-    public void OnMeasureStart()
-    {
-        MaxArrangeBounds = 0;
-    }
+    public void OnMeasureStart() => MaxArrangeBounds = 0;
 
-    private double[]? _estimationBuffer;
+    private double[] _estimationBuffer = null!;
     private const int BufferSize = 100;
 }

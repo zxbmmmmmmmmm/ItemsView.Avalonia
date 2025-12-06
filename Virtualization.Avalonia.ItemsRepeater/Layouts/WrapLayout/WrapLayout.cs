@@ -193,7 +193,7 @@ public class WrapLayout : VirtualizingLayout, IOrientationBasedMeasures, IFlowLa
         int anchorIndex = -1;
         double offset = double.NaN;
 
-        int itemsCount = context.ItemCount;
+        int itemsCount = context.ItemsCount;
         if (itemsCount > 0)
         {
             var realizationRect = context.RealizationRect;
@@ -228,7 +228,7 @@ public class WrapLayout : VirtualizingLayout, IOrientationBasedMeasures, IFlowLa
     {
         double offset = double.NaN;
         int index = -1;
-        int itemsCount = context.ItemCount;
+        int itemsCount = context.ItemsCount;
 
         if (targetIndex >= 0 && targetIndex < itemsCount)
         {
@@ -250,7 +250,7 @@ public class WrapLayout : VirtualizingLayout, IOrientationBasedMeasures, IFlowLa
     {
         Rect extent = default;
 
-        int itemsCount = context.ItemCount;
+        int itemsCount = context.ItemsCount;
         if (itemsCount > 0)
         {
             double availableSizeMinor = this.Minor(availableSize);
@@ -328,7 +328,7 @@ public class WrapLayout : VirtualizingLayout, IOrientationBasedMeasures, IFlowLa
         double avgLineSize = 0;
         avgCountInLine = 1;
 
-        Debug.Assert(context.ItemCount > 0);
+        Debug.Assert(context.ItemsCount > 0);
         if (flowState.TotalLinesMeasured == 0)
         {
             var tmpElement = context.GetOrCreateElementAt(0, ElementRealizationOptions.ForceCreate | ElementRealizationOptions.SuppressAutoRecycle);

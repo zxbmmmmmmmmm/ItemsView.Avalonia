@@ -1,7 +1,9 @@
-using System;
 using Avalonia;
 using Avalonia.Controls;
+#if DEBUG && REPEATER_TRACE
 using Avalonia.Logging;
+#endif
+
 using Virtualization.Avalonia.Layouts;
 
 namespace Virtualization.Avalonia;
@@ -57,7 +59,7 @@ internal class RepeaterLayoutContext(ItemsRepeater owner) : VirtualizingLayoutCo
             return;
         var owner = GetOwner();
 #if DEBUG && REPEATER_TRACE
-        Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"RepeaterLayout - RecycleElement {Index}", owner?.GetElementIndex(element));
+        Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this, $"RepeaterLayout - RecycleElement {owner?.GetElementIndex(element)}");
 #endif
         owner?.ClearElementImpl(element);
     }
@@ -72,7 +74,7 @@ internal class RepeaterLayoutContext(ItemsRepeater owner) : VirtualizingLayoutCo
         }
     }
     
-    public override int ItemCount => GetOwner()?.ItemsSourceView?.Count ?? 0;
+    public override int ItemsCount => GetOwner()?.ItemsSourceView?.Count ?? 0;
 
     public override Rect VisibleRect => GetOwner()?.VisibleWindow ?? default;
 

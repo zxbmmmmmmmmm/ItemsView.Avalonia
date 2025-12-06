@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls;
 
@@ -35,7 +35,7 @@ public abstract class VirtualizingLayoutContext : LayoutContext
     /// <summary>
     /// Gets the number of items in the data.
     /// </summary>
-    public abstract int ItemCount { get; }
+    public abstract int ItemsCount { get; }
 
     /// <summary>
     /// Gets an area that represents the viewport of the layout.
