@@ -99,9 +99,24 @@ public sealed partial class FlowLayout : VirtualizingLayout, IFlowLayoutAlgorith
         return new();
     }
 
-    FlowLayoutAnchorInfo IFlowLayoutAlgorithmDelegates.Algorithm_GetAnchorForTargetElement(int targetIndex, Size availableSize, VirtualizingLayoutContext ccontext)
+    FlowLayoutAnchorInfo IFlowLayoutAlgorithmDelegates.Algorithm_GetAnchorForTargetElement(int targetIndex, Size availableSize, VirtualizingLayoutContext context)
     {
-        return new();
+        double offset = double.NaN;
+        int index = -1;
+        int itemsCount = context.ItemCount;
+
+        if (targetIndex >= 0 && targetIndex < itemsCount)
+        {
+            index = targetIndex;
+            var state = context.LayoutState;
+            var flowState = GetAsFlowState(state);
+            double averageItemsPerLine = 0;
+            double averageLineSize = GetAverageLineInfo(availableSize, context, flowState, ref averageItemsPerLine) + LineSpacing;
+            int lineIndex = (int) (targetIndex / averageItemsPerLine);
+            offset = lineIndex * averageLineSize + flowState.FlowAlgorithm.LastExtent.Y;
+        }
+
+        return new FlowLayoutAnchorInfo { Index = index, Offset = offset };
     }
 
     Rect IFlowLayoutAlgorithmDelegates.Algorithm_GetExtent(Size availableSize, VirtualizingLayoutContext context, Control firstRealized, int firstRealizedItemIndex, Rect firstRealizedLayoutBounds, Control lastRealized, int lastRealizedItemIndex, Rect lastRealizedLayoutBounds)
