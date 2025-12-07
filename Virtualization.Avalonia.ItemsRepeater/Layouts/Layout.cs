@@ -4,36 +4,10 @@ using Avalonia;
 namespace Virtualization.Avalonia.Layouts;
 
 /// <summary>
-/// Gets the orientation, if any, in which items are laid out based on their index in the source collection.
-/// </summary>
-public enum IndexBasedLayoutOrientation
-{
-    /// <summary>
-    /// There is no correlation between the items' layout and their index number.
-    /// </summary>
-    None = 0,
-
-    /// <summary>
-    /// Items are laid out vertically with increasing indices.
-    /// </summary>
-    TopToBottom = 1,
-
-    /// <summary>
-    /// Items are laid out horizontally with increasing indices.
-    /// </summary>
-    LeftToRight = 2
-}
-
-/// <summary>
 /// Represents the base class for an object that sizes and arranges child elements for a host.
 /// </summary>
 public abstract class Layout : AvaloniaObject
-{    
-    /// <summary>
-    /// 
-    /// </summary>
-    public IndexBasedLayoutOrientation IndexBasedLayoutOrientation { get; protected internal set; }
-
+{
     /// <summary>
     /// Occurs when the measurement state (layout) has been invalidated.
     /// </summary>

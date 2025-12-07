@@ -18,12 +18,14 @@ public class UniformGridLayoutState
     // We need to measure the element at index 0 to know what size to measure all other items. 
     // If FlowlayoutAlgorithm has already realized element 0 then we can use that. 
     // If it does not, then we need to do context.GetElement(0) at which point we have requested an element and are on point to clear it.
-    // If we are responsible for clearing element 0 we keep m_cachedFirstElement valid. 
+    // If we are responsible for clearing element 0 we keep _cachedFirstElement valid. 
     // If we are not (because FlowLayoutAlgorithm is holding it for us) then we just null out this field and use the one from FlowLayoutAlgorithm.
     private Control? _cachedFirstElement;
 
     internal FlowLayoutAlgorithm FlowAlgorithm { get; } = new FlowLayoutAlgorithm();
+
     internal double EffectiveItemWidth { get; private set; }
+
     internal double EffectiveItemHeight { get; private set; }
 
     internal void InitializeForContext(VirtualizingLayoutContext context, IFlowLayoutAlgorithmDelegates callbacks)
@@ -49,23 +51,19 @@ public class UniformGridLayoutState
         double layoutItemHeight,
         UniformGridLayoutItemsStretch stretch,
         Orientation orientation,
-        double minRowSpacing,
-        double minColumnSpacing,
+        double itemSpacing,
         int maxItemsPerLine)
     {
-        if (maxItemsPerLine == 0)
-        {
+        if (maxItemsPerLine is 0)
             maxItemsPerLine = 1;
-        }
 
         if (context.ItemsCount > 0)
         {
             // If the first element is realized we don't need to cache it or to get it from the context
-            var realizedElement = FlowAlgorithm.GetElementIfRealized(0);
-            if (realizedElement != null)
+            if (FlowAlgorithm.GetElementIfRealized(0) is { } realizedElement)
             {
                 realizedElement.Measure(availableSize);
-                SetSize(realizedElement, layoutItemWidth, layoutItemHeight, availableSize, stretch, orientation, minRowSpacing, minColumnSpacing, maxItemsPerLine);
+                SetSize(realizedElement, layoutItemWidth, layoutItemHeight, availableSize, stretch, orientation, itemSpacing, maxItemsPerLine);
                 _cachedFirstElement = null;
             }
             else
@@ -77,14 +75,12 @@ public class UniformGridLayoutState
 
                 _cachedFirstElement.Measure(availableSize);
 
-                SetSize(_cachedFirstElement, layoutItemWidth, layoutItemHeight, availableSize, stretch, orientation, minRowSpacing, minColumnSpacing, maxItemsPerLine);
+                SetSize(_cachedFirstElement, layoutItemWidth, layoutItemHeight, availableSize, stretch, orientation, itemSpacing, maxItemsPerLine);
 
                 // See if we can move ownership to the flow algorithm. If we can, we do not need a local cache.
-                bool added = FlowAlgorithm.TryAddElement0(_cachedFirstElement);
+                var added = FlowAlgorithm.TryAddElement0(_cachedFirstElement);
                 if (added)
-                {
                     _cachedFirstElement = null;
-                }
             }
         }
     }
@@ -96,20 +92,16 @@ public class UniformGridLayoutState
         Size availableSize,
         UniformGridLayoutItemsStretch stretch,
         Orientation orientation,
-        double minRowSpacing,
-        double minColumnSpacing,
+        double itemSpacing,
         int maxItemsPerLine)
     {
-        if (maxItemsPerLine == 0)
-        {
+        if (maxItemsPerLine is 0)
             maxItemsPerLine = 1;
-        }
 
-        EffectiveItemWidth = (double.IsNaN(layoutItemWidth) ? element.DesiredSize.Width : layoutItemWidth);
-        EffectiveItemHeight = (double.IsNaN(layoutItemHeight) ? element.DesiredSize.Height : layoutItemHeight);
+        EffectiveItemWidth = double.IsNaN(layoutItemWidth) ? element.DesiredSize.Width : layoutItemWidth;
+        EffectiveItemHeight = double.IsNaN(layoutItemHeight) ? element.DesiredSize.Height : layoutItemHeight;
 
         var availableSizeMinor = orientation == Orientation.Horizontal ? availableSize.Width : availableSize.Height;
-        var minorItemSpacing = orientation == Orientation.Vertical ? minRowSpacing : minColumnSpacing;
 
         var itemSizeMinor = orientation == Orientation.Horizontal ? EffectiveItemWidth : EffectiveItemHeight;
 
@@ -118,36 +110,38 @@ public class UniformGridLayoutState
         {
             var numItemsPerColumn = (int)Math.Min(
                 maxItemsPerLine,
-                Math.Max(1.0, availableSizeMinor / (itemSizeMinor + minorItemSpacing)));
-            var usedSpace = (numItemsPerColumn * (itemSizeMinor + minorItemSpacing)) - minorItemSpacing;
+                Math.Max(1.0, availableSizeMinor / (itemSizeMinor + itemSpacing)));
+            var usedSpace = (numItemsPerColumn * (itemSizeMinor + itemSpacing)) - itemSpacing;
             var remainingSpace = availableSizeMinor - usedSpace;
             extraMinorPixelsForEachItem = (int)(remainingSpace / numItemsPerColumn);
         }
 
-        if (stretch == UniformGridLayoutItemsStretch.Fill)
+        switch (stretch)
         {
-            if (orientation == Orientation.Horizontal)
+            case UniformGridLayoutItemsStretch.Fill:
             {
-                EffectiveItemWidth += extraMinorPixelsForEachItem;
+                if (orientation == Orientation.Horizontal)
+                    EffectiveItemWidth += extraMinorPixelsForEachItem;
+                else
+                    EffectiveItemHeight += extraMinorPixelsForEachItem;
+                break;
             }
-            else
+            case UniformGridLayoutItemsStretch.Uniform:
             {
-                EffectiveItemHeight += extraMinorPixelsForEachItem;
-            }
-        }
-        else if (stretch == UniformGridLayoutItemsStretch.Uniform)
-        {
-            var itemSizeMajor = orientation == Orientation.Horizontal ? EffectiveItemHeight : EffectiveItemWidth;
-            var extraMajorPixelsForEachItem = itemSizeMajor * (extraMinorPixelsForEachItem / itemSizeMinor);
-            if (orientation == Orientation.Horizontal)
-            {
-                EffectiveItemWidth += extraMinorPixelsForEachItem;
-                EffectiveItemHeight += extraMajorPixelsForEachItem;
-            }
-            else
-            {
-                EffectiveItemHeight += extraMinorPixelsForEachItem;
-                EffectiveItemWidth += extraMajorPixelsForEachItem;
+                var itemSizeMajor = orientation == Orientation.Horizontal ? EffectiveItemHeight : EffectiveItemWidth;
+                var extraMajorPixelsForEachItem = itemSizeMajor * (extraMinorPixelsForEachItem / itemSizeMinor);
+                if (orientation == Orientation.Horizontal)
+                {
+                    EffectiveItemWidth += extraMinorPixelsForEachItem;
+                    EffectiveItemHeight += extraMajorPixelsForEachItem;
+                }
+                else
+                {
+                    EffectiveItemHeight += extraMinorPixelsForEachItem;
+                    EffectiveItemWidth += extraMajorPixelsForEachItem;
+                }
+
+                break;
             }
         }
     }

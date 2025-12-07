@@ -1,6 +1,9 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Avalonia;
 
 namespace Virtualization.Avalonia.Layouts;
@@ -13,12 +16,12 @@ internal class FlowLayoutState
 
     public int TotalElementsMeasured { get; private set; }
 
+    public int TotalLines { get; private set; } = 1;
+
     public void InitializeForContext(VirtualizingLayoutContext context, IFlowLayoutAlgorithmDelegates callbacks)
     {
         FlowAlgorithm = new FlowLayoutAlgorithm();
         FlowAlgorithm.InitializeForContext(context, callbacks);
-
-        _estimationBuffer = new double[BufferSize];
 
         context.LayoutState = this;
     }
@@ -26,19 +29,28 @@ internal class FlowLayoutState
     public void UninitializeForContext(VirtualizingLayoutContext context) =>
         FlowAlgorithm.UninitializeForContext(context);
 
-    public void OnElementMeasured(int elementIndex, double width)
+    public void OnElementMeasured(int elementIndex, double width, int controlHashCode)
     {
-        var estimationBufferIndex = elementIndex % BufferSize;
-        var alreadyMeasured = _estimationBuffer[estimationBufferIndex] != 0;
-        if (!alreadyMeasured)
+        ref var value = ref CollectionsMarshal.GetValueRefOrAddDefault(_set, controlHashCode, out var exists);
+        if (exists)
+            _totalElementSize -= value;
+        else
             TotalElementsMeasured++;
 
-        _totalElementSize -= _estimationBuffer[estimationBufferIndex];
-        _totalElementSize += width;
-        _estimationBuffer[estimationBufferIndex] = width;
+        value = width;
+        _totalElementSize += value;
+    }
+
+    public void OnBreakLine() => TotalLines++;
+
+    public void OnMeasureStart()
+    {
+        _set = [];
+        TotalLines = 1;
+        _totalElementSize = 0;
+        TotalElementsMeasured = 0;
     }
 
     private double _totalElementSize;
-    private double[] _estimationBuffer = null!;
-    private const int BufferSize = 100;
+    private Dictionary<int, double> _set = null!;
 }

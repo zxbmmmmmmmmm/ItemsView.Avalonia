@@ -57,11 +57,9 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             MakeAnchor(_context, suggestedAnchorIndex, availableSize);
 
         if (!disableVirtualization)
-        {
             _elementManager.OnBeginMeasure(orientation);
-        }
 
-        int anchorIndex = GetAnchorIndex(availableSize, isWrapping, minItemSpacing, disableVirtualization);
+        var anchorIndex = GetAnchorIndex(availableSize, isWrapping, minItemSpacing, disableVirtualization);
         Generate(true, anchorIndex, availableSize, minItemSpacing, lineSpacing, maxItemsPerLine, disableVirtualization);
         Generate(false, anchorIndex, availableSize, minItemSpacing, lineSpacing, maxItemsPerLine, disableVirtualization);
 
@@ -100,32 +98,28 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
     {
         _elementManager.ClearRealizedRange();
         // FlowLayout requires that the anchor is the first element in the row.
-        var internalAnchor = _algorithmCallbacks
-            .Algorithm_GetAnchorForTargetElement(index, availableSize, context);
-        Debug.Assert(internalAnchor.Index <= index);
+        var internalAnchorIndex = _algorithmCallbacks.Algorithm_GetAnchorIndexForTargetElement(index, availableSize, context);
+        Debug.Assert(internalAnchorIndex <= index);
 
         // No need to set the position of the anchor.
         // (0,0) is fine for now since the extent can
         // grow in any direction.
 
-        for (int dataIndex = internalAnchor.Index; dataIndex < index + 1; dataIndex++)
+        for (var dataIndex = internalAnchorIndex; dataIndex < index + 1; dataIndex++)
         {
-            var element = context.GetOrCreateElementAt(dataIndex,
-                ElementRealizationOptions.ForceCreate | ElementRealizationOptions.SuppressAutoRecycle);
+            var element = context.GetOrCreateElementAt(dataIndex, ElementRealizationOptions.ForceCreate | ElementRealizationOptions.SuppressAutoRecycle);
             element.Measure(_algorithmCallbacks.Algorithm_GetMeasureSize(dataIndex, availableSize, context));
             _elementManager.Add(element, dataIndex);
         }
     }
 
-    public void OnItemsSourceChanged(object? source, NotifyCollectionChangedEventArgs args,
-        VirtualizingLayoutContext context)
+    public void OnItemsSourceChanged(object? source, NotifyCollectionChangedEventArgs args, VirtualizingLayoutContext context)
     {
         _elementManager.DataSourceChanged(source, args);
         _collectionChangePending = true;
     }
 
-    public Size MeasureElement(Control element, int index, Size availableSize,
-        VirtualizingLayoutContext context)
+    public Size MeasureElement(Control element, int index, Size availableSize, VirtualizingLayoutContext context)
     {
         var measureSize = _algorithmCallbacks.Algorithm_GetMeasureSize(index, availableSize, context);
         element.Measure(measureSize);
@@ -171,23 +165,17 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
 #if DEBUG && REPEATER_TRACE
                 Logger.TryGet(LogEventLevel.Verbose, "Repeater")?.Log(this,"Using suggested anchor {index}", suggestedAnchorIndex);
 #endif
-                anchorIndex = _algorithmCallbacks.Algorithm_GetAnchorForTargetElement(
-                    suggestedAnchorIndex, availableSize, context).Index;
+                anchorIndex = _algorithmCallbacks.Algorithm_GetAnchorIndexForTargetElement(suggestedAnchorIndex, availableSize, context);
 
                 if (_elementManager.IsDataIndexRealized(anchorIndex))
                 {
                     var anchorBounds = _elementManager.GetLayoutBoundsForDataIndex(anchorIndex);
-                    if (needAnchorColumnRevaluation)
-                    {
-                        // We were provided a valid anchor, but its position might be incorrect because for example it is in
-                        // the wrong column. We do know that the anchor is the first element in the row, so we can force the minor position
-                        // to start at 0.
-                        anchorPosition = this.MinorMajorPoint(0, this.MajorStart(anchorBounds));
-                    }
-                    else
-                    {
-                        anchorPosition = new Point(anchorBounds.X, anchorBounds.Y);
-                    }
+                    // We were provided a valid anchor, but its position might be incorrect because for example it is in
+                    // the wrong column. We do know that the anchor is the first element in the row, so we can force the minor position
+                    // to start at 0.
+                    anchorPosition = needAnchorColumnRevaluation 
+                        ? this.MinorMajorPoint(0, this.MajorStart(anchorBounds)) 
+                        : new Point(anchorBounds.X, anchorBounds.Y);
                 }
                 else
                 {
@@ -297,6 +285,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
         double lineMajorSize = this.MajorSize(anchorBounds);
         int countInLine = 1;
         bool lineNeedsReposition = false;
+        var context = _context;
 
         while (_elementManager.IsIndexValidInData(currentIndex) &&
             (disableVirtualization || ShouldContinueFillingUpSpace(previousIndex, forward)))
@@ -316,7 +305,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
                 double remainingSpace = this.Minor(availableSize) -
                     (this.MinorStart(previousElementBounds) + this.MinorSize(previousElementBounds) + minItemSpacing + this.Minor(desiredSize));
 
-                if (countInLine >= maxItemsPerLine || _algorithmCallbacks.Algorithm_ShouldBreakLine(currentIndex, remainingSpace))
+                if (countInLine >= maxItemsPerLine || _algorithmCallbacks.Algorithm_ShouldBreakLine(currentIndex, remainingSpace, context))
                 {
                     // No more space in this row. wrap to next row.
                     this.SetMinorStart(ref currentBounds, 0);
@@ -357,7 +346,7 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
                 // Backward
                 double remainingSpace = this.MinorStart(previousElementBounds) - (this.Minor(desiredSize) + minItemSpacing);
 
-                if (countInLine >= maxItemsPerLine || _algorithmCallbacks.Algorithm_ShouldBreakLine(currentIndex, remainingSpace))
+                if (countInLine >= maxItemsPerLine || _algorithmCallbacks.Algorithm_ShouldBreakLine(currentIndex, remainingSpace, context))
                 {
                     // Does not fit, wrap to the previous row
                     var availableSizeMinor = this.Minor(availableSize);
@@ -614,51 +603,51 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
                     switch (lineAlignment)
                     {
                         case LineAlignment.Start:
-                            {
-                                this.SetMinorStart(ref bounds, this.MinorStart(bounds) - spaceAtLineStart);
-                                break;
-                            }
+                        {
+                            this.SetMinorStart(ref bounds, this.MinorStart(bounds) - spaceAtLineStart);
+                            break;
+                        }
 
                         case LineAlignment.End:
-                            {
-                                this.SetMinorStart(ref bounds, this.MinorStart(bounds) + spaceAtLineEnd);
-                                break;
-                            }
+                        {
+                            this.SetMinorStart(ref bounds, this.MinorStart(bounds) + spaceAtLineEnd);
+                            break;
+                        }
 
                         case LineAlignment.Center:
-                            {
-                                var minor = this.MinorStart(bounds);
-                                this.SetMinorStart(ref bounds, minor - spaceAtLineStart);
-                                this.SetMinorStart(ref bounds, minor + totalSpace / 2);
-                                break;
-                            }
+                        {
+                            var minor = this.MinorStart(bounds);
+                            this.SetMinorStart(ref bounds, minor - spaceAtLineStart);
+                            this.SetMinorStart(ref bounds, minor + (totalSpace / 2));
+                            break;
+                        }
 
                         case LineAlignment.SpaceAround:
-                            {
-                                double interItemSpace = countInLine >= 1 ? totalSpace / (countInLine * 2) : 0;
-                                var minor = this.MinorStart(bounds);
-                                this.SetMinorStart(ref bounds, minor - spaceAtLineStart);
-                                this.SetMinorStart(ref bounds, minor + interItemSpace * ((rangeIndex - lineStartIndex + 1) * 2 - 1));
-                                break;
-                            }
+                        {
+                            double interItemSpace = countInLine >= 1 ? totalSpace / (countInLine * 2) : 0;
+                            var minor = this.MinorStart(bounds);
+                            this.SetMinorStart(ref bounds, minor - spaceAtLineStart);
+                            this.SetMinorStart(ref bounds, minor + (interItemSpace * (((rangeIndex - lineStartIndex + 1) * 2) - 1)));
+                            break;
+                        }
 
                         case LineAlignment.SpaceBetween:
-                            {
-                                double interItemSpace = countInLine > 1 ? totalSpace / (countInLine - 1) : 0;
-                                var minor = this.MinorStart(bounds);
-                                this.SetMinorStart(ref bounds, minor - spaceAtLineStart) ;
-                                this.SetMinorStart(ref bounds, minor + interItemSpace * (rangeIndex - lineStartIndex));
-                                break;
-                            }
+                        {
+                            double interItemSpace = countInLine > 1 ? totalSpace / (countInLine - 1) : 0;
+                            var minor = this.MinorStart(bounds);
+                            this.SetMinorStart(ref bounds, minor - spaceAtLineStart);
+                            this.SetMinorStart(ref bounds, minor + (interItemSpace * (rangeIndex - lineStartIndex)));
+                            break;
+                        }
 
                         case LineAlignment.SpaceEvenly:
-                            {
-                                double interItemSpace = countInLine >= 1 ? totalSpace / (countInLine + 1) : 0;
-                                var minor = this.MinorStart(bounds);
-                                this.SetMinorStart(ref bounds, minor - spaceAtLineStart);
-                                this.SetMinorStart(ref bounds, minor + interItemSpace * (rangeIndex - lineStartIndex + 1));
-                                break;
-                            }
+                        {
+                            double interItemSpace = countInLine >= 1 ? totalSpace / (countInLine + 1) : 0;
+                            var minor = this.MinorStart(bounds);
+                            this.SetMinorStart(ref bounds, minor - spaceAtLineStart);
+                            this.SetMinorStart(ref bounds, minor + (interItemSpace * (rangeIndex - lineStartIndex + 1)));
+                            break;
+                        }
                     }
                 }
             }
@@ -711,26 +700,21 @@ internal class FlowLayoutAlgorithm : IOrientationBasedMeasures
             return false;
         _elementManager.Add(element, 0);
         return true;
-
     }
 
     private bool IsVirtualizingContext()
     {
-        if (_context is null)
-            return false;
         Rect rect = _context.RealizationRect;
         bool hasInfiniteSize = double.IsInfinity(rect.Height) || double.IsInfinity(rect.Width);
         return !hasInfiniteSize;
-
     }
 
-
-    private readonly ElementManager _elementManager = new ElementManager();
+    private readonly ElementManager _elementManager = new();
     private Size _lastAvailableSize;
     private double _lastItemSpacing;
     private bool _collectionChangePending;
-    private VirtualizingLayoutContext _context;
-    private IFlowLayoutAlgorithmDelegates _algorithmCallbacks;
+    private VirtualizingLayoutContext _context = null!;
+    private IFlowLayoutAlgorithmDelegates _algorithmCallbacks = null!;
     private Rect _lastExtent;
     private int _firstRealizedDataIndexInsideRealizationWindow = -1;
     private int _lastRealizedDataIndexInsideRealizationWindow = -1;

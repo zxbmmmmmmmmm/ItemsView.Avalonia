@@ -15,11 +15,11 @@ internal interface IFlowLayoutAlgorithmDelegates
 
     Size Algorithm_GetProvisionalArrangeSize(int index, Size measureSize, Size desiredSize, VirtualizingLayoutContext context);
 
-    bool Algorithm_ShouldBreakLine(int index, double remainingSpace);
+    bool Algorithm_ShouldBreakLine(int index, double remainingSpace, VirtualizingLayoutContext context);
 
     FlowLayoutAnchorInfo Algorithm_GetAnchorForRealizationRect(Size availableSize, VirtualizingLayoutContext context);
 
-    FlowLayoutAnchorInfo Algorithm_GetAnchorForTargetElement(int targetIndex, Size availableSize, VirtualizingLayoutContext context);
+    int Algorithm_GetAnchorIndexForTargetElement(int targetIndex, Size availableSize, VirtualizingLayoutContext context);
 
     Rect Algorithm_GetExtent(Size availableSize, VirtualizingLayoutContext context,
         Control firstRealized, int firstRealizedItemIndex, Rect firstRealizedLayoutBounds,

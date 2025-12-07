@@ -35,6 +35,7 @@ public partial class SampleViewModel : ObservableObject
     private static Item[] InitializeDataSources()
     {
         const int all = 1000;
+        const string str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
         var textItems = new Item[all];
         for (var i = 0; i < all - 1; i++)
         {
@@ -42,15 +43,15 @@ public partial class SampleViewModel : ObservableObject
             {
                 Value = i,
                 Name = $"Item {i}",
-                Description = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+                Description = str[(Random.Shared.Next(str.Length / 5) * 5)..]
             };
         }
-        textItems[all - 1] = new()
-        {
-            Value = all - 1,
-            Name = $"Item {all - 1}",
-            Description = string.Concat(Enumerable.Repeat("Lorem ipsum dolor sit amet, consectetur adipiscing elit.\n", all))
-        };
+        //textItems[all - 1] = new()
+        //{
+        //    Value = all - 1,
+        //    Name = $"Item {all - 1}",
+        //    Description = string.Concat(Enumerable.Repeat("Lorem ipsum dolor sit amet, consectetur adipiscing elit.\n", all))
+        //};
         return textItems;
     }
 

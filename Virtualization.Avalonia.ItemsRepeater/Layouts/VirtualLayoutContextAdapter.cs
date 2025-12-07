@@ -1,7 +1,4 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using Avalonia.Controls;
 
 namespace Virtualization.Avalonia.Layouts;
@@ -42,7 +39,7 @@ internal class VirtualLayoutContextAdapter(VirtualizingLayoutContext context) : 
     {
         public int Count => context.ItemsCount;
 
-        public Control this[int index] => context.GetOrCreateElementAt(index, ElementRealizationOptions.None);
+        public Control this[int index] => context.GetOrCreateElementAt(index);
 
         public IEnumerator<Control> GetEnumerator() => this.Cast<Control>().GetEnumerator();
 

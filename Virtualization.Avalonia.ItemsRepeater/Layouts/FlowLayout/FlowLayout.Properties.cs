@@ -9,7 +9,7 @@ public partial class FlowLayout
     public partial double LineSpacing { get; set; }
 
     [GeneratedStyledProperty(0d)]
-    public partial double MinItemSpacing { get; set; }
+    public partial double ItemSpacing { get; set; }
 
     [GeneratedStyledProperty(200d)]
     public partial double LineHeight { get; set; }
@@ -17,15 +17,31 @@ public partial class FlowLayout
     [GeneratedStyledProperty(FlowLayoutItemsStretch.Stretch)]
     public partial FlowLayoutItemsStretch ItemsStretch { get; set; }
 
-    partial void OnLineSpacingPropertyChanged(AvaloniaPropertyChangedEventArgs e) => OnLineHeightPropertyChanged(e);
+    ScrollOrientation IOrientationBasedMeasures.ScrollOrientation => ScrollOrientation.Vertical;
 
-    partial void OnMinItemSpacingPropertyChanged(AvaloniaPropertyChangedEventArgs e) => OnLineHeightPropertyChanged(e);
+    private double _itemSpacing;
+    private double _lineSpacing;
+    private double _lineHeight = 200;
+
+    partial void OnLineSpacingPropertyChanged(double newValue)
+    {
+        _lineSpacing = newValue;
+        InvalidateLayout();
+    }
+
+    partial void OnItemSpacingPropertyChanged(double newValue)
+    {
+        _itemSpacing = newValue;
+        InvalidateLayout();
+    }
 
     partial void OnItemsStretchPropertyChanged(AvaloniaPropertyChangedEventArgs e) => OnLineHeightPropertyChanged(e);
 
-    partial void OnLineHeightPropertyChanged(AvaloniaPropertyChangedEventArgs e)
+    partial void OnLineHeightPropertyChanged(double newValue)
     {
-        InvalidateMeasure();
-        InvalidateArrange();
+        _lineHeight = newValue;
+        InvalidateLayout();
     }
+
+    private void InvalidateLayout() => InvalidateMeasure();
 }

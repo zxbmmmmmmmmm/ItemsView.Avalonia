@@ -4,7 +4,7 @@ namespace Virtualization.Avalonia.Layouts;
 
 internal interface IOrientationBasedMeasures
 {
-    ScrollOrientation ScrollOrientation { get; set; }
+    ScrollOrientation ScrollOrientation { get; }
 }
 
 internal static class OrientationBasedMeasuresExt
@@ -26,6 +26,12 @@ internal static class OrientationBasedMeasuresExt
         /// <returns></returns>
         public double Minor(Size size) =>
             m.ScrollOrientation is ScrollOrientation.Vertical ? size.Width : size.Height;
+
+        public void SetMajor(ref Size size, double value) =>
+            size = m.ScrollOrientation is ScrollOrientation.Vertical ? size.WithHeight(value) : size.WithWidth(value);
+
+        public void SetMinor(ref Size size, double value) =>
+            size = m.ScrollOrientation is ScrollOrientation.Vertical ? size.WithWidth(value) : size.WithHeight(value);
 
         public double MajorSize(Rect rect) =>
             m.ScrollOrientation is ScrollOrientation.Vertical ? rect.Height : rect.Width;

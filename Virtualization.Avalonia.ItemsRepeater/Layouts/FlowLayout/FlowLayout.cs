@@ -5,7 +5,7 @@ using Avalonia.Controls;
 
 namespace Virtualization.Avalonia.Layouts;
 
-public sealed partial class FlowLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates
+public sealed partial class FlowLayout : VirtualizingLayout, IFlowLayoutAlgorithmDelegates, IOrientationBasedMeasures
 {
     /// <inheritdoc />
     protected internal override void InitializeForContextCore(VirtualizingLayoutContext context)
@@ -42,12 +42,15 @@ public sealed partial class FlowLayout : VirtualizingLayout, IFlowLayoutAlgorith
     /// <inheritdoc />
     protected internal override Size MeasureOverride(VirtualizingLayoutContext context, Size availableSize)
     {
+        var state = (FlowLayoutState) context.LayoutState!;
+        state.OnMeasureStart();
+
         var desiredSize = GetFlowAlgorithm(context).Measure(
             availableSize,
             context,
             false /*isWrapping*/,
-            MinItemSpacing /*minItemsSpacing*/,
-            LineSpacing,
+            _itemSpacing,
+            _lineSpacing,
             int.MaxValue /*maxItemsPerLine*/,
             ScrollOrientation.Vertical,
             false);
@@ -67,46 +70,61 @@ public sealed partial class FlowLayout : VirtualizingLayout, IFlowLayoutAlgorith
         return value;
     }
 
-    Size IFlowLayoutAlgorithmDelegates.Algorithm_GetMeasureSize(int index, Size availableSize, VirtualizingLayoutContext context) => availableSize;
+    Size IFlowLayoutAlgorithmDelegates.Algorithm_GetMeasureSize(int index, Size availableSize, VirtualizingLayoutContext context)
+    {
+        this.SetMajor(ref availableSize, _lineHeight);
+        return availableSize;
+    }
 
-    Size IFlowLayoutAlgorithmDelegates.Algorithm_GetProvisionalArrangeSize(int index, Size measureSize, Size desiredSize, VirtualizingLayoutContext context) => desiredSize;
+    Size IFlowLayoutAlgorithmDelegates.Algorithm_GetProvisionalArrangeSize(int index, Size measureSize, Size desiredSize, VirtualizingLayoutContext context)
+    {
+        this.SetMajor(ref desiredSize, _lineHeight);
+        return desiredSize;
+    }
 
-    bool IFlowLayoutAlgorithmDelegates.Algorithm_ShouldBreakLine(int index, double remainingSpace) => remainingSpace < 0;
+    bool IFlowLayoutAlgorithmDelegates.Algorithm_ShouldBreakLine(int index, double remainingSpace, VirtualizingLayoutContext context)
+    {
+        var breakLine = remainingSpace < 0;
+        if (breakLine)
+        {
+            var state = (FlowLayoutState) context.LayoutState!;
+            state.OnBreakLine();
+        }
+        return breakLine;
+    }
 
     FlowLayoutAnchorInfo IFlowLayoutAlgorithmDelegates.Algorithm_GetAnchorForRealizationRect(Size availableSize, VirtualizingLayoutContext context)
     {
-        int anchorIndex = -1;
-        double offset = double.NaN;
+        var anchorIndex = -1;
+        var offset = double.NaN;
 
-        int itemsCount = context.ItemsCount;
+        var itemsCount = context.ItemsCount;
         if (itemsCount > 0)
         {
-            var lineSpacing = LineSpacing;
-            Rect realizationRect = context.RealizationRect;
-            Rect lastExtent = GetFlowAlgorithm(context).LastExtent;
-            var lineSize = LineHeight + LineSpacing;
+            var lineSize = _lineHeight + _lineSpacing;
+            var realizationRect = context.RealizationRect;
+            var lastExtent = GetFlowAlgorithm(context).LastExtent;
 
-            double averageItemsPerLine = GetAverageCountInLine(availableSize, context);
+            var averageItemsPerLine = GetAverageCountInLine(availableSize, context);
             Debug.Assert(averageItemsPerLine != 0);
 
-            double extentMajorSize = lastExtent.Height == 0
-                ? (Math.Ceiling(itemsCount / averageItemsPerLine) * lineSize) - lineSpacing
-                : lastExtent.Height;
+            var majorSize = this.MajorSize(lastExtent);
+            if (majorSize is 0)
+                majorSize = (Math.Ceiling(itemsCount / averageItemsPerLine) * lineSize) - _lineSpacing;
 
-            if (realizationRect.Height > 0)
+            if (this.MajorSize(realizationRect) > 0)
             {
-                Rect extentRect = new(lastExtent.X, lastExtent.Y, availableSize.Width, extentMajorSize);
+                var realizationWindowStartWithinExtent = this.MajorStart(realizationRect) - this.MajorStart(lastExtent);
 
                 var overlaps =
-                    realizationRect.Bottom >= extentRect.Y &&
-                    realizationRect.Y <= extentRect.Bottom;
+                    realizationWindowStartWithinExtent + this.MajorSize(realizationRect) >= 0 &&
+                    realizationWindowStartWithinExtent <= majorSize;
                 if (overlaps)
                 {
-                    var realizationWindowStartWithinExtent = realizationRect.Y - lastExtent.Y;
-                    var o = Math.Max(0, realizationWindowStartWithinExtent + LineSpacing);
+                    var o = Math.Max(0, realizationWindowStartWithinExtent + _lineSpacing);
                     var anchorLineIndex = (int) (o / lineSize);
                     anchorIndex = Math.Clamp((int) (anchorLineIndex * averageItemsPerLine), 0, itemsCount - 1);
-                    offset = (anchorLineIndex * lineSize) + lastExtent.Y;
+                    offset = (anchorLineIndex * lineSize) + this.MajorStart(lastExtent);
                 }
             }
         }
@@ -118,87 +136,81 @@ public sealed partial class FlowLayout : VirtualizingLayout, IFlowLayoutAlgorith
         };
     }
 
-    FlowLayoutAnchorInfo IFlowLayoutAlgorithmDelegates.Algorithm_GetAnchorForTargetElement(int targetIndex, Size availableSize, VirtualizingLayoutContext context)
+    int IFlowLayoutAlgorithmDelegates.Algorithm_GetAnchorIndexForTargetElement(int targetIndex, Size availableSize, VirtualizingLayoutContext context)
     {
-        double offset = double.NaN;
-        int index = -1;
-        int itemsCount = context.ItemsCount;
+        var index = -1;
+        var itemsCount = context.ItemsCount;
 
         if (targetIndex >= 0 && targetIndex < itemsCount)
-        {
             index = targetIndex;
-            var lineSize = LineHeight + LineSpacing;
-            double averageItemsPerLine = GetAverageCountInLine(availableSize, context);
-            int lineIndex = (int) (targetIndex / averageItemsPerLine);
-            offset = (lineIndex * lineSize) + GetFlowAlgorithm(context).LastExtent.Y;
-        }
 
-        return new FlowLayoutAnchorInfo { Index = index, Offset = offset };
+        return index;
     }
 
-    Rect IFlowLayoutAlgorithmDelegates.Algorithm_GetExtent(Size availableSize, VirtualizingLayoutContext context, Control firstRealized, int firstRealizedItemIndex, Rect firstRealizedLayoutBounds, Control lastRealized, int lastRealizedItemIndex, Rect lastRealizedLayoutBounds)
+    Rect IFlowLayoutAlgorithmDelegates.Algorithm_GetExtent(
+        Size availableSize,
+        VirtualizingLayoutContext context,
+        Control? firstRealized,
+        int firstRealizedItemIndex,
+        Rect firstRealizedLayoutBounds,
+        Control? lastRealized,
+        int lastRealizedItemIndex,
+        Rect lastRealizedLayoutBounds)
     {
         Rect extent = default;
 
-        int itemsCount = context.ItemsCount;
+        var itemsCount = context.ItemsCount;
         if (itemsCount > 0)
         {
-            double availableSizeMinor = availableSize.Width;
-            var lineSize = LineHeight + LineSpacing;
-            double averageItemsPerLine = GetAverageCountInLine(availableSize, context);
-
+            var availableSizeMinor = this.Minor(availableSize);
+            var lineSize = _lineHeight + _lineSpacing;
+            var averageItemsPerLine = GetAverageCountInLine(availableSize, context);
             Debug.Assert(averageItemsPerLine != 0);
+
+            var estimatedLines = (int) ((itemsCount / averageItemsPerLine) + 1);
+
+            this.SetMinorSize(
+                ref extent,
+                !double.IsInfinity(availableSizeMinor)
+                    ? availableSizeMinor
+                    : Math.Max(0d, itemsCount * (_itemSpacing + _lineHeight)));
+
             if (firstRealized != null)
             {
-                Debug.Assert(lastRealized != null);
-                int linesBeforeFirst = (int) (firstRealizedItemIndex / averageItemsPerLine);
-                double extentMajorStart = firstRealizedLayoutBounds.Y - (linesBeforeFirst * lineSize);
-                extent = extent.WithHeight(extentMajorStart);
-                int remainingItems = itemsCount - lastRealizedItemIndex - 1;
-                int remainingLinesAfterLast = (int) (remainingItems / averageItemsPerLine);
-                double extentMajorSize = lastRealizedLayoutBounds.Y + lastRealizedLayoutBounds.Height -
-                    extent.Y + (remainingLinesAfterLast * lineSize);
-                extent = extent.WithHeight(extentMajorSize);
+                var linesBeforeFirst = (int) (firstRealizedItemIndex / averageItemsPerLine);
+                var extentMajorStart = this.MajorStart(firstRealizedLayoutBounds) - (linesBeforeFirst * lineSize);
+                this.SetMajorStart(ref extent, extentMajorStart);
+                var remainingItems = itemsCount - lastRealizedItemIndex - 1;
+                var remainingLinesAfterLast = (int) (remainingItems / averageItemsPerLine);
+                var extentMajorSize = this.MajorEnd(lastRealizedLayoutBounds) - this.MajorStart(extent) + (remainingLinesAfterLast * lineSize);
+                this.SetMajorSize(ref extent, extentMajorSize);
 
                 // If the available size is infinite, we will have realized all the items in one line.
                 // In that case, the extent in the non virtualizing direction should be based on the
                 // right/bottom of the last realized element.
-                extent = extent.WithWidth(!double.IsInfinity(availableSizeMinor) ?
-                    availableSizeMinor : Math.Max(0, lastRealizedLayoutBounds.X + lastRealizedLayoutBounds.Width));
             }
             else
             {
-                var lineSpacing = LineSpacing;
-                var minItemSpacing = MinItemSpacing;
+                var majorSize = Math.Max(0, (estimatedLines * lineSize) - _lineSpacing);
+                this.SetMajorSize(ref extent, majorSize);
                 // We dont have anything realized. make an educated guess.
-                int numLines = (int) Math.Ceiling(itemsCount / averageItemsPerLine);
-                extent = !double.IsInfinity(availableSizeMinor)
-                    ? new Rect(0, 0, availableSizeMinor, Math.Max(0, (numLines * lineSize) - lineSpacing))
-                    : new Rect(0, 0,
-                        Math.Max(0, ((LineHeight + minItemSpacing) * itemsCount) - minItemSpacing),
-                        Math.Max(0, lineSize - lineSpacing));
-                //REPEATER_TRACE_INFO(L"%*s: \tEstimating extent with no realized elements. \n", winrt::get_self<VirtualizingLayoutContext>(context)->Indent(), LayoutId().data());
             }
-
-            //REPEATER_TRACE_INFO(L"%*s: \tExtent is {%.0f,%.0f}. Based on average line size {%.0f} and average items per line {%.0f}. \n",
-            //winrt::get_self<VirtualizingLayoutContext>(context)->Indent(), LayoutId().data(), extent.Width, extent.Height, averageLineSize, averageItemsPerLine);
         }
         else
         {
             Debug.Assert(firstRealizedItemIndex == -1);
             Debug.Assert(lastRealizedItemIndex == -1);
-            //        REPEATER_TRACE_INFO(L"%*s: \tExtent is {%.0f,%.0f}. ItemCount is 0 \n",
-            //winrt::get_self<VirtualizingLayoutContext>(context)->Indent(), LayoutId().data(), extent.Width, extent.Height);
         }
 
         return extent;
     }
 
-    private static double GetAverageCountInLine(Size availableSize, VirtualizingLayoutContext context)
+    private double GetAverageCountInLine(Size availableSize, VirtualizingLayoutContext context)
     {
         var flowState = (FlowLayoutState) context.LayoutState!;
-        if (flowState.AverageElementSize is var avg and not 0)
-            return Math.Max(1, Math.Floor(availableSize.Width / avg));
+        var realizedCount = (double)flowState.TotalElementsMeasured;
+        if (realizedCount is not 0)
+            return realizedCount / flowState.TotalLines;
 
         Debug.Assert(context.ItemsCount > 0);
 
@@ -206,15 +218,22 @@ public sealed partial class FlowLayout : VirtualizingLayout, IFlowLayoutAlgorith
         var desiredSize = GetFlowAlgorithm(context).MeasureElement(tmpElement, 0, availableSize, context);
         context.RecycleElement(tmpElement);
 
-        var avgCountInLine = Math.Max(1, availableSize.Width / desiredSize.Width);
+        var avgCountInLine = Math.Max(1, this.Minor(availableSize) / this.Minor(desiredSize));
 
         return avgCountInLine;
     }
 
-    void IFlowLayoutAlgorithmDelegates.Algorithm_OnElementMeasured(Control element, int index, Size availableSize, Size measureSize, Size desiredSize, Size provisionalArrangeSize, VirtualizingLayoutContext context)
+    void IFlowLayoutAlgorithmDelegates.Algorithm_OnElementMeasured(
+        Control element,
+        int index,
+        Size availableSize,
+        Size measureSize,
+        Size desiredSize,
+        Size provisionalArrangeSize,
+        VirtualizingLayoutContext context)
     {
         var flowState = (FlowLayoutState) context.LayoutState!;
-        flowState.OnElementMeasured(index, provisionalArrangeSize.Width);
+        flowState.OnElementMeasured(index, this.Minor(provisionalArrangeSize), element.GetHashCode());
     }
 
     void IFlowLayoutAlgorithmDelegates.Algorithm_OnLineArranged(int startIndex, int countInLine, double lineSize, VirtualizingLayoutContext context)
@@ -222,6 +241,4 @@ public sealed partial class FlowLayout : VirtualizingLayout, IFlowLayoutAlgorith
     }
 
     private static FlowLayoutAlgorithm GetFlowAlgorithm(VirtualizingLayoutContext context) => ((FlowLayoutState) context.LayoutState!).FlowAlgorithm;
-
-    private void InvalidateLayout() => InvalidateMeasure();
 }

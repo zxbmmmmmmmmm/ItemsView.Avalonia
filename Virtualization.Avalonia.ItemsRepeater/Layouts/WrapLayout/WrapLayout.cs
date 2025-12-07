@@ -67,7 +67,6 @@ public class WrapLayout : VirtualizingLayout, IOrientationBasedMeasures, IFlowLa
     ScrollOrientation IOrientationBasedMeasures.ScrollOrientation
     {
         get => ScrollOrientation;
-        set => ScrollOrientation = value;
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs args)
@@ -182,7 +181,8 @@ public class WrapLayout : VirtualizingLayout, IOrientationBasedMeasures, IFlowLa
         return desiredSize;
     }
 
-    bool IFlowLayoutAlgorithmDelegates.Algorithm_ShouldBreakLine(int index, double remainingSpace)
+    bool IFlowLayoutAlgorithmDelegates.Algorithm_ShouldBreakLine(int index, double remainingSpace,
+        VirtualizingLayoutContext context)
     {
         return remainingSpace < 0;
     }
@@ -223,7 +223,7 @@ public class WrapLayout : VirtualizingLayout, IOrientationBasedMeasures, IFlowLa
         return new FlowLayoutAnchorInfo { Index = anchorIndex, Offset = offset };
     }
 
-    FlowLayoutAnchorInfo IFlowLayoutAlgorithmDelegates.Algorithm_GetAnchorForTargetElement(int targetIndex, 
+    int IFlowLayoutAlgorithmDelegates.Algorithm_GetAnchorIndexForTargetElement(int targetIndex,
         Size availableSize, VirtualizingLayoutContext context)
     {
         double offset = double.NaN;
@@ -241,7 +241,7 @@ public class WrapLayout : VirtualizingLayout, IOrientationBasedMeasures, IFlowLa
             offset = lineIndex * averageLineSize + this.MajorStart(flowState.FlowAlgorithm.LastExtent);
         }
 
-        return new FlowLayoutAnchorInfo { Index = index, Offset = offset };
+        return index;
     }
 
     Rect IFlowLayoutAlgorithmDelegates.Algorithm_GetExtent(Size availableSize, VirtualizingLayoutContext context, 
